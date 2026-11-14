@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Team extends Model
+{
+    protected $table = 'mst_teams';
+
+    protected $fillable = [
+        'team_code',
+        'team_name',
+        'max_member',
+        'description',
+        'is_active',
+    ];
+
+    /**
+     * Members of this team.
+     */
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
+    }
+}

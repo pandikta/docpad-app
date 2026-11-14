@@ -1,0 +1,53 @@
+services:
+  app:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: docpad_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./src:/var/www/html
+    ports:
+      - "5173:5173" # Port Vite Dev Server (HMR Vue)
+    networks:
+      - docpad_network
+    depends_on:
+      - db
+
+  nginx:
+    image: nginx:alpine
+    container_name: docpad_nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80" # Akses aplikasi di http://localhost:8000
+    volumes:
+      - ./src:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - docpad_network
+    depends_on:
+      - app
+
+  db:
+    image: mariadb:11.4
+    container_name: docpad_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: dbsf_docpad
+      MYSQL_USER: user
+      MYSQL_PASSWORD: P@ssw0rdMYSQL@123
+      MYSQL_ROOT_PASSWORD: P@ssw0rdR00T123
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - docpad_network
+
+networks:
+  docpad_network:
+    driver: bridge
+
+volumes:
+  db_data:

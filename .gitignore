@@ -1,0 +1,88 @@
+# =====================================================================
+# OS & System Files
+# =====================================================================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+Desktop.ini
+
+# =====================================================================
+# IDE, Editor & AI Agent Configs
+# =====================================================================
+.idea/
+.vscode/
+.fleet/
+.nova/
+.zed/
+.cursor/
+.gemini/
+*.swp
+*.swo
+*~
+
+# =====================================================================
+# Environment & Secrets (JANGAN PERNAH DI-PUSH)
+# =====================================================================
+.env
+.env.*
+!.env.example
+src/.env
+src/.env.*
+!src/.env.example
+src/auth.json
+src/storage/*.key
+Homestead.json
+Homestead.yaml
+src/Homestead.json
+src/Homestead.yaml
+
+# =====================================================================
+# Dependencies & Build Artifacts (di-generate ulang via composer & npm)
+# =====================================================================
+/node_modules/
+src/node_modules/
+src/vendor/
+src/public/build/
+src/public/hot
+src/public/storage
+
+# =====================================================================
+# Runtime Logs, Cache & Uploaded User Documents
+# =====================================================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+src/bootstrap/cache/*
+!src/bootstrap/cache/.gitignore
+src/storage/logs/*.log
+!src/storage/logs/.gitignore
+src/storage/pail/
+src/storage/framework/cache/data/*
+src/storage/framework/sessions/*
+!src/storage/framework/sessions/.gitignore
+src/storage/framework/testing/*
+!src/storage/framework/testing/.gitignore
+src/storage/framework/views/*
+!src/storage/framework/views/.gitignore
+src/storage/app/private/*
+!src/storage/app/private/.gitignore
+src/storage/app/public/*
+!src/storage/app/public/.gitignore
+
+# =====================================================================
+# Testing & Static Analysis Cache
+# =====================================================================
+src/.phpunit.cache/
+src/.phpunit.result.cache
+src/.phpactor.json
+
+# =====================================================================
+# Docker Local Data (jika ada volume lokal)
+# =====================================================================
+docker/data/
+mysql-data/
+db_data/
