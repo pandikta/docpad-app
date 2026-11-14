@@ -87,4 +87,4 @@ docker/data/
 mysql-data/
 db_data/
 docpad-rules.md
-
+docker-compose.yml
