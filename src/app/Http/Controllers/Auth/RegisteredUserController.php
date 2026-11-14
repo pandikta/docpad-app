@@ -48,6 +48,12 @@ class RegisteredUserController extends Controller
             ]);
         }
 
+        if ($teams->hasReachedMaxMembers($team)) {
+            throw ValidationException::withMessages([
+                'team_code' => "This team has reached its maximum member limit ({$team->max_member}). Please contact admin.",
+            ]);
+        }
+
         $user = $users->registerForTeam($team, $request->only('name', 'email', 'password'));
 
         event(new Registered($user));

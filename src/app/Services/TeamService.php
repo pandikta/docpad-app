@@ -18,6 +18,18 @@ class TeamService
     }
 
     /**
+     * Cek apakah jumlah anggota team sudah mencapai batas max_member.
+     */
+    public function hasReachedMaxMembers(Team $team): bool
+    {
+        if ($team->max_member <= 0) {
+            return false;
+        }
+
+        return $team->users()->count() >= $team->max_member;
+    }
+
+    /**
      * Daftar seluruh team aktif untuk pilihan assign dokumen.
      *
      * @return Collection<int, array{id: int, name: string, code: string}>
