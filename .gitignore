@@ -81,8 +81,11 @@ src/.phpunit.result.cache
 src/.phpactor.json
 
 # =====================================================================
-# Docker Local Data (jika ada volume lokal)
+# Docker Local Data & Catatan Lokal
 # =====================================================================
 docker/data/
 mysql-data/
 db_data/
+note.md
+docpad-rules.md
+
