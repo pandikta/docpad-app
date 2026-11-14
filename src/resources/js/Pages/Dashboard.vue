@@ -12,6 +12,7 @@ import DocumentLogsDialog from '@/Components/Documents/DocumentLogsDialog.vue';
 import DocumentRenameDialog from '@/Components/Documents/DocumentRenameDialog.vue';
 import DocumentAssignTeamsDialog from '@/Components/Documents/DocumentAssignTeamsDialog.vue';
 import DocumentDeleteDialog from '@/Components/Documents/DocumentDeleteDialog.vue';
+import { useAuth } from '@/composables/useAuth';
 import { useDocumentActions } from '@/composables/useDocumentActions';
 
 const props = defineProps({
@@ -21,6 +22,7 @@ const props = defineProps({
 });
 
 const page = usePage();
+const { can } = useAuth();
 const {
     uploading,
     creating,
@@ -138,8 +140,9 @@ const onFileSelected = (event) => {
                     @change="onFileSelected"
                 />
 
-                <div class="sm:ml-auto flex flex-wrap items-center gap-3">
+                <div v-if="can('documents.create') || can('documents.upload')" class="sm:ml-auto flex flex-wrap items-center gap-3">
                     <Button
+                        v-if="can('documents.create')"
                         label="Create File"
                         icon="pi pi-plus"
                         severity="secondary"
@@ -148,6 +151,7 @@ const onFileSelected = (event) => {
                         @click="createVisible = true"
                     />
                     <Button
+                        v-if="can('documents.upload')"
                         label="Upload File"
                         icon="pi pi-cloud-upload"
                         :loading="uploading"
@@ -179,6 +183,7 @@ const onFileSelected = (event) => {
             v-model:visible="editorVisible"
             :document="selectedDocument"
             :saving="saving"
+            :can-edit="can('documents.edit')"
             @save="saveDocument"
         />
 

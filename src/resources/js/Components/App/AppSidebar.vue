@@ -6,6 +6,7 @@ import InputIcon from 'primevue/inputicon';
 import InputText from 'primevue/inputtext';
 import { useToast } from 'primevue/usetoast';
 import AppLogo from '@/Components/App/AppLogo.vue';
+import { useAuth } from '@/composables/useAuth';
 
 const props = defineProps({
     // Dipakai untuk membuka/menutup sidebar di layar kecil
@@ -17,6 +18,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'toggle-minimize', 'set-minimized']);
 
 const toast = useToast();
+const { isSuperAdmin } = useAuth();
 
 // Tambah menu utama di sini.
 const navItems = [
@@ -36,6 +38,16 @@ const settingsGroups = [
             { label: 'Master Extensions', routeName: 'settings.extensions.index', description: 'Manage allowed document extensions' },
             { label: 'Master Teams', routeName: 'settings.teams.index', description: 'Manage workspace teams & codes' },
             { label: 'Master Users', routeName: 'settings.users.index', description: 'Manage registered users' },
+        ],
+    },
+    {
+        title: 'Access & Authorization',
+        items: [
+            {
+                label: 'Function Authorization',
+                routeName: 'settings.function-auth.index',
+                description: 'Manage menu & action permissions per team or user',
+            },
         ],
     },
     // {
@@ -172,8 +184,9 @@ const openSettingItem = (item) => {
                 <span :class="minimized ? 'lg:hidden' : ''">{{ item.label }}</span>
             </Link>
 
-            <!-- Menu Settings (Membuka Flyout Panel seperti contoh gambar) -->
+            <!-- Menu Settings (Khusus Superadmin - Membuka Flyout Panel seperti contoh gambar) -->
             <button
+                v-if="isSuperAdmin"
                 v-tooltip.right="minimized ? 'Settings' : null"
                 type="button"
                 class="w-full flex items-center rounded-xl text-sm font-medium transition-colors cursor-pointer"
@@ -240,7 +253,7 @@ const openSettingItem = (item) => {
         leave-to-class="opacity-0 -translate-x-3"
     >
         <div
-            v-if="settingsOpen"
+            v-if="isSuperAdmin && settingsOpen"
             class="fixed inset-y-0 left-0 z-40 w-full sm:w-[36rem] lg:w-[42rem] bg-white dark:bg-surface-900 border-r border-slate-200 dark:border-surface-800 shadow-2xl overflow-y-auto px-6 sm:px-10 py-8 transition-all"
             :class="minimized ? 'lg:left-20' : 'lg:left-60'"
         >

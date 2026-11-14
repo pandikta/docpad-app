@@ -4,6 +4,7 @@ namespace App\Helpers;
 
 use App\Models\Document;
 use App\Models\User;
+use App\Services\FunctionAuthService;
 use Illuminate\Support\Facades\Auth;
 
 class AuthHelper
@@ -53,5 +54,19 @@ class AuthHelper
         }
 
         return $document->teams()->where('mst_teams.id', $user->team_id)->exists();
+    }
+
+    /**
+     * Cek apakah user berhak menjalankan fungsi/aksi tertentu berdasarkan Function Authorization.
+     */
+    public static function canUseFunction(string $functionCode, ?User $user = null): bool
+    {
+        $user ??= Auth::user();
+
+        if (! $user) {
+            return false;
+        }
+
+        return app(FunctionAuthService::class)->can($user, $functionCode);
     }
 }

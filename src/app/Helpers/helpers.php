@@ -36,6 +36,16 @@ if (! function_exists('can_access_document')) {
     }
 }
 
+if (! function_exists('can_use_function')) {
+    /**
+     * Cek apakah user berhak menjalankan fungsi tertentu (Function Authorization).
+     */
+    function can_use_function(string $functionCode, ?User $user = null): bool
+    {
+        return AuthHelper::canUseFunction($functionCode, $user);
+    }
+}
+
 if (! function_exists('text_to_html')) {
     /**
      * Konversi teks biasa menjadi HTML (satu <p> per baris) agar siap dibuka di Editor.

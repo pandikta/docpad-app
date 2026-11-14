@@ -1,10 +1,10 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { usePage } from '@inertiajs/vue3';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import Menu from 'primevue/menu';
+import { useAuth } from '@/composables/useAuth';
 import { useDocumentSearch } from '@/composables/useDocumentSearch';
 import { formatFileSize, formatDateTime } from '@/utils/formatters';
 
@@ -22,8 +22,7 @@ const props = defineProps({
 // delete       : aksi delete dipilih dari menu titik tiga
 const emit = defineEmits(['open', 'logs', 'download', 'rename', 'assign-teams', 'delete']);
 
-const page = usePage();
-const isSuperAdmin = computed(() => Boolean(page.props.auth.user?.is_superadmin));
+const { isSuperAdmin, can } = useAuth();
 
 const { searchQuery, clearSearch, matchesDocument } = useDocumentSearch();
 
@@ -46,18 +45,21 @@ const moreMenuItems = computed(() => {
         });
     }
 
-    items.push(
-        {
+    if (can('documents.rename')) {
+        items.push({
             label: 'Rename',
             icon: 'pi pi-pencil',
             command: () => activeRowDocument.value && emit('rename', activeRowDocument.value),
-        },
-        {
+        });
+    }
+
+    if (can('documents.delete')) {
+        items.push({
             label: 'Delete',
             icon: 'pi pi-trash text-red-500',
             command: () => activeRowDocument.value && emit('delete', activeRowDocument.value),
-        },
-    );
+        });
+    }
 
     return items;
 });
@@ -192,6 +194,7 @@ const actionBtnClass =
                 <template #body="{ data }">
                     <div class="flex justify-end gap-2">
                         <Button
+                            v-if="can('documents.logs')"
                             v-tooltip.top="'Document Logs'"
                             icon="pi pi-history"
                             severity="secondary"
@@ -202,6 +205,7 @@ const actionBtnClass =
                             @click="$emit('logs', data)"
                         />
                         <Button
+                            v-if="can('documents.download')"
                             v-tooltip.top="'Download'"
                             icon="pi pi-download"
                             severity="secondary"
@@ -212,6 +216,7 @@ const actionBtnClass =
                             @click="$emit('download', data)"
                         />
                         <Button
+                            v-if="moreMenuItems.length"
                             v-tooltip.top="'More actions'"
                             icon="pi pi-ellipsis-v"
                             severity="secondary"

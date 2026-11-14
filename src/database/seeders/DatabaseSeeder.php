@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             TeamSeeder::class,
             SuperAdminSeeder::class,
+            FunctionAuthSeeder::class,
         ]);
 
         // User::factory(10)->create();

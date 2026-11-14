@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\FunctionAuthService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -37,6 +38,9 @@ class HandleInertiaRequests extends Middleware
                     ...$request->user()->only('id', 'name', 'email', 'email_verified_at'),
                     'is_superadmin' => $request->user()->isSuperAdmin(),
                 ] : null,
+                'permissions' => fn () => $request->user()
+                    ? app(FunctionAuthService::class)->getPermissionsMap($request->user())
+                    : [],
             ],
             // Flash message (mis. ->with('success', '...')) yang ditampilkan sebagai toast di FE.
             'flash' => [

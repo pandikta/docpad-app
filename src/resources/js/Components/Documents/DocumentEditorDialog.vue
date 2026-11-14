@@ -11,6 +11,8 @@ const props = defineProps({
     document: { type: Object, default: null },
     // Tampilkan loading di tombol Save
     saving: { type: Boolean, default: false },
+    // Apakah user berhak mengedit dokumen
+    canEdit: { type: Boolean, default: true },
 });
 
 const emit = defineEmits(['update:visible', 'save']);
@@ -48,11 +50,12 @@ const save = () => emit('save', { ...props.document, content: content.value });
             </div>
         </template>
 
-        <Editor v-model="content" editorStyle="height: 22rem" />
+        <Editor v-model="content" :readonly="!canEdit" editorStyle="height: 22rem" />
 
         <template #footer>
             <Button label="Close" severity="secondary" variant="outlined" @click="close" />
             <Button
+                v-if="canEdit"
                 label="Save"
                 icon="pi pi-save"
                 :loading="saving"

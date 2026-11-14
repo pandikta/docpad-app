@@ -19,6 +19,8 @@ class DocumentController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        abort_unless(can_use_function('documents.upload', $request->user()), 403);
+
         $allowed = implode(',', allowed_document_extensions());
 
         $request->validate([
@@ -41,6 +43,8 @@ class DocumentController extends Controller
      */
     public function create(Request $request): RedirectResponse
     {
+        abort_unless(can_use_function('documents.create', $request->user()), 403);
+
         $allowed = implode(',', allowed_document_extensions());
 
         $validated = $request->validate([
@@ -64,6 +68,7 @@ class DocumentController extends Controller
      */
     public function update(Request $request, Document $document): RedirectResponse
     {
+        abort_unless(can_use_function('documents.edit', $request->user()), 403);
         $this->documents->authorizeAccess($request->user(), $document);
 
         $validated = $request->validate([
@@ -80,6 +85,7 @@ class DocumentController extends Controller
      */
     public function rename(Request $request, Document $document): RedirectResponse
     {
+        abort_unless(can_use_function('documents.rename', $request->user()), 403);
         $this->documents->authorizeAccess($request->user(), $document);
 
         $validated = $request->validate([
@@ -123,6 +129,7 @@ class DocumentController extends Controller
      */
     public function destroy(Request $request, Document $document): RedirectResponse
     {
+        abort_unless(can_use_function('documents.delete', $request->user()), 403);
         $this->documents->authorizeAccess($request->user(), $document);
 
         $name = $document->name;
@@ -136,6 +143,7 @@ class DocumentController extends Controller
      */
     public function download(Request $request, Document $document): StreamedResponse
     {
+        abort_unless(can_use_function('documents.download', $request->user()), 403);
         $this->documents->authorizeAccess($request->user(), $document);
 
         $text = $this->documents->toPlainText($document);
