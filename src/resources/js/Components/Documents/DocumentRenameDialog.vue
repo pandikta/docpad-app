@@ -4,11 +4,10 @@ import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 
-const ALLOWED_EXTENSIONS = ['txt', 'md'];
-
 const props = defineProps({
     visible: { type: Boolean, default: false },
     document: { type: Object, default: null },
+    extensions: { type: Array, default: () => ['txt', 'md'] },
     loading: { type: Boolean, default: false },
 });
 
@@ -33,8 +32,8 @@ const validationError = computed(() => {
     const baseName = lastDot > 0 ? trimmed.slice(0, lastDot).trim() : '';
     const ext = lastDot > 0 ? trimmed.slice(lastDot + 1).toLowerCase() : '';
 
-    if (!baseName || !ALLOWED_EXTENSIONS.includes(ext)) {
-        return `Document name must end with an allowed extension (.${ALLOWED_EXTENSIONS.join(', .')}).`;
+    if (!baseName || !props.extensions.includes(ext)) {
+        return `Document name must end with an allowed extension (.${props.extensions.join(', .')}).`;
     }
 
     return null;
@@ -84,7 +83,7 @@ const onSubmit = () => {
                 <span>{{ validationError }}</span>
             </small>
             <small v-else class="text-slate-400 dark:text-surface-500 text-xs block">
-                Allowed extensions: .txt, .md
+                Allowed extensions: .{{ extensions.join(', .') }}
             </small>
         </form>
 

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Document extends Model
@@ -12,7 +13,6 @@ class Document extends Model
     protected $table = 'doc_files';
 
     protected $fillable = [
-        'team_id',
         'user_id',
         'name',
         'content',
@@ -21,8 +21,8 @@ class Document extends Model
 
     /**
      * Scope query dokumen berdasarkan user:
-     * - Superadmin dikecualikan dari filter team_id (melihat seluruh dokumen).
-     * - User biasa hanya melihat dokumen milik timnya.
+     * - Superadmin dikecualikan dari filter tim (melihat seluruh dokumen).
+     * - User biasa hanya melihat dokumen yang di-assign ke timnya di tabel doc_file_teams.
      */
     public function scopeForUser(Builder $query, User $user): Builder
     {
@@ -30,7 +30,11 @@ class Document extends Model
             return $query;
         }
 
-        return $query->where('team_id', $user->team_id);
+        if (! $user->team_id) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereHas('teams', fn (Builder $q) => $q->where('mst_teams.id', $user->team_id));
     }
 
     /**
@@ -50,9 +54,10 @@ class Document extends Model
         });
     }
 
-    public function team(): BelongsTo
+    public function teams(): BelongsToMany
     {
-        return $this->belongsTo(Team::class);
+        return $this->belongsToMany(Team::class, 'doc_file_teams', 'document_id', 'team_id')
+            ->withTimestamps();
     }
 
     public function user(): BelongsTo
@@ -80,6 +85,10 @@ class Document extends Model
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
             'content' => $this->content,
+            'teams' => $this->teams->map(fn (Team $team) => [
+                'id' => $team->id,
+                'name' => $team->team_name,
+            ])->values()->all(),
             'logs' => $this->logs->map(fn (DocumentLog $log) => [
                 'id' => $log->id,
                 'user_name' => $log->user?->name ?? 'Unknown',

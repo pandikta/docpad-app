@@ -37,6 +37,29 @@ class DocumentController extends Controller
     }
 
     /**
+     * Buat file dokumen baru langsung dari form (pilih ekstensi dari daftar yang diizinkan).
+     */
+    public function create(Request $request): RedirectResponse
+    {
+        $allowed = implode(',', allowed_document_extensions());
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:200'],
+            'extension' => ['required', 'string', "in:{$allowed}"],
+            'content' => ['nullable', 'string', 'max:2000000'],
+        ]);
+
+        $document = $this->documents->createBlank(
+            $request->user(),
+            $validated['name'],
+            $validated['extension'],
+            $validated['content'] ?? '',
+        );
+
+        return back()->with('success', "{$document->name} created successfully.");
+    }
+
+    /**
      * Simpan hasil edit dari text editor.
      */
     public function update(Request $request, Document $document): RedirectResponse
@@ -76,6 +99,23 @@ class DocumentController extends Controller
         $this->documents->rename($document, $validated['name'], $request->user());
 
         return back()->with('success', "Document renamed to {$document->name}.");
+    }
+
+    /**
+     * Assign dokumen ke satu atau banyak tim (khusus superadmin).
+     */
+    public function assignTeams(Request $request, Document $document): RedirectResponse
+    {
+        abort_unless(is_superadmin($request->user()), 403);
+
+        $validated = $request->validate([
+            'team_ids' => ['present', 'array'],
+            'team_ids.*' => ['integer', 'exists:mst_teams,id'],
+        ]);
+
+        $this->documents->assignTeams($document, $validated['team_ids'], $request->user());
+
+        return back()->with('success', "Team assignment updated for {$document->name}.");
     }
 
     /**

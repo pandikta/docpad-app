@@ -33,7 +33,10 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 // Hanya field yang aman & dibutuhkan FE (jangan kirim model User utuh).
-                'user' => $request->user()?->only('id', 'name', 'email', 'email_verified_at'),
+                'user' => $request->user() ? [
+                    ...$request->user()->only('id', 'name', 'email', 'email_verified_at'),
+                    'is_superadmin' => $request->user()->isSuperAdmin(),
+                ] : null,
             ],
             // Flash message (mis. ->with('success', '...')) yang ditampilkan sebagai toast di FE.
             'flash' => [

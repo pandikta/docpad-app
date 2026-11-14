@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
+import { usePage } from '@inertiajs/vue3';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
@@ -8,17 +9,21 @@ import { useDocumentSearch } from '@/composables/useDocumentSearch';
 import { formatFileSize, formatDateTime } from '@/utils/formatters';
 
 const props = defineProps({
-    // [{ id, name, size (bytes), created_by, created_at (ISO), updated_at (ISO), content, logs }]
+    // [{ id, name, size (bytes), created_by, created_at (ISO), updated_at (ISO), content, teams, logs }]
     documents: { type: Array, default: () => [] },
     rows: { type: Number, default: 10 },
 });
 
-// open     : nama dokumen diklik (buka editor)
-// logs     : tombol log aktivitas diklik
-// download : tombol download diklik
-// rename   : aksi rename dipilih dari menu titik tiga
-// delete   : aksi delete dipilih dari menu titik tiga
-const emit = defineEmits(['open', 'logs', 'download', 'rename', 'delete']);
+// open         : nama dokumen diklik (buka editor)
+// logs         : tombol log aktivitas diklik
+// download     : tombol download diklik
+// rename       : aksi rename dipilih dari menu titik tiga
+// assign-teams : aksi assign ke tim dipilih dari menu titik tiga (khusus superadmin)
+// delete       : aksi delete dipilih dari menu titik tiga
+const emit = defineEmits(['open', 'logs', 'download', 'rename', 'assign-teams', 'delete']);
+
+const page = usePage();
+const isSuperAdmin = computed(() => Boolean(page.props.auth.user?.is_superadmin));
 
 const { searchQuery, clearSearch, matchesDocument } = useDocumentSearch();
 
@@ -30,18 +35,32 @@ const filteredDocuments = computed(() => {
 const moreMenu = ref(null);
 const activeRowDocument = ref(null);
 
-const moreMenuItems = [
-    {
-        label: 'Rename',
-        icon: 'pi pi-pencil',
-        command: () => activeRowDocument.value && emit('rename', activeRowDocument.value),
-    },
-    {
-        label: 'Delete',
-        icon: 'pi pi-trash text-red-500',
-        command: () => activeRowDocument.value && emit('delete', activeRowDocument.value),
-    },
-];
+const moreMenuItems = computed(() => {
+    const items = [];
+
+    if (isSuperAdmin.value) {
+        items.push({
+            label: 'Assign Teams',
+            icon: 'pi pi-users text-[#1f6f46]',
+            command: () => activeRowDocument.value && emit('assign-teams', activeRowDocument.value),
+        });
+    }
+
+    items.push(
+        {
+            label: 'Rename',
+            icon: 'pi pi-pencil',
+            command: () => activeRowDocument.value && emit('rename', activeRowDocument.value),
+        },
+        {
+            label: 'Delete',
+            icon: 'pi pi-trash text-red-500',
+            command: () => activeRowDocument.value && emit('delete', activeRowDocument.value),
+        },
+    );
+
+    return items;
+});
 
 const toggleMoreMenu = (event, doc) => {
     activeRowDocument.value = doc;
@@ -120,6 +139,33 @@ const actionBtnClass =
             <!-- Size -->
             <Column field="size" header="Size">
                 <template #body="{ data }">{{ formatFileSize(data.size) }}</template>
+            </Column>
+
+            <!-- Teams (khusus Superadmin) -->
+            <Column v-if="isSuperAdmin" header="Teams">
+                <template #body="{ data }">
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <template v-if="data.teams?.length">
+                            <span
+                                v-for="team in data.teams"
+                                :key="team.id"
+                                class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-[#1f6f46] dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/60"
+                            >
+                                <i class="pi pi-users text-[10px]"></i>
+                                <span>{{ team.name }}</span>
+                            </span>
+                        </template>
+                        <button
+                            v-else
+                            type="button"
+                            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 cursor-pointer transition-colors"
+                            @click="$emit('assign-teams', data)"
+                        >
+                            <i class="pi pi-exclamation-circle text-[10px]"></i>
+                            <span>Unassigned</span>
+                        </button>
+                    </div>
+                </template>
             </Column>
 
             <!-- Created At (siapa yang membuat & jamnya) -->

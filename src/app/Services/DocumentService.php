@@ -18,7 +18,7 @@ class DocumentService
     {
         return Document::forUser($user)
             ->search($search)
-            ->with(['user:id,name', 'logs.user:id,name'])
+            ->with(['user:id,name', 'teams:id,team_name', 'logs.user:id,name'])
             ->latest()
             ->get()
             ->map(fn (Document $document) => $document->toListItem());
@@ -29,7 +29,7 @@ class DocumentService
      */
     public function authorizeAccess(User $user, Document $document): void
     {
-        abort_unless(can_access_team($document->team_id, $user), 403);
+        abort_unless(can_access_document($document, $user), 403);
     }
 
     /**
@@ -51,14 +51,69 @@ class DocumentService
         $raw = (string) file_get_contents($file->getRealPath());
 
         $document = Document::create([
-            'team_id' => $user->team_id,
             'user_id' => $user->id,
             'name' => $file->getClientOriginalName(),
             'content' => text_to_html($raw),
             'size' => $file->getSize(),
         ]);
 
+        if ($user->team_id) {
+            $document->teams()->syncWithoutDetaching([$user->team_id]);
+        }
+
         record_document_log($document, 'created a new document', $user);
+
+        return $document;
+    }
+
+    /**
+     * Buat dokumen baru langsung dari form Create File (nama + pilihan ekstensi + konten opsional).
+     */
+    public function createBlank(User $user, string $name, string $extension, string $content = ''): Document
+    {
+        $extension = ltrim(strtolower(trim($extension)), '.');
+        $baseName = trim($name);
+
+        // Jika user mengetik nama sekaligus ekstensinya (mis. "catatan.txt"), hapus akhiran ganda.
+        if (str_ends_with(strtolower($baseName), '.'.$extension)) {
+            $baseName = substr($baseName, 0, -strlen('.'.$extension));
+        }
+
+        $finalName = trim($baseName).'.'.$extension;
+        $htmlContent = $content !== '' ? $content : '<p><br></p>';
+
+        $document = Document::create([
+            'user_id' => $user->id,
+            'name' => $finalName,
+            'content' => $htmlContent,
+            'size' => strlen(trim(html_to_text($htmlContent))),
+        ]);
+
+        if ($user->team_id) {
+            $document->teams()->syncWithoutDetaching([$user->team_id]);
+        }
+
+        record_document_log($document, 'created a new document', $user);
+
+        return $document;
+    }
+
+    /**
+     * Assign dokumen ke satu atau banyak tim (khusus superadmin) dan catat log perubahannya.
+     *
+     * @param  array<int, int>  $teamIds
+     */
+    public function assignTeams(Document $document, array $teamIds, ?User $user = null): Document
+    {
+        $document->teams()->sync($teamIds);
+        $document->touch();
+
+        $teamNames = $document->teams()->pluck('team_name')->implode(', ');
+        $action = $teamNames !== ''
+            ? "assigned document to team: {$teamNames}"
+            : 'removed all team assignments';
+
+        record_document_log($document, $action, $user);
 
         return $document;
     }

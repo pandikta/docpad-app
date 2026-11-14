@@ -12,6 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::disableForeignKeyConstraints();
+        Schema::dropIfExists('doc_file_teams');
         Schema::dropIfExists('doc_logs');
         Schema::dropIfExists('doc_files');
         Schema::enableForeignKeyConstraints();
@@ -54,6 +55,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::disableForeignKeyConstraints();
+        Schema::dropIfExists('doc_file_teams');
         Schema::dropIfExists('doc_logs');
         Schema::dropIfExists('doc_files');
         Schema::enableForeignKeyConstraints();

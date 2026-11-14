@@ -11,8 +11,10 @@ export function useDocumentActions() {
     const toast = useToast();
 
     const uploading = ref(false);
+    const creating = ref(false);
     const saving = ref(false);
     const renaming = ref(false);
+    const assigningTeams = ref(false);
     const deleting = ref(false);
 
     const notifyError = (summary, errors) => {
@@ -34,6 +36,20 @@ export function useDocumentActions() {
                 onStart: () => (uploading.value = true),
                 onError: (errors) => notifyError('Upload Failed', errors),
                 onFinish: () => (uploading.value = false),
+            },
+        );
+    };
+
+    const create = (payload, { onSuccess } = {}) => {
+        router.post(
+            route('documents.create'),
+            payload,
+            {
+                preserveScroll: true,
+                onStart: () => (creating.value = true),
+                onSuccess,
+                onError: (errors) => notifyError('Create Failed', errors),
+                onFinish: () => (creating.value = false),
             },
         );
     };
@@ -66,6 +82,20 @@ export function useDocumentActions() {
         );
     };
 
+    const assignTeams = (document, teamIds, { onSuccess } = {}) => {
+        router.put(
+            route('documents.assign-teams', document.id),
+            { team_ids: teamIds },
+            {
+                preserveScroll: true,
+                onStart: () => (assigningTeams.value = true),
+                onSuccess,
+                onError: (errors) => notifyError('Assign Teams Failed', errors),
+                onFinish: () => (assigningTeams.value = false),
+            },
+        );
+    };
+
     const destroy = (document, { onSuccess } = {}) => {
         router.delete(route('documents.destroy', document.id), {
             preserveScroll: true,
@@ -82,12 +112,16 @@ export function useDocumentActions() {
 
     return {
         uploading,
+        creating,
         saving,
         renaming,
+        assigningTeams,
         deleting,
         upload,
+        create,
         save,
         rename,
+        assignTeams,
         destroy,
         download,
     };

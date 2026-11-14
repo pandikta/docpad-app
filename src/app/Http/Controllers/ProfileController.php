@@ -28,7 +28,7 @@ class ProfileController extends Controller
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => session('status'),
-            'teamName' => $user?->team?->name ?? (is_superadmin($user) ? 'Superadmin (All Teams)' : null),
+            'teamName' => $user?->team?->team_name ?? (is_superadmin($user) ? 'Superadmin (All Teams)' : null),
         ]);
     }
 

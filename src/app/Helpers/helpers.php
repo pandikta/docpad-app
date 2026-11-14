@@ -26,6 +26,16 @@ if (! function_exists('can_access_team')) {
     }
 }
 
+if (! function_exists('can_access_document')) {
+    /**
+     * Cek apakah user berhak mengakses dokumen (superadmin selalu true, user biasa cek doc_file_teams).
+     */
+    function can_access_document(Document $document, ?User $user = null): bool
+    {
+        return AuthHelper::canAccessDocument($document, $user);
+    }
+}
+
 if (! function_exists('text_to_html')) {
     /**
      * Konversi teks biasa menjadi HTML (satu <p> per baris) agar siap dibuka di Editor.
