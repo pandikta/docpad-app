@@ -34,10 +34,10 @@ services:
     container_name: docpad_db
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: dbsf_docpad
-      MYSQL_USER: user
-      MYSQL_PASSWORD: P@ssw0rdMYSQL@123
-      MYSQL_ROOT_PASSWORD: P@ssw0rdR00T123
+      MYSQL_DATABASE:
+      MYSQL_USER:
+      MYSQL_PASSWORD:
+      MYSQL_ROOT_PASSWORD:
     ports:
       - "3306:3306"
     volumes:
