@@ -32,6 +32,9 @@ const visibleNavItems = computed(() => {
     return fromDb.length ? fromDb : fallbackMainMenus;
 });
 
+const topNavItems = computed(() => visibleNavItems.value.filter((item) => item.code !== 'menu.profile'));
+const profileNavItem = computed(() => visibleNavItems.value.find((item) => item.code === 'menu.profile') ?? null);
+
 // Panel sub-menu Settings (seperti contoh referensi gambar)
 const settingsOpen = ref(false);
 const settingsSearch = ref('');
@@ -206,7 +209,7 @@ const openSettingItem = (item) => {
 
         <!-- Navigation -->
         <nav class="px-3 space-y-2">
-            <div v-for="item in visibleNavItems" :key="item.code" class="space-y-1">
+            <div v-for="item in topNavItems" :key="item.code" class="space-y-1">
                 <!-- Menu dengan Sub-menu (Parent Menu — klik hanya expand/collapse, tidak direct ke halaman) -->
                 <template v-if="item.children?.length">
                     <button
@@ -317,8 +320,27 @@ const openSettingItem = (item) => {
             <!-- <path d="M60 110C50 80 62 50 90 38C96 66 86 96 60 110Z" fill="#1a6140" /> -->
         </svg>
 
-        <!-- Logout -->
-        <div class="relative mt-auto px-3 pb-6">
+        <!-- Profile & Logout -->
+        <div class="relative mt-auto px-3 pb-6 space-y-1.5">
+            <button
+                v-if="profileNavItem"
+                v-tooltip.right="minimized ? profileNavItem.name : null"
+                type="button"
+                class="w-full flex items-center rounded-xl text-sm font-medium transition-colors text-left cursor-pointer"
+                :class="[
+                    minimized
+                        ? 'gap-3 px-3 py-2.5 lg:justify-center lg:gap-0 lg:p-0 lg:w-11 lg:h-11 lg:mx-auto lg:rounded-full'
+                        : 'gap-3 px-3 py-2.5',
+                    isActive(profileNavItem.route_name) && !settingsOpen
+                        ? 'bg-emerald-500/35 text-white shadow-sm ring-1 ring-white/20'
+                        : 'text-emerald-100/90 hover:bg-white/10 hover:text-white',
+                ]"
+                @click="navigateMenu(profileNavItem)"
+            >
+                <i :class="[profileNavItem.icon || 'pi pi-user', 'text-base leading-none']"></i>
+                <span :class="minimized ? 'lg:hidden' : ''">{{ profileNavItem.name }}</span>
+            </button>
+
             <Link
                 v-tooltip.right="minimized ? 'Logout' : null"
                 :href="route('logout')"
