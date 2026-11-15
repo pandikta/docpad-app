@@ -43,7 +43,6 @@ const {
 } = useDocumentActions();
 
 const userName = computed(() => page.props.auth.user?.name ?? '');
-const acceptExtensions = computed(() => props.allowedExtensions.map((ext) => `.${ext}`).join(','));
 
 // --- Create dialog -------------------------------------------------------
 const createVisible = ref(false);
@@ -125,26 +124,12 @@ const confirmDelete = (doc) => {
 };
 
 // --- Upload --------------------------------------------------------------
-const fileInput = ref(null);
-const uploadConfirmVisible = ref(false);
-const pendingUploadFiles = ref([]);
-
-const onFileSelected = (event) => {
-    const files = Array.from(event.target.files ?? []);
-    if (files.length) {
-        pendingUploadFiles.value = files;
-        uploadConfirmVisible.value = true;
-    }
-
-    // reset supaya file yang sama bisa dipilih lagi
-    event.target.value = '';
-};
+const uploadDialogVisible = ref(false);
 
 const confirmUpload = (files) => {
     upload(files, {
         onSuccess: () => {
-            uploadConfirmVisible.value = false;
-            pendingUploadFiles.value = [];
+            uploadDialogVisible.value = false;
         },
     });
 };
@@ -160,15 +145,6 @@ const confirmUpload = (files) => {
             <!-- Stats + Upload -->
             <div class="flex flex-wrap items-center gap-4">
                 <StatCard icon="pi pi-file" label="Total Documents" :value="documents.length" />
-
-                <input
-                    ref="fileInput"
-                    type="file"
-                    :accept="acceptExtensions"
-                    multiple
-                    class="hidden"
-                    @change="onFileSelected"
-                />
 
                 <div v-if="can('documents.create') || can('documents.upload')" class="sm:ml-auto flex flex-wrap items-center gap-3">
                     <Button
@@ -186,7 +162,7 @@ const confirmUpload = (files) => {
                         icon="pi pi-cloud-upload"
                         :loading="uploading"
                         class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white !font-semibold !rounded-xl !px-6 !py-3"
-                        @click="fileInput.click()"
+                        @click="uploadDialogVisible = true"
                     />
                 </div>
             </div>
@@ -248,8 +224,8 @@ const confirmUpload = (files) => {
         />
 
         <DocumentUploadConfirmDialog
-            v-model:visible="uploadConfirmVisible"
-            :files="pendingUploadFiles"
+            v-model:visible="uploadDialogVisible"
+            :allowed-extensions="allowedExtensions"
             :extension-max-sizes="extensionMaxSizes"
             :loading="uploading"
             @confirm="confirmUpload"

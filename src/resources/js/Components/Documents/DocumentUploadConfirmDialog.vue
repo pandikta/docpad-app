@@ -1,16 +1,35 @@
 <script setup>
+import { ref, computed, watch } from 'vue';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 import { formatFileSize } from '@/utils/formatters';
 
 const props = defineProps({
     visible: { type: Boolean, default: false },
-    files: { type: Array, default: () => [] },
+    allowedExtensions: { type: Array, default: () => ['txt', 'md'] },
     extensionMaxSizes: { type: Object, default: () => ({}) },
     loading: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['update:visible', 'confirm']);
+
+const fileInput = ref(null);
+const selectedFiles = ref([]);
+const isDragging = ref(false);
+
+const acceptExtensions = computed(() =>
+    props.allowedExtensions.map((ext) => `.${ext}`).join(','),
+);
+
+watch(
+    () => props.visible,
+    (isOpen) => {
+        if (isOpen) {
+            selectedFiles.value = [];
+            isDragging.value = false;
+        }
+    },
+);
 
 const close = () => emit('update:visible', false);
 
@@ -19,10 +38,7 @@ const getFileExtension = (fileName) => {
     return parts.length > 1 ? parts.pop().toLowerCase() : '';
 };
 
-const getMaxSizeKb = (file) => {
-    const ext = getFileExtension(file?.name);
-    return Number(props.extensionMaxSizes?.[ext] ?? 1024);
-};
+const getMaxSizeKb = (ext) => Number(props.extensionMaxSizes?.[ext] ?? 1024);
 
 const formatMaxKb = (kb) => {
     if (kb >= 1024) {
@@ -32,11 +48,53 @@ const formatMaxKb = (kb) => {
     return `${kb} KB`;
 };
 
-const isOversized = (file) => Number(file?.size ?? 0) > getMaxSizeKb(file) * 1024;
+const isExtensionAllowed = (file) => {
+    const ext = getFileExtension(file?.name);
+    return props.allowedExtensions.includes(ext);
+};
+
+const isOversized = (file) => {
+    const ext = getFileExtension(file?.name);
+    return Number(file?.size ?? 0) > getMaxSizeKb(ext) * 1024;
+};
+
+const hasFileIssue = (file) => !isExtensionAllowed(file) || isOversized(file);
+
+const addFiles = (incomingFiles) => {
+    const list = Array.from(incomingFiles ?? []);
+    if (!list.length) return;
+
+    const existingKeys = new Set(selectedFiles.value.map((f) => `${f.name}-${f.size}-${f.lastModified}`));
+    const merged = [...selectedFiles.value];
+
+    for (const file of list) {
+        const key = `${file.name}-${file.size}-${file.lastModified}`;
+        if (!existingKeys.has(key)) {
+            merged.push(file);
+            existingKeys.add(key);
+        }
+    }
+
+    selectedFiles.value = merged;
+};
+
+const onFileSelected = (event) => {
+    addFiles(event.target.files);
+    event.target.value = '';
+};
+
+const onDrop = (event) => {
+    isDragging.value = false;
+    addFiles(event.dataTransfer?.files);
+};
+
+const removeFile = (index) => {
+    selectedFiles.value = selectedFiles.value.filter((_, idx) => idx !== index);
+};
 
 const onConfirm = () => {
-    if (!props.files.length) return;
-    emit('confirm', props.files);
+    if (!selectedFiles.value.length) return;
+    emit('confirm', selectedFiles.value);
 };
 </script>
 
@@ -45,57 +103,136 @@ const onConfirm = () => {
         :visible="visible"
         modal
         :draggable="false"
-        :style="{ width: '30rem' }"
-        :breakpoints="{ '640px': '92vw' }"
+        :style="{ width: '36rem' }"
+        :breakpoints="{ '640px': '94vw' }"
         @update:visible="(value) => emit('update:visible', value)"
     >
         <template #header>
             <div class="flex items-center gap-2.5">
-                <i class="pi pi-cloud-upload text-[#1f6f46] dark:text-emerald-400"></i>
-                <span class="text-lg font-bold text-slate-800 dark:text-surface-0">Confirm Upload</span>
+                <i class="pi pi-cloud-upload text-xl text-[#1f6f46] dark:text-emerald-400"></i>
+                <span class="text-lg font-bold text-slate-800 dark:text-surface-0">Upload Documents</span>
             </div>
         </template>
 
-        <div class="space-y-3">
-            <p class="text-sm text-slate-600 dark:text-surface-300 leading-relaxed">
-                You are about to upload
-                <span class="font-semibold text-slate-900 dark:text-surface-0">{{ files.length }}</span>
-                {{ files.length === 1 ? 'document' : 'documents' }}.
-                All uploaded documents will be set to
-                <span class="font-semibold text-[#1f6f46] dark:text-emerald-400">Publish</span>
-                and shared with your team.
-            </p>
-
-            <ul
-                v-if="files.length"
-                class="max-h-44 overflow-y-auto rounded-lg border border-slate-200 dark:border-surface-700 bg-slate-50 dark:bg-surface-900/50 divide-y divide-slate-200/70 dark:divide-surface-700/70 text-xs"
-            >
-                <li
-                    v-for="(file, idx) in files"
-                    :key="`${file.name}-${idx}`"
-                    class="flex items-center justify-between gap-2 px-3 py-2"
-                    :class="isOversized(file) ? 'text-amber-700 dark:text-amber-300 bg-amber-50/70 dark:bg-amber-950/30' : 'text-slate-700 dark:text-surface-200'"
-                >
-                    <div class="flex items-center gap-2 min-w-0">
-                        <i
-                            class="text-xs shrink-0"
-                            :class="isOversized(file) ? 'pi pi-exclamation-triangle text-amber-500' : 'pi pi-file text-slate-400'"
-                        ></i>
-                        <span class="truncate font-medium">{{ file.name }}</span>
-                    </div>
-                    <span class="shrink-0 text-[11px] opacity-80">
-                        {{ formatFileSize(file.size) }} / max {{ formatMaxKb(getMaxSizeKb(file)) }}
+        <div class="space-y-4 pt-1">
+            <!-- Allowed Extensions & Max Sizes Info -->
+            <div class="rounded-xl border border-slate-200 dark:border-surface-700 bg-slate-50/80 dark:bg-surface-900/50 p-3.5 space-y-2">
+                <div class="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-surface-200">
+                    <i class="pi pi-info-circle text-[#1f6f46] dark:text-emerald-400"></i>
+                    <span>Allowed File Types &amp; Max Size</span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                    <span
+                        v-for="ext in allowedExtensions"
+                        :key="ext"
+                        class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-white dark:bg-surface-800 border border-slate-200 dark:border-surface-700 text-slate-700 dark:text-surface-200"
+                    >
+                        <span class="font-semibold text-[#1f6f46] dark:text-emerald-400">.{{ ext }}</span>
+                        <span class="text-slate-400">·</span>
+                        <span class="text-slate-500 dark:text-surface-400">max {{ formatMaxKb(getMaxSizeKb(ext)) }}</span>
                     </span>
-                </li>
-            </ul>
+                </div>
+                <p class="text-[11px] text-slate-500 dark:text-surface-400">
+                    All uploaded documents will be set to
+                    <span class="font-semibold text-[#1f6f46] dark:text-emerald-400">Publish</span>
+                    and shared with your team.
+                </p>
+            </div>
+
+            <!-- Hidden File Input -->
+            <input
+                ref="fileInput"
+                type="file"
+                :accept="acceptExtensions"
+                multiple
+                class="hidden"
+                @change="onFileSelected"
+            />
+
+            <!-- Dropzone / Choose Files -->
+            <div
+                class="rounded-xl border-2 border-dashed p-6 text-center transition-colors cursor-pointer"
+                :class="
+                    isDragging
+                        ? 'border-[#1f6f46] bg-emerald-50/70 dark:bg-emerald-950/30'
+                        : 'border-slate-300 dark:border-surface-700 hover:border-[#1f6f46] dark:hover:border-emerald-500/70 bg-white dark:bg-surface-900/30'
+                "
+                @click="fileInput?.click()"
+                @dragover.prevent="isDragging = true"
+                @dragleave.prevent="isDragging = false"
+                @drop.prevent="onDrop"
+            >
+                <i class="pi pi-cloud-upload text-3xl text-[#1f6f46] dark:text-emerald-400 mb-2"></i>
+                <p class="text-sm font-semibold text-slate-700 dark:text-surface-100">
+                    Click to choose files or drag &amp; drop here
+                </p>
+                <p class="text-xs text-slate-500 dark:text-surface-400 mt-1">
+                    You can select one or multiple files at once
+                </p>
+            </div>
+
+            <!-- Selected Files Listing -->
+            <div v-if="selectedFiles.length" class="space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="font-semibold text-slate-700 dark:text-surface-200">
+                        Selected Files ({{ selectedFiles.length }})
+                    </span>
+                    <button
+                        type="button"
+                        class="text-slate-500 hover:text-red-500 font-medium cursor-pointer"
+                        @click="selectedFiles = []"
+                    >
+                        Clear all
+                    </button>
+                </div>
+
+                <ul class="max-h-44 overflow-y-auto rounded-xl border border-slate-200 dark:border-surface-700 bg-slate-50 dark:bg-surface-900/50 divide-y divide-slate-200/70 dark:divide-surface-700/70 text-xs">
+                    <li
+                        v-for="(file, idx) in selectedFiles"
+                        :key="`${file.name}-${file.size}-${idx}`"
+                        class="flex items-center justify-between gap-2 px-3 py-2"
+                        :class="hasFileIssue(file) ? 'text-amber-700 dark:text-amber-300 bg-amber-50/70 dark:bg-amber-950/30' : 'text-slate-700 dark:text-surface-200'"
+                    >
+                        <div class="flex items-center gap-2 min-w-0">
+                            <i
+                                class="text-xs shrink-0"
+                                :class="hasFileIssue(file) ? 'pi pi-exclamation-triangle text-amber-500' : 'pi pi-file text-slate-400'"
+                            ></i>
+                            <div class="min-w-0">
+                                <p class="truncate font-medium">{{ file.name }}</p>
+                                <p v-if="!isExtensionAllowed(file)" class="text-[11px] text-amber-600 dark:text-amber-400">
+                                    Extension not allowed (will be skipped)
+                                </p>
+                                <p v-else-if="isOversized(file)" class="text-[11px] text-amber-600 dark:text-amber-400">
+                                    Exceeds max {{ formatMaxKb(getMaxSizeKb(getFileExtension(file.name))) }} (will be skipped)
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="text-[11px] opacity-80">
+                                {{ formatFileSize(file.size) }}
+                            </span>
+                            <button
+                                type="button"
+                                class="p-1 rounded hover:bg-slate-200/70 dark:hover:bg-surface-700 text-slate-400 hover:text-red-500 cursor-pointer"
+                                aria-label="Remove file"
+                                @click.stop="removeFile(idx)"
+                            >
+                                <i class="pi pi-times text-[10px]"></i>
+                            </button>
+                        </div>
+                    </li>
+                </ul>
+            </div>
         </div>
 
         <template #footer>
             <Button label="Cancel" severity="secondary" variant="outlined" :disabled="loading" @click="close" />
             <Button
-                label="Upload & Publish"
+                :label="selectedFiles.length ? `Upload & Publish (${selectedFiles.length})` : 'Upload & Publish'"
                 icon="pi pi-cloud-upload"
                 :loading="loading"
+                :disabled="!selectedFiles.length"
                 class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white"
                 @click="onConfirm"
             />
