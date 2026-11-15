@@ -61,7 +61,12 @@
         "folder_name_label": "Folder Name",
         "folder_name_placeholder": "e.g. Finance, HR, Legal",
         "delete_folder_title": "Delete Folder",
-        "delete_folder_confirm": "Are you sure you want to delete folder \"{name}\"? Documents inside this folder will be moved to Uncategorized."
+        "delete_folder_confirm": "Are you sure you want to delete folder \"{name}\"? Documents inside this folder will be moved to Uncategorized.",
+        "my_team": "My Team",
+        "team_members_count": "{count} members",
+        "team_lead_badge": "PM / Team Lead",
+        "you_badge": "You",
+        "no_team_members": "No members in this team yet."
     },
     "table": {
         "title": "List Documents",

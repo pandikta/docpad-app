@@ -20,6 +20,7 @@ import DocumentUploadConfirmDialog from '@/Components/Documents/DocumentUploadCo
 import { useAuth } from '@/composables/useAuth';
 import { useDocumentActions } from '@/composables/useDocumentActions';
 import { useLocale } from '@/composables/useLocale';
+import { getInitials } from '@/utils/formatters';
 
 const props = defineProps({
     documents: { type: Array, default: () => [] },
@@ -28,7 +29,10 @@ const props = defineProps({
     extensionMaxSizes: { type: Object, default: () => ({}) },
     storageQuota: { type: Object, default: () => ({ used_bytes: 0, limit_mb: 100, limit_bytes: 104857600 }) },
     teams: { type: Array, default: () => [] },
+    myTeam: { type: Object, default: null },
 });
+
+const myTeamDialogVisible = ref(false);
 
 const page = usePage();
 const { can, isSuperAdmin, isTeamLeader } = useAuth();
@@ -333,6 +337,27 @@ const confirmUpload = ({ files, folderId, notifyMembers }) => {
                 <StatCard icon="pi pi-database" :label="t('dashboard.storage_used')" :value="storageUsageLabel" />
                 <StatCard icon="pi pi-file" :label="t('dashboard.total_documents')" :value="documents.length" />
 
+                <button
+                    v-if="myTeam"
+                    type="button"
+                    class="flex items-center gap-4 px-5 py-4 rounded-2xl bg-white dark:bg-surface-900 border border-slate-200 dark:border-surface-800 shadow-sm min-w-[14rem] text-left transition-colors hover:border-[#1f6f46] dark:hover:border-emerald-500/70 cursor-pointer"
+                    @click="myTeamDialogVisible = true"
+                >
+                    <div class="flex items-center justify-center w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-[#1f6f46] dark:text-emerald-400 shrink-0">
+                        <i class="pi pi-users text-lg"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs font-medium text-slate-500 dark:text-surface-400">{{ t('dashboard.my_team') }}</p>
+                        <p class="text-lg font-bold text-slate-900 dark:text-surface-0 truncate">
+                            {{ myTeam.name }}
+                        </p>
+                        <p class="text-[11px] font-medium text-[#1f6f46] dark:text-emerald-400">
+                            {{ t('dashboard.team_members_count', { count: myTeam.members?.length ?? 0 }) }}
+                        </p>
+                    </div>
+                    <i class="pi pi-chevron-right text-xs text-slate-400"></i>
+                </button>
+
                 <div v-if="can('documents.create') || can('documents.upload')" class="sm:ml-auto flex flex-wrap items-center gap-3">
                     <Button
                         v-if="can('documents.create')"
@@ -508,6 +533,71 @@ const confirmUpload = ({ files, folderId, notifyMembers }) => {
             :loading="uploading"
             @confirm="confirmUpload"
         />
+
+        <!-- My Team Members Dialog -->
+        <Dialog
+            v-model:visible="myTeamDialogVisible"
+            modal
+            :draggable="false"
+            :style="{ width: '30rem' }"
+            :breakpoints="{ '640px': '94vw' }"
+        >
+            <template #header>
+                <div class="flex items-center gap-2.5">
+                    <i class="pi pi-users text-[#1f6f46] dark:text-emerald-400"></i>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800 dark:text-surface-0 leading-tight">
+                            {{ myTeam?.name || t('dashboard.my_team') }}
+                        </h3>
+                        <p v-if="myTeam" class="text-xs text-slate-500 dark:text-surface-400">
+                            {{ t('dashboard.team_members_count', { count: myTeam.members?.length ?? 0 }) }}
+                        </p>
+                    </div>
+                </div>
+            </template>
+
+            <div v-if="!myTeam?.members?.length" class="py-8 text-center text-sm text-slate-500 dark:text-surface-400">
+                {{ t('dashboard.no_team_members') }}
+            </div>
+
+            <ul v-else class="max-h-96 overflow-y-auto divide-y divide-slate-100 dark:divide-surface-800">
+                <li
+                    v-for="member in myTeam.members"
+                    :key="member.id"
+                    class="flex items-center gap-3 py-3 first:pt-1 last:pb-1"
+                >
+                    <span class="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-[#1f6f46] dark:text-emerald-400 text-xs font-bold shrink-0">
+                        {{ getInitials(member.name) }}
+                    </span>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <span class="text-sm font-semibold text-slate-800 dark:text-surface-0 truncate">
+                                {{ member.name }}
+                            </span>
+                            <span
+                                v-if="member.is_me"
+                                class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-surface-800 dark:text-surface-300"
+                            >
+                                {{ t('dashboard.you_badge') }}
+                            </span>
+                            <span
+                                v-if="member.is_team_leader"
+                                class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-[#1f6f46] dark:bg-emerald-950/60 dark:text-emerald-300"
+                            >
+                                {{ t('dashboard.team_lead_badge') }}
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-surface-400 truncate">
+                            {{ member.email }}
+                        </p>
+                    </div>
+                </li>
+            </ul>
+
+            <template #footer>
+                <Button :label="t('common.close')" severity="secondary" variant="outlined" @click="myTeamDialogVisible = false" />
+            </template>
+        </Dialog>
 
         <!-- New Folder Dialog -->
         <Dialog

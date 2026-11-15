@@ -61,7 +61,12 @@
         "folder_name_label": "Nama Folder",
         "folder_name_placeholder": "mis. Keuangan, HR, Legal",
         "delete_folder_title": "Hapus Folder",
-        "delete_folder_confirm": "Yakin ingin menghapus folder \"{name}\"? Dokumen di dalamnya akan dipindahkan ke Tanpa Folder."
+        "delete_folder_confirm": "Yakin ingin menghapus folder \"{name}\"? Dokumen di dalamnya akan dipindahkan ke Tanpa Folder.",
+        "my_team": "Tim Saya",
+        "team_members_count": "{count} anggota",
+        "team_lead_badge": "PM / Ketua Tim",
+        "you_badge": "Anda",
+        "no_team_members": "Belum ada anggota di tim ini."
     },
     "table": {
         "title": "Daftar Dokumen",

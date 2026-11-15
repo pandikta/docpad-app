@@ -19,6 +19,31 @@ class DashboardController extends Controller
         $user = $request->user();
         $search = $request->string('search')->toString();
 
+        $myTeam = null;
+        if ($user->team_id !== null) {
+            $team = $user->team()
+                ->with(['users' => fn ($q) => $q
+                    ->select('id', 'team_id', 'name', 'email', 'is_team_leader')
+                    ->orderByDesc('is_team_leader')
+                    ->orderBy('name')])
+                ->first();
+
+            if ($team) {
+                $myTeam = [
+                    'id' => $team->id,
+                    'name' => $team->team_name,
+                    'code' => $team->team_code,
+                    'members' => $team->users->map(fn ($m) => [
+                        'id' => $m->id,
+                        'name' => $m->name,
+                        'email' => $m->email,
+                        'is_team_leader' => (bool) $m->is_team_leader,
+                        'is_me' => $m->id === $user->id,
+                    ])->values(),
+                ];
+            }
+        }
+
         return Inertia::render('Dashboard', [
             'documents' => $documents->listForUser($user, $search),
             'folders' => $documents->listFolders(),
@@ -26,6 +51,7 @@ class DashboardController extends Controller
             'extensionMaxSizes' => $extensions->listActiveWithLimits(),
             'storageQuota' => $documents->getStorageQuotaSummary($user),
             'teams' => is_superadmin($user) ? $teams->listActiveTeams() : [],
+            'myTeam' => $myTeam,
             'filters' => [
                 'search' => $search,
             ],
