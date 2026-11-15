@@ -428,4 +428,42 @@ class DocumentService
         $document->shareLinks()->where('is_active', true)->update(['is_active' => false]);
         record_document_log($document, 'revoked shareable read-only link', $user);
     }
+
+    /**
+     * Hitung total pemakaian storage user (dalam bytes) dari seluruh dokumen miliknya.
+     */
+    public function getStorageUsageBytes(User $user): int
+    {
+        return (int) Document::where('user_id', $user->id)->sum('size');
+    }
+
+    /**
+     * Ringkasan pemakaian dan batas storage user untuk ditampilkan di UI.
+     *
+     * @return array{used_bytes: int, limit_mb: ?int, limit_bytes: ?int}
+     */
+    public function getStorageQuotaSummary(User $user): array
+    {
+        $limitMb = $user->storage_limit_mb !== null ? (int) $user->storage_limit_mb : null;
+
+        return [
+            'used_bytes' => $this->getStorageUsageBytes($user),
+            'limit_mb' => $limitMb,
+            'limit_bytes' => $limitMb !== null ? $limitMb * 1024 * 1024 : null,
+        ];
+    }
+
+    /**
+     * Cek apakah penambahan ukuran tertentu akan melebihi batas storage user.
+     */
+    public function wouldExceedStorageQuota(User $user, int $additionalBytes): bool
+    {
+        if ($user->storage_limit_mb === null || $additionalBytes <= 0) {
+            return false;
+        }
+
+        $limitBytes = (int) $user->storage_limit_mb * 1024 * 1024;
+
+        return ($this->getStorageUsageBytes($user) + $additionalBytes) > $limitBytes;
+    }
 }

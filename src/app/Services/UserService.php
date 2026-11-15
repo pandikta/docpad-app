@@ -68,9 +68,10 @@ class UserService
     public function listAllForManagement(): Collection
     {
         return User::with('team:id,team_name')
+            ->withSum('documents as storage_used_bytes', 'size')
             ->orderByDesc('is_superadmin')
             ->orderBy('name')
-            ->get(['id', 'team_id', 'name', 'email', 'is_superadmin', 'last_login', 'created_at'])
+            ->get(['id', 'team_id', 'name', 'email', 'is_superadmin', 'storage_limit_mb', 'last_login', 'created_at'])
             ->map(fn (User $user) => [
                 'id' => $user->id,
                 'team_id' => $user->team_id,
@@ -78,6 +79,8 @@ class UserService
                 'name' => $user->name,
                 'email' => $user->email,
                 'is_superadmin' => (bool) $user->is_superadmin,
+                'storage_limit_mb' => $user->storage_limit_mb !== null ? (int) $user->storage_limit_mb : null,
+                'storage_used_bytes' => (int) ($user->storage_used_bytes ?? 0),
                 'last_login' => $user->last_login?->toIso8601String(),
                 'created_at' => $user->created_at?->toIso8601String(),
             ]);
@@ -97,6 +100,9 @@ class UserService
             'name' => trim($data['name']),
             'email' => strtolower(trim($data['email'])),
             'password' => Hash::make($data['password']),
+            'storage_limit_mb' => array_key_exists('storage_limit_mb', $data)
+                ? ($data['storage_limit_mb'] !== null ? (int) $data['storage_limit_mb'] : null)
+                : 100,
         ])->forceFill([
             'is_superadmin' => $isSuperAdmin,
             'email_verified_at' => now(),
@@ -120,6 +126,9 @@ class UserService
             'team_id' => $isSuperAdmin ? null : ($data['team_id'] ?? null),
             'name' => trim($data['name']),
             'email' => strtolower(trim($data['email'])),
+            'storage_limit_mb' => array_key_exists('storage_limit_mb', $data)
+                ? ($data['storage_limit_mb'] !== null ? (int) $data['storage_limit_mb'] : null)
+                : $user->storage_limit_mb,
         ])->forceFill([
             'is_superadmin' => $isSuperAdmin,
         ]);

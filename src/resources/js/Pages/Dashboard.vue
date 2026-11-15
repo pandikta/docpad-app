@@ -25,6 +25,7 @@ const props = defineProps({
     folders: { type: Array, default: () => [] },
     allowedExtensions: { type: Array, default: () => ['txt', 'md'] },
     extensionMaxSizes: { type: Object, default: () => ({}) },
+    storageQuota: { type: Object, default: () => ({ used_bytes: 0, limit_mb: 100, limit_bytes: 104857600 }) },
     teams: { type: Array, default: () => [] },
 });
 
@@ -63,6 +64,21 @@ const {
 } = useDocumentActions();
 
 const userName = computed(() => page.props.auth.user?.name ?? '');
+
+const formatStorageBytes = (bytes) => {
+    const value = Number(bytes ?? 0);
+    if (value < 1024) return `${value} B`;
+    if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+    if (value < 1024 * 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(value / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+};
+
+const storageUsageLabel = computed(() => {
+    const used = formatStorageBytes(props.storageQuota?.used_bytes ?? 0);
+    const limitMb = props.storageQuota?.limit_mb;
+    const limit = limitMb === null || limitMb === undefined ? 'Unlimited' : `${limitMb} MB`;
+    return `${used} / ${limit}`;
+});
 
 // --- Create dialog -------------------------------------------------------
 const createVisible = ref(false);
@@ -311,6 +327,7 @@ const confirmUpload = ({ files, folderId }) => {
 
             <!-- Stats + Upload -->
             <div class="flex flex-wrap items-center gap-4">
+                <StatCard icon="pi pi-database" label="Storage Used" :value="storageUsageLabel" />
                 <StatCard icon="pi pi-file" label="Total Documents" :value="documents.length" />
 
                 <div v-if="can('documents.create') || can('documents.upload')" class="sm:ml-auto flex flex-wrap items-center gap-3">

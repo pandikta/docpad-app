@@ -36,6 +36,7 @@ class UserController extends Controller
             'password' => ['required', Password::defaults()],
             'team_id' => ['nullable', 'integer', 'exists:mst_teams,id', 'required_if:is_superadmin,false'],
             'is_superadmin' => ['boolean'],
+            'storage_limit_mb' => ['nullable', 'integer', 'min:1', 'max:1048576'],
         ]);
 
         $user = $this->users->createUser($validated);
@@ -58,6 +59,7 @@ class UserController extends Controller
             'password' => ['nullable', Password::defaults()],
             'team_id' => ['nullable', 'integer', 'exists:mst_teams,id', 'required_if:is_superadmin,false'],
             'is_superadmin' => ['boolean'],
+            'storage_limit_mb' => ['nullable', 'integer', 'min:1', 'max:1048576'],
         ]);
 
         $this->users->updateUser($user, $validated);

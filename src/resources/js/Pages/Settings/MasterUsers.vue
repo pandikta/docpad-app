@@ -5,6 +5,7 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
+import InputNumber from 'primevue/inputnumber';
 import InputText from 'primevue/inputtext';
 import Password from 'primevue/password';
 import Select from 'primevue/select';
@@ -37,7 +38,23 @@ const form = useForm({
     password: '',
     team_id: null,
     is_superadmin: false,
+    storage_limit_mb: 100,
 });
+
+const formatStorageBytes = (bytes) => {
+    const value = Number(bytes ?? 0);
+    if (value < 1024) return `${value} B`;
+    if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+    if (value < 1024 * 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(value / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+};
+
+const storagePercent = (user) => {
+    if (!user?.storage_limit_mb) return 0;
+    const limitBytes = Number(user.storage_limit_mb) * 1024 * 1024;
+    if (limitBytes <= 0) return 0;
+    return Math.min(100, Math.round((Number(user.storage_used_bytes ?? 0) / limitBytes) * 100));
+};
 
 const filteredUsers = computed(() => {
     const q = search.value.trim().toLowerCase();
@@ -59,6 +76,7 @@ const openCreate = () => {
     form.password = '';
     form.team_id = props.teams[0]?.id ?? null;
     form.is_superadmin = false;
+    form.storage_limit_mb = 100;
     dialogVisible.value = true;
 };
 
@@ -70,6 +88,7 @@ const openEdit = (user) => {
     form.password = '';
     form.team_id = user.team_id;
     form.is_superadmin = Boolean(user.is_superadmin);
+    form.storage_limit_mb = user.storage_limit_mb ?? null;
     dialogVisible.value = true;
 };
 
@@ -201,6 +220,27 @@ const deleteUser = () => {
                         </template>
                     </Column>
 
+                    <Column header="Storage">
+                        <template #body="{ data }">
+                            <div class="flex min-w-[8.5rem] flex-col gap-1">
+                                <span class="text-xs font-medium text-slate-700 dark:text-surface-200">
+                                    {{ formatStorageBytes(data.storage_used_bytes) }} /
+                                    {{ data.storage_limit_mb ? `${data.storage_limit_mb} MB` : 'Unlimited' }}
+                                </span>
+                                <div
+                                    v-if="data.storage_limit_mb"
+                                    class="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-surface-700"
+                                >
+                                    <div
+                                        class="h-full rounded-full transition-all"
+                                        :class="storagePercent(data) >= 90 ? 'bg-red-500' : 'bg-[#1f6f46]'"
+                                        :style="{ width: `${storagePercent(data)}%` }"
+                                    ></div>
+                                </div>
+                            </div>
+                        </template>
+                    </Column>
+
                     <Column field="last_login" header="Last Login">
                         <template #body="{ data }">
                             <span v-if="data.last_login">{{ formatDateTime(data.last_login) }}</span>
@@ -302,6 +342,22 @@ const deleteUser = () => {
                         :invalid="Boolean(form.errors.team_id)"
                     />
                     <small v-if="form.errors.team_id" class="text-red-500 text-xs">{{ form.errors.team_id }}</small>
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-semibold">
+                        Max Storage (MB)
+                        <span class="text-xs font-normal text-slate-400">(leave empty for Unlimited)</span>
+                    </label>
+                    <InputNumber
+                        v-model="form.storage_limit_mb"
+                        :min="1"
+                        :useGrouping="false"
+                        placeholder="Unlimited"
+                        fluid
+                        :invalid="Boolean(form.errors.storage_limit_mb)"
+                    />
+                    <small v-if="form.errors.storage_limit_mb" class="text-red-500 text-xs">{{ form.errors.storage_limit_mb }}</small>
                 </div>
             </form>
 

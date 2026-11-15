@@ -7,6 +7,7 @@ use App\Notifications\ResetPasswordNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -27,6 +28,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'storage_limit_mb',
     ];
 
     /**
@@ -35,6 +37,14 @@ class User extends Authenticatable
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
+    }
+
+    /**
+     * Dokumen yang dimiliki oleh user ini.
+     */
+    public function documents(): HasMany
+    {
+        return $this->hasMany(Document::class, 'user_id');
     }
 
     /**
@@ -84,6 +94,7 @@ class User extends Authenticatable
             'last_login' => 'datetime',
             'password' => 'hashed',
             'is_superadmin' => 'boolean',
+            'storage_limit_mb' => 'integer',
         ];
     }
 }

@@ -474,11 +474,15 @@ const actionBtnClass =
                         >
                             <i :class="getDocumentIconClass(data)"></i>
                             <span>{{ data.name }}</span>
-                            <i
-                                v-if="data.share_link"
-                                v-tooltip.top="'Shared via public link'"
-                                class="pi pi-link text-xs text-[#1f6f46] dark:text-emerald-400"
-                            ></i>
+                        </button>
+                        <button
+                            v-if="data.share_link"
+                            v-tooltip.top="'Shared via public link (click to manage)'"
+                            type="button"
+                            class="ml-2 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[#1f6f46] hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                            @click.stop="$emit('share', data)"
+                        >
+                            <i class="pi pi-link text-xs"></i>
                         </button>
                     </div>
                 </template>

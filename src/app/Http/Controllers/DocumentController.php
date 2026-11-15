@@ -58,6 +58,11 @@ class DocumentController extends Controller
                 continue;
             }
 
+            if ($this->documents->wouldExceedStorageQuota($request->user(), (int) $file->getSize())) {
+                $failed[] = "\"{$originalName}\": storage quota exceeded.";
+                continue;
+            }
+
             $uploaded[] = $this->documents->createFromUpload($request->user(), $file, $folderId);
         }
 
@@ -103,6 +108,13 @@ class DocumentController extends Controller
             ]);
         }
 
+        $contentSize = strlen(trim(html_to_text($validated['content'] ?? '')));
+        if ($this->documents->wouldExceedStorageQuota($request->user(), $contentSize)) {
+            return back()->withErrors([
+                'storage' => 'Storage quota exceeded. Delete unused files or ask an admin to increase your storage limit.',
+            ]);
+        }
+
         $document = $this->documents->createBlank(
             $request->user(),
             $validated['name'],
@@ -127,7 +139,18 @@ class DocumentController extends Controller
             'content' => ['nullable', 'string', 'max:2000000'],
         ]);
 
-        $this->documents->updateContent($document, $validated['content'] ?? '', $request->user());
+        $newContent = $validated['content'] ?? '';
+        $newSize = strlen(html_to_text($newContent));
+        $deltaBytes = max(0, $newSize - (int) $document->size);
+        $owner = $document->user ?? $request->user();
+
+        if ($this->documents->wouldExceedStorageQuota($owner, $deltaBytes)) {
+            return back()->withErrors([
+                'storage' => 'Storage quota exceeded. Unable to save changes.',
+            ]);
+        }
+
+        $this->documents->updateContent($document, $newContent, $request->user());
 
         return back()->with('success', "{$document->name} saved.");
     }
