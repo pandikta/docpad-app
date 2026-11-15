@@ -4,9 +4,10 @@ import { router, usePage } from '@inertiajs/vue3';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import InputText from 'primevue/inputtext';
-import Menu from 'primevue/menu';
+import Popover from 'primevue/popover';
 import { useDarkMode } from '@/composables/useDarkMode';
 import { useDocumentSearch } from '@/composables/useDocumentSearch';
+import { useLocale } from '@/composables/useLocale';
 import { getInitials } from '@/utils/formatters';
 
 defineEmits(['toggle-sidebar']);
@@ -14,8 +15,10 @@ defineEmits(['toggle-sidebar']);
 const page = usePage();
 const { isDark, toggleDarkMode } = useDarkMode();
 const { searchQuery, clearSearch } = useDocumentSearch();
+const { locale, setLocale } = useLocale();
 
 const userName = computed(() => page.props.auth.user?.name ?? '');
+const userEmail = computed(() => page.props.auth.user?.email ?? '');
 const initials = computed(() => getInitials(userName.value));
 
 // Search (Ctrl/Cmd + K untuk fokus, Esc untuk reset)
@@ -39,12 +42,17 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onShortcut));
 
 // User menu
 const userMenu = ref(null);
-const userMenuItems = [
-    { label: 'Profile', icon: 'pi pi-user', command: () => router.visit(route('profile.edit')) },
-    { label: 'Logout', icon: 'pi pi-sign-out', command: () => router.post(route('logout')) },
-];
-
 const toggleUserMenu = (event) => userMenu.value.toggle(event);
+
+const goToProfile = () => {
+    userMenu.value?.hide();
+    router.visit(route('profile.edit'));
+};
+
+const handleLogout = () => {
+    userMenu.value?.hide();
+    router.post(route('logout'));
+};
 </script>
 
 <template>
@@ -115,7 +123,93 @@ const toggleUserMenu = (event) => userMenu.value.toggle(event);
                 </span>
                 <i class="pi pi-chevron-down text-xs text-slate-500 dark:text-surface-400"></i>
             </button>
-            <Menu ref="userMenu" :model="userMenuItems" popup />
+
+            <Popover ref="userMenu" class="w-64">
+                <div class="space-y-3 p-1">
+                    <!-- User Info -->
+                    <div class="border-b border-slate-100 pb-2.5 dark:border-surface-800">
+                        <p class="truncate text-sm font-semibold text-slate-800 dark:text-surface-0">{{ userName }}</p>
+                        <p v-if="userEmail" class="truncate text-xs text-slate-500 dark:text-surface-400">{{ userEmail }}</p>
+                    </div>
+
+                    <!-- Change Language -->
+                    <div class="border-b border-slate-100 pb-3 dark:border-surface-800">
+                        <p class="mb-2.5 text-xs font-semibold text-slate-600 dark:text-surface-300">Change Language</p>
+                        <div class="flex items-center gap-3">
+                            <!-- English (UK Flag) -->
+                            <button
+                                type="button"
+                                title="English"
+                                class="relative flex h-6 w-9 items-center justify-center rounded-md border transition-all cursor-pointer"
+                                :class="
+                                    locale === 'en'
+                                        ? 'border-[#1f6f46] ring-2 ring-[#1f6f46]/25'
+                                        : 'border-slate-200 opacity-75 hover:opacity-100 dark:border-surface-700'
+                                "
+                                @click="setLocale('en')"
+                            >
+                                <svg viewBox="0 0 60 36" class="h-full w-full rounded-[5px] object-cover">
+                                    <rect width="60" height="36" fill="#012169" />
+                                    <path d="M0 0L60 36M60 0L0 36" stroke="#FFFFFF" stroke-width="6" />
+                                    <path d="M0 0L60 36M60 0L0 36" stroke="#C8102E" stroke-width="2.5" />
+                                    <path d="M30 0V36M0 18H60" stroke="#FFFFFF" stroke-width="10" />
+                                    <path d="M30 0V36M0 18H60" stroke="#C8102E" stroke-width="6" />
+                                </svg>
+                                <span
+                                    v-if="locale === 'en'"
+                                    class="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#1f6f46] text-white shadow-sm ring-2 ring-white dark:ring-surface-900"
+                                >
+                                    <i class="pi pi-check text-[8px] font-bold"></i>
+                                </span>
+                            </button>
+
+                            <!-- Indonesia (ID Flag) -->
+                            <button
+                                type="button"
+                                title="Bahasa Indonesia"
+                                class="relative flex h-6 w-9 items-center justify-center rounded-md border transition-all cursor-pointer"
+                                :class="
+                                    locale === 'id'
+                                        ? 'border-[#1f6f46] ring-2 ring-[#1f6f46]/25'
+                                        : 'border-slate-200 opacity-75 hover:opacity-100 dark:border-surface-700'
+                                "
+                                @click="setLocale('id')"
+                            >
+                                <svg viewBox="0 0 60 36" class="h-full w-full rounded-[5px] object-cover">
+                                    <rect width="60" height="18" fill="#DC2626" />
+                                    <rect y="18" width="60" height="18" fill="#FFFFFF" />
+                                </svg>
+                                <span
+                                    v-if="locale === 'id'"
+                                    class="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#1f6f46] text-white shadow-sm ring-2 ring-white dark:ring-surface-900"
+                                >
+                                    <i class="pi pi-check text-[8px] font-bold"></i>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Profile & Logout -->
+                    <div class="space-y-1">
+                        <button
+                            type="button"
+                            class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:text-surface-200 dark:hover:bg-surface-800 cursor-pointer transition-colors"
+                            @click="goToProfile"
+                        >
+                            <i class="pi pi-user text-xs"></i>
+                            <span>Profile</span>
+                        </button>
+                        <button
+                            type="button"
+                            class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40 cursor-pointer transition-colors"
+                            @click="handleLogout"
+                        >
+                            <i class="pi pi-sign-out text-xs"></i>
+                            <span>Logout</span>
+                        </button>
+                    </div>
+                </div>
+            </Popover>
         </div>
     </header>
 </template>
