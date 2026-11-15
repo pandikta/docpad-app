@@ -50,6 +50,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/document-folders', [DocumentController::class, 'storeFolder'])->name('document-folders.store');
     Route::delete('/document-folders/{folder}', [DocumentController::class, 'destroyFolder'])->name('document-folders.destroy');
     Route::post('/documents/{document}/share', [DocumentController::class, 'createShareLink'])->name('documents.share.store');
+    Route::patch('/documents/{document}/share/password', [DocumentController::class, 'updateSharePassword'])->name('documents.share.password');
     Route::delete('/documents/{document}/share', [DocumentController::class, 'revokeShareLink'])->name('documents.share.destroy');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -117,5 +118,6 @@ require __DIR__.'/auth.php';
 
 // Public Shareable Read-Only Document Routes (tanpa login)
 Route::get('/share/{token}', [ShareController::class, 'show'])->name('share.show');
+Route::post('/share/{token}/verify', [ShareController::class, 'verify'])->name('share.verify');
 Route::get('/share/{token}/preview', [ShareController::class, 'preview'])->name('share.preview');
 Route::get('/share/{token}/download', [ShareController::class, 'download'])->name('share.download');

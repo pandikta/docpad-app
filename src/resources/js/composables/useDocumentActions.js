@@ -263,6 +263,20 @@ export function useDocumentActions() {
         );
     };
 
+    const updateSharePassword = (document, payload = {}, { onSuccess } = {}) => {
+        router.patch(
+            route('documents.share.password', document.id),
+            payload,
+            {
+                preserveScroll: true,
+                onStart: () => (sharing.value = true),
+                onSuccess,
+                onError: (errors) => notifyError('Update Password Failed', errors),
+                onFinish: () => (sharing.value = false),
+            },
+        );
+    };
+
     const revokeShareLink = (document, payload = {}, { onSuccess } = {}) => {
         router.delete(route('documents.share.destroy', document.id), {
             data: { notify_members: payload?.notify_members ? 1 : 0 },
@@ -302,6 +316,7 @@ export function useDocumentActions() {
         createFolder,
         deleteFolder,
         createShareLink,
+        updateSharePassword,
         revokeShareLink,
         destroy,
         download,

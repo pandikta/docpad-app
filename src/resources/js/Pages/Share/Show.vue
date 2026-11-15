@@ -1,17 +1,32 @@
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { ref, computed, watch, onMounted, nextTick } from 'vue';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import Button from 'primevue/button';
+import Password from 'primevue/password';
 import { renderAsync } from 'docx-preview';
 import { useLocale } from '@/composables/useLocale';
 
 const { t } = useLocale();
+const appName = import.meta.env.VITE_APP_NAME || 'DocPad';
 
 const props = defineProps({
     expired: { type: Boolean, default: false },
+    requiresPassword: { type: Boolean, default: false },
+    token: { type: String, default: '' },
     expiresAt: { type: String, default: null },
     document: { type: Object, default: null },
 });
+
+const unlockForm = useForm({
+    password: '',
+});
+
+const submitUnlock = () => {
+    if (!props.token || unlockForm.processing) return;
+    unlockForm.post(route('share.verify', props.token), {
+        onFinish: () => unlockForm.reset('password'),
+    });
+};
 
 const docxContainer = ref(null);
 const docxLoading = ref(false);
@@ -48,8 +63,8 @@ const formattedExpiresAt = computed(() => {
     });
 });
 
-onMounted(async () => {
-    if (props.expired || !isDocx.value || !props.document?.preview_url) return;
+const loadDocx = async () => {
+    if (props.expired || props.requiresPassword || !isDocx.value || !props.document?.preview_url) return;
 
     docxLoading.value = true;
     docxError.value = null;
@@ -76,13 +91,16 @@ onMounted(async () => {
     } finally {
         docxLoading.value = false;
     }
-});
+};
+
+onMounted(loadDocx);
+watch(() => [props.requiresPassword, props.document?.preview_url], loadDocx);
 </script>
 
 <template>
     <Head :title="expired ? 'Link Expired or Revoked' : `${document?.name ?? 'Shared Document'} — DocPad`" />
 
-    <div class="min-h-screen bg-slate-50 text-slate-800 dark:bg-surface-950 dark:text-surface-100">
+    <div class="min-h-screen flex flex-col bg-slate-50 text-slate-800 dark:bg-surface-950 dark:text-surface-100">
         <!-- Top Bar -->
         <header class="border-b border-slate-200 bg-white/95 backdrop-blur dark:border-surface-800 dark:bg-surface-900/95">
             <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-6">
@@ -104,7 +122,7 @@ onMounted(async () => {
                     </div>
                 </div>
 
-                <div v-if="!expired && document" class="flex items-center gap-2">
+                <div v-if="!expired && !requiresPassword && document" class="flex items-center gap-2">
                     <Button
                         v-if="isPdf && document.preview_url"
                         :label="t('share.open_new_tab')"
@@ -143,6 +161,53 @@ onMounted(async () => {
             <Link href="/login" class="mt-6">
                 <Button :label="t('share.go_login')" icon="pi pi-sign-in" severity="secondary" variant="outlined" />
             </Link>
+        </main>
+
+        <!-- Password / PIN Protected State -->
+        <main v-else-if="requiresPassword" class="mx-auto flex max-w-md flex-col items-center justify-center px-4 py-20">
+            <div class="w-full rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm dark:border-surface-800 dark:bg-surface-900">
+                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-[#1f6f46] dark:bg-emerald-950/50 dark:text-emerald-400">
+                    <i class="pi pi-lock text-2xl"></i>
+                </div>
+                <h1 class="mt-4 text-center text-xl font-bold text-slate-900 dark:text-surface-0">
+                    {{ t('share.locked_title') }}
+                </h1>
+                <p class="mt-1 text-center text-sm text-slate-500 dark:text-surface-400">
+                    {{ t('share.locked_desc') }}
+                </p>
+
+                <form class="mt-6 space-y-4" @submit.prevent="submitUnlock">
+                    <div class="flex flex-col gap-1.5">
+                        <label for="share-unlock-password" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
+                            {{ t('share.password_label') }}
+                        </label>
+                        <Password
+                            inputId="share-unlock-password"
+                            v-model="unlockForm.password"
+                            :feedback="false"
+                            toggleMask
+                            autofocus
+                            :placeholder="t('share.password_placeholder')"
+                            fluid
+                            :invalid="Boolean(unlockForm.errors.password)"
+                            inputClass="!rounded-xl"
+                        />
+                        <small v-if="unlockForm.errors.password" class="text-xs text-red-500">
+                            {{ unlockForm.errors.password }}
+                        </small>
+                    </div>
+
+                    <Button
+                        type="submit"
+                        :label="t('share.unlock_button')"
+                        icon="pi pi-unlock"
+                        fluid
+                        :loading="unlockForm.processing"
+                        :disabled="!unlockForm.password"
+                        class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white !font-semibold !rounded-xl"
+                    />
+                </form>
+            </div>
         </main>
 
         <!-- Document Content -->
@@ -213,6 +278,10 @@ onMounted(async () => {
                 v-html="document.content || '<p class=\'text-slate-400 italic\'>Empty document.</p>'"
             />
         </main>
+
+        <footer class="mt-auto border-t border-slate-200/80 bg-white/80 py-4 text-center text-xs text-slate-500 dark:border-surface-800 dark:bg-surface-900/80 dark:text-surface-400">
+            &copy; {{ new Date().getFullYear() }} {{ appName }}. All rights reserved.
+        </footer>
     </div>
 </template>
 

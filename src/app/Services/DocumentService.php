@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Notifications\DocumentCreatedNotification;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -397,7 +398,7 @@ class DocumentService
     /**
      * Buat shareable read-only link baru (menonaktifkan link aktif sebelumnya).
      */
-    public function createShareLink(Document $document, User $user, string $expiry = '24h'): DocumentShareLink
+    public function createShareLink(Document $document, User $user, string $expiry = '24h', ?string $password = null): DocumentShareLink
     {
         $document->shareLinks()->where('is_active', true)->update(['is_active' => false]);
 
@@ -413,11 +414,35 @@ class DocumentService
             'document_id' => $document->id,
             'created_by' => $user->id,
             'token' => Str::random(48),
+            'password_hash' => filled($password) ? Hash::make($password) : null,
             'expires_at' => $expiresAt,
             'is_active' => true,
         ]);
 
         record_document_log($document, 'created a shareable read-only link', $user);
+
+        return $link;
+    }
+
+    /**
+     * Perbarui atau hapus password pada shareable link aktif milik dokumen.
+     */
+    public function updateShareLinkPassword(Document $document, User $user, ?string $password = null): ?DocumentShareLink
+    {
+        $link = $document->shareLinks()->where('is_active', true)->latest('id')->first();
+        if (! $link) {
+            return null;
+        }
+
+        $link->update([
+            'password_hash' => filled($password) ? Hash::make($password) : null,
+        ]);
+
+        record_document_log(
+            $document,
+            filled($password) ? 'updated shareable link password' : 'removed shareable link password',
+            $user,
+        );
 
         return $link;
     }

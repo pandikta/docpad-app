@@ -150,6 +150,11 @@
         "share_regenerate": "Buat Ulang",
         "share_generate": "Buat Link",
         "share_revoke": "Cabut Link",
+        "share_password_label": "Password / PIN (Opsional)",
+        "share_password_placeholder": "Min. 4 karakter (kosongkan jika tanpa password)",
+        "share_password_protected": "Dilindungi Password",
+        "share_reset_password": "Reset Password",
+        "share_remove_password": "Hapus Password",
         "upload_title": "Unggah File",
         "upload_allowed": "Ekstensi yang diizinkan:",
         "upload_choose": "Pilih File",
@@ -191,7 +196,12 @@
         "loading_preview": "Memuat pratinjau dokumen...",
         "preview_unavailable": "Pratinjau tidak tersedia untuk tipe file ini",
         "preview_unavailable_desc": "Anda dapat mengunduh file ini untuk membukanya di perangkat Anda.",
-        "download_file": "Unduh File"
+        "download_file": "Unduh File",
+        "locked_title": "Dokumen Dilindungi",
+        "locked_desc": "Masukkan password atau PIN untuk membuka dokumen ini.",
+        "password_label": "Password / PIN",
+        "password_placeholder": "Masukkan password atau PIN",
+        "unlock_button": "Buka Dokumen"
     },
     "errors": {
         "forbidden_title": "Akses Ditolak",

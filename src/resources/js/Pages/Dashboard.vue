@@ -63,6 +63,7 @@ const {
     createFolder,
     deleteFolder,
     createShareLink,
+    updateSharePassword,
     revokeShareLink,
     destroy,
     download,
@@ -142,6 +143,11 @@ const submitGenerateShare = (payload) => {
 const submitRevokeShare = (payload) => {
     if (!selectedShareDocument.value) return;
     revokeShareLink(selectedShareDocument.value, payload);
+};
+
+const submitUpdateSharePassword = (payload) => {
+    if (!selectedShareDocument.value) return;
+    updateSharePassword(selectedShareDocument.value, payload);
 };
 
 // --- Rename dialog -------------------------------------------------------
@@ -490,6 +496,7 @@ const confirmUpload = ({ files, folderId, notifyMembers }) => {
             :document="selectedShareDocument"
             :loading="sharing"
             @generate="submitGenerateShare"
+            @update-password="submitUpdateSharePassword"
             @revoke="submitRevokeShare"
         />
 

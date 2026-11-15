@@ -150,6 +150,11 @@
         "share_regenerate": "Regenerate",
         "share_generate": "Generate Link",
         "share_revoke": "Revoke Link",
+        "share_password_label": "Password / PIN (Optional)",
+        "share_password_placeholder": "Min. 4 characters (leave empty for public)",
+        "share_password_protected": "Password Protected",
+        "share_reset_password": "Reset Password",
+        "share_remove_password": "Remove Password",
         "upload_title": "Upload Files",
         "upload_allowed": "Allowed extensions:",
         "upload_choose": "Choose Files",
@@ -191,7 +196,12 @@
         "loading_preview": "Loading document preview...",
         "preview_unavailable": "Preview is not available for this file type",
         "preview_unavailable_desc": "You can download the file to view it on your device.",
-        "download_file": "Download File"
+        "download_file": "Download File",
+        "locked_title": "Protected Document",
+        "locked_desc": "Enter the password or PIN to view this shared document.",
+        "password_label": "Password / PIN",
+        "password_placeholder": "Enter password or PIN",
+        "unlock_button": "Unlock Document"
     },
     "errors": {
         "forbidden_title": "Forbidden",

@@ -419,16 +419,53 @@ class DocumentController extends Controller
 
         $validated = $request->validate([
             'expiry' => ['required', 'string', 'in:1h,24h,7d,30d,never'],
+            'password' => ['nullable', 'string', 'min:4', 'max:50'],
             'notify_members' => ['nullable', 'boolean'],
         ]);
 
-        $this->documents->createShareLink($document, $request->user(), $validated['expiry']);
+        $this->documents->createShareLink(
+            $document,
+            $request->user(),
+            $validated['expiry'],
+            $validated['password'] ?? null,
+        );
 
         if ($request->boolean('notify_members')) {
             $this->documents->notifyTeamMembers($request->user(), 'shared', [$document]);
         }
 
         return back()->with('success', "Shareable link created for {$document->name}.");
+    }
+
+    /**
+     * Perbarui atau hapus password pada shareable link aktif milik dokumen.
+     */
+    public function updateSharePassword(Request $request, Document $document): RedirectResponse
+    {
+        $this->documents->authorizeAccess($request->user(), $document);
+
+        $validated = $request->validate([
+            'password' => ['nullable', 'string', 'min:4', 'max:50'],
+            'notify_members' => ['nullable', 'boolean'],
+        ]);
+
+        $link = $this->documents->updateShareLinkPassword(
+            $document,
+            $request->user(),
+            $validated['password'] ?? null,
+        );
+
+        abort_unless($link, 404, 'No active share link found.');
+
+        if ($request->boolean('notify_members')) {
+            $this->documents->notifyTeamMembers($request->user(), 'shared', [$document]);
+        }
+
+        $msg = filled($validated['password'] ?? null)
+            ? "Share link password updated for {$document->name}."
+            : "Share link password removed for {$document->name}.";
+
+        return back()->with('success', $msg);
     }
 
     /**

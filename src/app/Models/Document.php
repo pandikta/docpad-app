@@ -125,6 +125,7 @@ class Document extends Model
                 'id' => $activeShare->id,
                 'url' => route('share.show', $activeShare->token),
                 'expires_at' => $activeShare->expires_at?->toIso8601String(),
+                'has_password' => $activeShare->hasPassword(),
             ] : null,
             'name' => $this->name,
             'visibility' => $this->visibility ?? 'publish',

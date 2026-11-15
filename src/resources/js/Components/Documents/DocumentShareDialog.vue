@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue';
 import Dialog from 'primevue/dialog';
 import Select from 'primevue/select';
 import InputText from 'primevue/inputtext';
+import Password from 'primevue/password';
 import Checkbox from 'primevue/checkbox';
 import Button from 'primevue/button';
 import { useLocale } from '@/composables/useLocale';
@@ -15,7 +16,7 @@ const props = defineProps({
     loading: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['update:visible', 'generate', 'revoke']);
+const emit = defineEmits(['update:visible', 'generate', 'update-password', 'revoke']);
 
 const expiryOptions = [
     { label: '1 Hour', value: '1h' },
@@ -26,6 +27,7 @@ const expiryOptions = [
 ];
 
 const selectedExpiry = ref('7d');
+const sharePassword = ref('');
 const notifyMembers = ref(false);
 const copied = ref(false);
 let copiedTimer = null;
@@ -35,6 +37,7 @@ watch(
     (isOpen) => {
         if (isOpen) {
             selectedExpiry.value = '7d';
+            sharePassword.value = '';
             notifyMembers.value = false;
             copied.value = false;
         }
@@ -69,7 +72,19 @@ const copyUrl = async () => {
 };
 
 const close = () => emit('update:visible', false);
-const generate = () => emit('generate', { expiry: selectedExpiry.value, notify_members: notifyMembers.value });
+const generate = () =>
+    emit('generate', {
+        expiry: selectedExpiry.value,
+        password: sharePassword.value.trim() || null,
+        notify_members: notifyMembers.value,
+    });
+const updatePassword = (remove = false) => {
+    emit('update-password', {
+        password: remove ? null : sharePassword.value.trim() || null,
+        notify_members: notifyMembers.value,
+    });
+    sharePassword.value = '';
+};
 const revoke = () => emit('revoke', { notify_members: notifyMembers.value });
 </script>
 
@@ -122,10 +137,19 @@ const revoke = () => emit('revoke', { notify_members: notifyMembers.value });
                 </div>
 
                 <div class="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50/70 px-3.5 py-2.5 text-xs text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300">
-                    <span class="flex items-center gap-2 font-medium">
-                        <i class="pi pi-clock"></i>
-                        {{ t('dialogs.share_expires', { date: formattedExpiry }) }}
-                    </span>
+                    <div class="flex flex-wrap items-center gap-2 font-medium">
+                        <span class="flex items-center gap-1.5">
+                            <i class="pi pi-clock"></i>
+                            {{ t('dialogs.share_expires', { date: formattedExpiry }) }}
+                        </span>
+                        <span
+                            v-if="shareLink.has_password"
+                            class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                        >
+                            <i class="pi pi-lock text-[9px]"></i>
+                            {{ t('dialogs.share_password_protected') }}
+                        </span>
+                    </div>
                     <Button
                         :label="t('dialogs.share_open')"
                         icon="pi pi-external-link"
@@ -159,6 +183,46 @@ const revoke = () => emit('revoke', { notify_members: notifyMembers.value });
                         :loading="loading"
                         class="shrink-0 !bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white"
                         @click="generate"
+                    />
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <div class="flex items-center justify-between gap-2">
+                    <label for="share-password" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
+                        {{ t('dialogs.share_password_label') }}
+                    </label>
+                    <button
+                        v-if="shareLink?.has_password"
+                        type="button"
+                        :disabled="loading"
+                        class="text-xs font-semibold text-red-500 hover:underline cursor-pointer disabled:opacity-50"
+                        @click="updatePassword(true)"
+                    >
+                        {{ t('dialogs.share_remove_password') }}
+                    </button>
+                </div>
+                <div class="flex items-center gap-2">
+                    <Password
+                        inputId="share-password"
+                        v-model="sharePassword"
+                        :feedback="false"
+                        toggleMask
+                        autocomplete="new-password"
+                        :placeholder="t('dialogs.share_password_placeholder')"
+                        fluid
+                        inputClass="!rounded-xl !text-sm"
+                    />
+                    <Button
+                        v-if="shareLink"
+                        :label="t('dialogs.share_reset_password')"
+                        icon="pi pi-key"
+                        severity="secondary"
+                        variant="outlined"
+                        :loading="loading"
+                        :disabled="sharePassword.trim().length < 4"
+                        class="shrink-0"
+                        @click="updatePassword(false)"
                     />
                 </div>
             </div>

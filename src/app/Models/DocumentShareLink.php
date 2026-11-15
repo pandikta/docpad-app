@@ -13,8 +13,13 @@ class DocumentShareLink extends Model
         'document_id',
         'created_by',
         'token',
+        'password_hash',
         'expires_at',
         'is_active',
+    ];
+
+    protected $hidden = [
+        'password_hash',
     ];
 
     protected function casts(): array
@@ -33,6 +38,11 @@ class DocumentShareLink extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function hasPassword(): bool
+    {
+        return filled($this->password_hash);
     }
 
     public function isValid(): bool
