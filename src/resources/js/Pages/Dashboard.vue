@@ -57,6 +57,15 @@ const editorVisible = ref(false);
 const selectedDocument = ref(null);
 
 const openEditor = (doc) => {
+    const name = String(doc?.name ?? '').toLowerCase();
+    const isPdf = doc?.mime_type === 'application/pdf' || name.endsWith('.pdf');
+    const isDocx = name.endsWith('.docx');
+
+    if (doc?.is_stored_file && !isPdf && !isDocx && can('documents.download')) {
+        download(doc);
+        return;
+    }
+
     selectedDocument.value = doc;
     editorVisible.value = true;
 };
