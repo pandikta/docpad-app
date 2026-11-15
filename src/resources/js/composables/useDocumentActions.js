@@ -21,6 +21,7 @@ export function useDocumentActions() {
     const bulkDeleting = ref(false);
     const managingFolder = ref(false);
     const deleting = ref(false);
+    const sharing = ref(false);
 
     const notifyError = (summary, errors) => {
         toast.add({
@@ -247,6 +248,30 @@ export function useDocumentActions() {
         });
     };
 
+    const createShareLink = (document, expiry, { onSuccess } = {}) => {
+        router.post(
+            route('documents.share.store', document.id),
+            { expiry },
+            {
+                preserveScroll: true,
+                onStart: () => (sharing.value = true),
+                onSuccess,
+                onError: (errors) => notifyError('Share Failed', errors),
+                onFinish: () => (sharing.value = false),
+            },
+        );
+    };
+
+    const revokeShareLink = (document, { onSuccess } = {}) => {
+        router.delete(route('documents.share.destroy', document.id), {
+            preserveScroll: true,
+            onStart: () => (sharing.value = true),
+            onSuccess,
+            onError: (errors) => notifyError('Revoke Failed', errors),
+            onFinish: () => (sharing.value = false),
+        });
+    };
+
     return {
         uploading,
         creating,
@@ -259,6 +284,7 @@ export function useDocumentActions() {
         bulkDeleting,
         managingFolder,
         deleting,
+        sharing,
         upload,
         create,
         save,
@@ -273,6 +299,8 @@ export function useDocumentActions() {
         bulkDownload,
         createFolder,
         deleteFolder,
+        createShareLink,
+        revokeShareLink,
         destroy,
         download,
     };

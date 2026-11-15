@@ -4,10 +4,12 @@ namespace App\Services;
 
 use App\Models\Document;
 use App\Models\DocumentFolder;
+use App\Models\DocumentShareLink;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use ZipArchive;
 
 class DocumentService
@@ -27,7 +29,7 @@ class DocumentService
     {
         return Document::forUser($user)
             ->search($search)
-            ->with(['user:id,name', 'folder:id,name', 'teams:id,team_name', 'logs.user:id,name'])
+            ->with(['user:id,name', 'folder:id,name', 'teams:id,team_name', 'logs.user:id,name', 'shareLinks'])
             ->withExists([
                 'favoritedBy as is_favorite' => fn ($q) => $q->where('mst_users.id', $user->id),
             ])
@@ -388,5 +390,42 @@ class DocumentService
     public function toPlainText(Document $document): string
     {
         return html_to_text((string) $document->content);
+    }
+
+    /**
+     * Buat shareable read-only link baru (menonaktifkan link aktif sebelumnya).
+     */
+    public function createShareLink(Document $document, User $user, string $expiry = '24h'): DocumentShareLink
+    {
+        $document->shareLinks()->where('is_active', true)->update(['is_active' => false]);
+
+        $expiresAt = match ($expiry) {
+            '1h' => now()->addHour(),
+            '24h' => now()->addDay(),
+            '7d' => now()->addDays(7),
+            '30d' => now()->addDays(30),
+            default => null,
+        };
+
+        $link = DocumentShareLink::create([
+            'document_id' => $document->id,
+            'created_by' => $user->id,
+            'token' => Str::random(48),
+            'expires_at' => $expiresAt,
+            'is_active' => true,
+        ]);
+
+        record_document_log($document, 'created a shareable read-only link', $user);
+
+        return $link;
+    }
+
+    /**
+     * Nonaktifkan (revoke) seluruh shareable link aktif pada dokumen.
+     */
+    public function revokeShareLinks(Document $document, ?User $user = null): void
+    {
+        $document->shareLinks()->where('is_active', true)->update(['is_active' => false]);
+        record_document_log($document, 'revoked shareable read-only link', $user);
     }
 }

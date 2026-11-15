@@ -15,6 +15,7 @@ import DocumentRenameDialog from '@/Components/Documents/DocumentRenameDialog.vu
 import DocumentAssignTeamsDialog from '@/Components/Documents/DocumentAssignTeamsDialog.vue';
 import DocumentMoveFolderDialog from '@/Components/Documents/DocumentMoveFolderDialog.vue';
 import DocumentDeleteDialog from '@/Components/Documents/DocumentDeleteDialog.vue';
+import DocumentShareDialog from '@/Components/Documents/DocumentShareDialog.vue';
 import DocumentUploadConfirmDialog from '@/Components/Documents/DocumentUploadConfirmDialog.vue';
 import { useAuth } from '@/composables/useAuth';
 import { useDocumentActions } from '@/composables/useDocumentActions';
@@ -54,8 +55,11 @@ const {
     bulkDownload,
     createFolder,
     deleteFolder,
+    createShareLink,
+    revokeShareLink,
     destroy,
     download,
+    sharing,
 } = useDocumentActions();
 
 const userName = computed(() => page.props.auth.user?.name ?? '');
@@ -94,6 +98,28 @@ const selectedLogDocument = ref(null);
 const openLogs = (doc) => {
     selectedLogDocument.value = doc;
     logsVisible.value = true;
+};
+
+// --- Share dialog --------------------------------------------------------
+const shareVisible = ref(false);
+const selectedShareDocumentId = ref(null);
+const selectedShareDocument = computed(
+    () => props.documents.find((d) => Number(d.id) === Number(selectedShareDocumentId.value)) ?? null,
+);
+
+const openShare = (doc) => {
+    selectedShareDocumentId.value = doc.id;
+    shareVisible.value = true;
+};
+
+const submitGenerateShare = (expiry) => {
+    if (!selectedShareDocument.value) return;
+    createShareLink(selectedShareDocument.value, expiry);
+};
+
+const submitRevokeShare = () => {
+    if (!selectedShareDocument.value) return;
+    revokeShareLink(selectedShareDocument.value);
 };
 
 // --- Rename dialog -------------------------------------------------------
@@ -387,6 +413,7 @@ const confirmUpload = ({ files, folderId }) => {
                 @bulk-delete="openBulkDelete"
                 @bulk-move-folder="openBulkMoveFolder"
                 @bulk-assign-teams="openBulkAssignTeams"
+                @share="openShare"
                 @delete="openDelete"
             />
         </div>
@@ -411,6 +438,14 @@ const confirmUpload = ({ files, folderId }) => {
         <DocumentLogsDialog
             v-model:visible="logsVisible"
             :document="selectedLogDocument"
+        />
+
+        <DocumentShareDialog
+            v-model:visible="shareVisible"
+            :document="selectedShareDocument"
+            :loading="sharing"
+            @generate="submitGenerateShare"
+            @revoke="submitRevokeShare"
         />
 
         <DocumentRenameDialog

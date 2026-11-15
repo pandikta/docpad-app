@@ -101,6 +101,11 @@ class Document extends Model
         return $this->hasMany(DocumentLog::class, 'document_id')->latest('id');
     }
 
+    public function shareLinks(): HasMany
+    {
+        return $this->hasMany(DocumentShareLink::class, 'document_id')->latest('id');
+    }
+
     /**
      * Bentuk data yang dikirim ke frontend.
      *
@@ -108,12 +113,19 @@ class Document extends Model
      */
     public function toListItem(): array
     {
+        $activeShare = $this->shareLinks->first(fn (DocumentShareLink $link) => $link->isValid());
+
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
             'folder_id' => $this->folder_id,
             'folder_name' => $this->folder?->name,
             'is_favorite' => (bool) ($this->is_favorite ?? false),
+            'share_link' => $activeShare ? [
+                'id' => $activeShare->id,
+                'url' => route('share.show', $activeShare->token),
+                'expires_at' => $activeShare->expires_at?->toIso8601String(),
+            ] : null,
             'name' => $this->name,
             'visibility' => $this->visibility ?? 'publish',
             'is_stored_file' => $this->isStoredFile(),

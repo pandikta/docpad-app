@@ -8,6 +8,7 @@ use App\Http\Controllers\Settings\FunctionAuthController;
 use App\Http\Controllers\Settings\MenuAuthController;
 use App\Http\Controllers\Settings\TeamController;
 use App\Http\Controllers\Settings\UserController;
+use App\Http\Controllers\ShareController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -46,6 +47,8 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/document-folders', [DocumentController::class, 'storeFolder'])->name('document-folders.store');
     Route::delete('/document-folders/{folder}', [DocumentController::class, 'destroyFolder'])->name('document-folders.destroy');
+    Route::post('/documents/{document}/share', [DocumentController::class, 'createShareLink'])->name('documents.share.store');
+    Route::delete('/documents/{document}/share', [DocumentController::class, 'revokeShareLink'])->name('documents.share.destroy');
 
     Route::middleware('menu.auth:menu.profile')->group(function () {
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -97,3 +100,8 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+// Public Shareable Read-Only Document Routes (tanpa login)
+Route::get('/share/{token}', [ShareController::class, 'show'])->name('share.show');
+Route::get('/share/{token}/preview', [ShareController::class, 'preview'])->name('share.preview');
+Route::get('/share/{token}/download', [ShareController::class, 'download'])->name('share.download');

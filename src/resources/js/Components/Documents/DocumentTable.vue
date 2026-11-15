@@ -32,6 +32,7 @@ const emit = defineEmits([
     'bulk-delete',
     'bulk-move-folder',
     'bulk-assign-teams',
+    'share',
     'delete',
 ]);
 
@@ -239,6 +240,12 @@ const moreMenuItems = computed(() => {
     }
 
     items.push({
+        label: 'Share Link',
+        icon: 'pi pi-share-alt text-[#1f6f46]',
+        command: () => activeRowDocument.value && emit('share', activeRowDocument.value),
+    });
+
+    items.push({
         label: 'Move to Folder',
         icon: 'pi pi-folder',
         command: () => activeRowDocument.value && emit('move-folder', activeRowDocument.value),
@@ -255,11 +262,7 @@ const moreMenuItems = computed(() => {
     return items;
 });
 
-const hasMoreActions = (doc) =>
-    (isSuperAdmin.value && doc?.visibility !== 'private') ||
-    isOwner(doc) ||
-    can('documents.rename') ||
-    can('documents.delete');
+const hasMoreActions = () => true;
 
 const getDocumentIconClass = (doc) => {
     const name = String(doc?.name ?? '').toLowerCase();
@@ -471,6 +474,11 @@ const actionBtnClass =
                         >
                             <i :class="getDocumentIconClass(data)"></i>
                             <span>{{ data.name }}</span>
+                            <i
+                                v-if="data.share_link"
+                                v-tooltip.top="'Shared via public link'"
+                                class="pi pi-link text-xs text-[#1f6f46] dark:text-emerald-400"
+                            ></i>
                         </button>
                     </div>
                 </template>
