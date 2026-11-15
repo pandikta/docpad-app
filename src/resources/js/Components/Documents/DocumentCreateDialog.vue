@@ -9,6 +9,7 @@ import Button from 'primevue/button';
 const props = defineProps({
     visible: { type: Boolean, default: false },
     extensions: { type: Array, default: () => ['txt', 'md'] },
+    extensionMaxSizes: { type: Object, default: () => ({}) },
     loading: { type: Boolean, default: false },
 });
 
@@ -24,12 +25,27 @@ const visibilityOptions = [
     { label: 'Private (Only Me)', value: 'private' },
 ];
 
+const BINARY_EXTENSIONS = new Set(['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx']);
+
+const editableExtensions = computed(() =>
+    props.extensions.filter((ext) => !BINARY_EXTENSIONS.has(String(ext).toLowerCase())),
+);
+
 const extensionOptions = computed(() =>
-    props.extensions.map((ext) => ({
+    editableExtensions.value.map((ext) => ({
         label: `.${ext}`,
         value: ext,
     })),
 );
+
+const selectedMaxSizeLabel = computed(() => {
+    const kb = Number(props.extensionMaxSizes?.[selectedExtension.value] ?? 1024);
+    if (kb >= 1024) {
+        const mb = kb / 1024;
+        return `${Number.isInteger(mb) ? mb : mb.toFixed(1)} MB`;
+    }
+    return `${kb} KB`;
+});
 
 // Reset form setiap kali dialog dibuka
 watch(
@@ -37,7 +53,7 @@ watch(
     (isOpen) => {
         if (isOpen) {
             name.value = '';
-            selectedExtension.value = props.extensions[0] ?? 'txt';
+            selectedExtension.value = editableExtensions.value[0] ?? 'txt';
             visibility.value = 'publish';
             content.value = '';
         }
@@ -141,12 +157,16 @@ const onSubmit = () => {
                 </div>
             </div>
 
-            <!-- Live Preview Filename -->
-            <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-surface-400">
+            <!-- Live Preview Filename + Max Size Info -->
+            <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-surface-400">
                 <i class="pi pi-file text-[#1f6f46] dark:text-emerald-400"></i>
                 <span>File will be saved as:</span>
                 <span class="font-semibold text-slate-800 dark:text-surface-100 bg-slate-100 dark:bg-surface-800 px-2 py-0.5 rounded-md">
                     {{ previewFileName }}
+                </span>
+                <span class="sm:ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-[#1f6f46] dark:text-emerald-300 font-medium">
+                    <i class="pi pi-info-circle text-[11px]"></i>
+                    <span>Max size (.{{ selectedExtension }}): {{ selectedMaxSizeLabel }}</span>
                 </span>
             </div>
 

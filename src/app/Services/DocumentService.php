@@ -6,9 +6,16 @@ use App\Models\Document;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 
 class DocumentService
 {
+    /**
+     * Ekstensi file biner yang disimpan langsung ke storage server (bukan sebagai teks HTML di DB).
+     *
+     * @var list<string>
+     */
+    private const BINARY_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'];
     /**
      * Daftar dokumen untuk user yang login (superadmin melihat semua dokumen lintas tim).
      *
@@ -44,17 +51,30 @@ class DocumentService
     }
 
     /**
-     * Buat dokumen baru dari file teks yang di-upload.
+     * Buat dokumen baru dari file yang di-upload (teks disimpan ke DB, file biner seperti PDF ke storage server).
      */
     public function createFromUpload(User $user, UploadedFile $file): Document
     {
-        $raw = (string) file_get_contents($file->getRealPath());
+        $extension = strtolower($file->getClientOriginalExtension());
+        $isBinary = in_array($extension, self::BINARY_EXTENSIONS, true);
+
+        $filePath = null;
+        $content = null;
+
+        if ($isBinary) {
+            $filePath = Storage::disk('local')->putFile('documents', $file);
+        } else {
+            $raw = (string) file_get_contents($file->getRealPath());
+            $content = text_to_html($raw);
+        }
 
         $document = Document::create([
             'user_id' => $user->id,
             'name' => $file->getClientOriginalName(),
             'visibility' => 'publish',
-            'content' => text_to_html($raw),
+            'content' => $content,
+            'file_path' => $filePath,
+            'mime_type' => $file->getMimeType(),
             'size' => $file->getSize(),
         ]);
 
@@ -126,6 +146,8 @@ class DocumentService
      */
     public function updateContent(Document $document, string $content, ?User $user = null): Document
     {
+        abort_if($document->isStoredFile(), 422, 'Stored binary files cannot be edited in the text editor.');
+
         $document->update([
             'content' => $content,
             'size' => strlen(html_to_text($content)),
@@ -186,6 +208,10 @@ class DocumentService
      */
     public function delete(Document $document): void
     {
+        if ($document->file_path && Storage::disk('local')->exists($document->file_path)) {
+            Storage::disk('local')->delete($document->file_path);
+        }
+
         $document->delete();
     }
 

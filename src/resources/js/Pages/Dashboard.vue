@@ -19,6 +19,7 @@ import { useDocumentActions } from '@/composables/useDocumentActions';
 const props = defineProps({
     documents: { type: Array, default: () => [] },
     allowedExtensions: { type: Array, default: () => ['txt', 'md'] },
+    extensionMaxSizes: { type: Object, default: () => ({}) },
     teams: { type: Array, default: () => [] },
 });
 
@@ -196,6 +197,7 @@ const confirmUpload = (files) => {
         <DocumentCreateDialog
             v-model:visible="createVisible"
             :extensions="allowedExtensions"
+            :extension-max-sizes="extensionMaxSizes"
             :loading="creating"
             @submit="submitCreate"
         />
@@ -239,6 +241,7 @@ const confirmUpload = (files) => {
         <DocumentUploadConfirmDialog
             v-model:visible="uploadConfirmVisible"
             :files="pendingUploadFiles"
+            :extension-max-sizes="extensionMaxSizes"
             :loading="uploading"
             @confirm="confirmUpload"
         />

@@ -33,6 +33,7 @@ class ExtensionController extends Controller
             'extension' => ['required', 'string', 'max:20', 'alpha_num', 'unique:mst_extensions,extension'],
             'label' => ['required', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:255'],
+            'max_size_kb' => ['required', 'integer', 'min:1', 'max:102400'],
             'is_active' => ['boolean'],
         ]);
 
@@ -56,6 +57,7 @@ class ExtensionController extends Controller
             ],
             'label' => ['required', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:255'],
+            'max_size_kb' => ['required', 'integer', 'min:1', 'max:102400'],
             'is_active' => ['boolean'],
         ]);
 

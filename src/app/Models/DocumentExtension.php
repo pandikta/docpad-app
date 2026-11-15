@@ -12,12 +12,14 @@ class DocumentExtension extends Model
         'extension',
         'label',
         'description',
+        'max_size_kb',
         'is_active',
     ];
 
     protected function casts(): array
     {
         return [
+            'max_size_kb' => 'integer',
             'is_active' => 'boolean',
         ];
     }

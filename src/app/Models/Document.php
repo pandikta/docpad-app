@@ -17,8 +17,15 @@ class Document extends Model
         'name',
         'visibility',
         'content',
+        'file_path',
+        'mime_type',
         'size',
     ];
+
+    public function isStoredFile(): bool
+    {
+        return ! empty($this->file_path);
+    }
 
     /**
      * Scope query dokumen berdasarkan user:
@@ -94,6 +101,9 @@ class Document extends Model
             'user_id' => $this->user_id,
             'name' => $this->name,
             'visibility' => $this->visibility ?? 'publish',
+            'is_stored_file' => $this->isStoredFile(),
+            'mime_type' => $this->mime_type,
+            'preview_url' => $this->isStoredFile() ? route('documents.preview', $this->id) : null,
             'size' => $this->size,
             'created_by' => $this->user?->name ?? 'Unknown',
             'created_at' => $this->created_at?->toIso8601String(),

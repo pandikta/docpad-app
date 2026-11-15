@@ -1,16 +1,38 @@
 <script setup>
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
+import { formatFileSize } from '@/utils/formatters';
 
 const props = defineProps({
     visible: { type: Boolean, default: false },
     files: { type: Array, default: () => [] },
+    extensionMaxSizes: { type: Object, default: () => ({}) },
     loading: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['update:visible', 'confirm']);
 
 const close = () => emit('update:visible', false);
+
+const getFileExtension = (fileName) => {
+    const parts = String(fileName ?? '').split('.');
+    return parts.length > 1 ? parts.pop().toLowerCase() : '';
+};
+
+const getMaxSizeKb = (file) => {
+    const ext = getFileExtension(file?.name);
+    return Number(props.extensionMaxSizes?.[ext] ?? 1024);
+};
+
+const formatMaxKb = (kb) => {
+    if (kb >= 1024) {
+        const mb = kb / 1024;
+        return `${Number.isInteger(mb) ? mb : mb.toFixed(1)} MB`;
+    }
+    return `${kb} KB`;
+};
+
+const isOversized = (file) => Number(file?.size ?? 0) > getMaxSizeKb(file) * 1024;
 
 const onConfirm = () => {
     if (!props.files.length) return;
@@ -23,7 +45,7 @@ const onConfirm = () => {
         :visible="visible"
         modal
         :draggable="false"
-        :style="{ width: '28rem' }"
+        :style="{ width: '30rem' }"
         :breakpoints="{ '640px': '92vw' }"
         @update:visible="(value) => emit('update:visible', value)"
     >
@@ -46,15 +68,24 @@ const onConfirm = () => {
 
             <ul
                 v-if="files.length"
-                class="max-h-36 overflow-y-auto rounded-lg border border-slate-200 dark:border-surface-700 bg-slate-50 dark:bg-surface-900/50 divide-y divide-slate-200/70 dark:divide-surface-700/70 text-xs"
+                class="max-h-44 overflow-y-auto rounded-lg border border-slate-200 dark:border-surface-700 bg-slate-50 dark:bg-surface-900/50 divide-y divide-slate-200/70 dark:divide-surface-700/70 text-xs"
             >
                 <li
                     v-for="(file, idx) in files"
                     :key="`${file.name}-${idx}`"
-                    class="flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-surface-200"
+                    class="flex items-center justify-between gap-2 px-3 py-2"
+                    :class="isOversized(file) ? 'text-amber-700 dark:text-amber-300 bg-amber-50/70 dark:bg-amber-950/30' : 'text-slate-700 dark:text-surface-200'"
                 >
-                    <i class="pi pi-file text-slate-400 text-xs shrink-0"></i>
-                    <span class="truncate font-medium">{{ file.name }}</span>
+                    <div class="flex items-center gap-2 min-w-0">
+                        <i
+                            class="text-xs shrink-0"
+                            :class="isOversized(file) ? 'pi pi-exclamation-triangle text-amber-500' : 'pi pi-file text-slate-400'"
+                        ></i>
+                        <span class="truncate font-medium">{{ file.name }}</span>
+                    </div>
+                    <span class="shrink-0 text-[11px] opacity-80">
+                        {{ formatFileSize(file.size) }} / max {{ formatMaxKb(getMaxSizeKb(file)) }}
+                    </span>
                 </li>
             </ul>
         </div>

@@ -52,6 +52,7 @@ class HandleInertiaRequests extends Middleware
             // Flash message (mis. ->with('success', '...')) yang ditampilkan sebagai toast di FE.
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
+                'warning' => fn () => $request->session()->get('warning'),
             ],
             'sessionLifetime' => (int) config('session.lifetime', 120),
         ];

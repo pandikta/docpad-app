@@ -35,6 +35,32 @@ class ExtensionService
     }
 
     /**
+     * Map ekstensi aktif ke batas maksimal ukuran file dalam KB (mis. ['txt' => 1024, 'pdf' => 10240]).
+     *
+     * @return array<string, int>
+     */
+    public function listActiveWithLimits(): array
+    {
+        try {
+            if (! Schema::hasTable('mst_extensions')) {
+                return ['txt' => 1024, 'md' => 1024];
+            }
+
+            $map = DocumentExtension::where('is_active', true)
+                ->orderBy('id')
+                ->get(['extension', 'max_size_kb'])
+                ->mapWithKeys(fn (DocumentExtension $ext) => [
+                    strtolower(ltrim($ext->extension, '.')) => (int) ($ext->max_size_kb ?? 1024),
+                ])
+                ->all();
+
+            return count($map) > 0 ? $map : ['txt' => 1024, 'md' => 1024];
+        } catch (\Throwable) {
+            return ['txt' => 1024, 'md' => 1024];
+        }
+    }
+
+    /**
      * Daftar seluruh ekstensi untuk halaman Master Extensions.
      *
      * @return Collection<int, DocumentExtension>
@@ -45,9 +71,31 @@ class ExtensionService
     }
 
     /**
+     * Ambil batas maksimal ukuran file (KB) untuk ekstensi tertentu.
+     */
+    public function getMaxSizeKbForExtension(string $extension): int
+    {
+        $normalized = strtolower(ltrim(trim($extension), '.'));
+
+        try {
+            if (! Schema::hasTable('mst_extensions')) {
+                return 1024;
+            }
+
+            $max = DocumentExtension::where('extension', $normalized)
+                ->where('is_active', true)
+                ->value('max_size_kb');
+
+            return $max ? (int) $max : 1024;
+        } catch (\Throwable) {
+            return 1024;
+        }
+    }
+
+    /**
      * Tambah ekstensi baru.
      *
-     * @param  array{extension: string, label: string, description?: ?string, is_active?: bool}  $data
+     * @param  array{extension: string, label: string, description?: ?string, max_size_kb?: int, is_active?: bool}  $data
      */
     public function create(array $data): DocumentExtension
     {
@@ -55,6 +103,7 @@ class ExtensionService
             'extension' => strtolower(ltrim(trim($data['extension']), '.')),
             'label' => trim($data['label']),
             'description' => isset($data['description']) ? trim($data['description']) : null,
+            'max_size_kb' => max(1, (int) ($data['max_size_kb'] ?? 1024)),
             'is_active' => $data['is_active'] ?? true,
         ]);
     }
@@ -62,7 +111,7 @@ class ExtensionService
     /**
      * Perbarui data ekstensi.
      *
-     * @param  array{extension: string, label: string, description?: ?string, is_active?: bool}  $data
+     * @param  array{extension: string, label: string, description?: ?string, max_size_kb?: int, is_active?: bool}  $data
      */
     public function update(DocumentExtension $extension, array $data): DocumentExtension
     {
@@ -70,6 +119,7 @@ class ExtensionService
             'extension' => strtolower(ltrim(trim($data['extension']), '.')),
             'label' => trim($data['label']),
             'description' => isset($data['description']) ? trim($data['description']) : null,
+            'max_size_kb' => max(1, (int) ($data['max_size_kb'] ?? $extension->max_size_kb ?? 1024)),
             'is_active' => $data['is_active'] ?? $extension->is_active,
         ]);
 

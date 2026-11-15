@@ -35,6 +35,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/documents/{document}/visibility', [DocumentController::class, 'updateVisibility'])->name('documents.visibility');
     Route::put('/documents/{document}/teams', [DocumentController::class, 'assignTeams'])->name('documents.assign-teams');
     Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
+    Route::get('/documents/{document}/preview', [DocumentController::class, 'preview'])->name('documents.preview');
     Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
 
     Route::middleware('menu.auth:menu.profile')->group(function () {

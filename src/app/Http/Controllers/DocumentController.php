@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Document;
 use App\Services\DocumentService;
+use App\Services\ExtensionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DocumentController extends Controller
@@ -15,27 +18,56 @@ class DocumentController extends Controller
     }
 
     /**
-     * Upload satu atau banyak file teks (.txt / .md) sekaligus milik team user.
+     * Upload satu atau banyak file sekaligus milik team user (mendukung partial success saat bulk upload).
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, ExtensionService $extensions): RedirectResponse
     {
         abort_unless(can_use_function('documents.upload', $request->user()), 403);
 
-        $allowed = implode(',', allowed_document_extensions());
-
         $request->validate([
             'files' => ['required', 'array', 'min:1'],
-            'files.*' => ['required', 'file', 'max:1024', "extensions:{$allowed}"],
+            'files.*' => ['required', 'file'],
         ]);
 
-        $uploaded = $this->documents->createManyFromUpload($request->user(), $request->file('files'));
-        $count = $uploaded->count();
+        $allowedExtensions = allowed_document_extensions();
+        $uploaded = [];
+        $failed = [];
 
-        $message = $count === 1
-            ? "{$uploaded->first()->name} uploaded successfully."
-            : "{$count} documents uploaded successfully.";
+        foreach ($request->file('files', []) as $file) {
+            $ext = strtolower($file->getClientOriginalExtension());
+            $originalName = $file->getClientOriginalName();
 
-        return back()->with('success', $message);
+            if (! in_array($ext, $allowedExtensions, true)) {
+                $failed[] = "\"{$originalName}\": extension .{$ext} is not allowed.";
+                continue;
+            }
+
+            $maxKb = $extensions->getMaxSizeKbForExtension($ext);
+            if ($file->getSize() > ($maxKb * 1024)) {
+                $maxLabel = $maxKb >= 1024 ? round($maxKb / 1024, 2).' MB' : "{$maxKb} KB";
+                $failed[] = "\"{$originalName}\": exceeds max size of {$maxLabel} for .{$ext}.";
+                continue;
+            }
+
+            $uploaded[] = $this->documents->createFromUpload($request->user(), $file);
+        }
+
+        $uploadedCount = count($uploaded);
+        if ($uploadedCount === 0) {
+            return back()->withErrors(['files' => implode(' ', $failed)]);
+        }
+
+        $message = $uploadedCount === 1
+            ? "{$uploaded[0]->name} uploaded successfully."
+            : "{$uploadedCount} documents uploaded successfully.";
+
+        $redirect = back()->with('success', $message);
+
+        if (count($failed) > 0) {
+            $redirect->with('warning', count($failed).' file(s) skipped: '.implode(' ', $failed));
+        }
+
+        return $redirect;
     }
 
     /**
@@ -160,12 +192,32 @@ class DocumentController extends Controller
     }
 
     /**
-     * Download dokumen sebagai file teks.
+     * Preview dokumen biner (mis. PDF) secara inline di browser.
+     */
+    public function preview(Request $request, Document $document): StreamedResponse
+    {
+        $this->documents->authorizeAccess($request->user(), $document);
+        abort_unless($document->isStoredFile() && Storage::disk('local')->exists($document->file_path), 404);
+
+        return Storage::disk('local')->response($document->file_path, $document->name, [
+            'Content-Type' => $document->mime_type ?: 'application/octet-stream',
+            'Content-Disposition' => 'inline; filename="'.$document->name.'"',
+        ]);
+    }
+
+    /**
+     * Download dokumen (dari storage server jika file biner, atau sebagai teks biasa).
      */
     public function download(Request $request, Document $document): StreamedResponse
     {
         abort_unless(can_use_function('documents.download', $request->user()), 403);
         $this->documents->authorizeAccess($request->user(), $document);
+
+        if ($document->isStoredFile()) {
+            abort_unless(Storage::disk('local')->exists($document->file_path), 404);
+
+            return Storage::disk('local')->download($document->file_path, $document->name);
+        }
 
         $text = $this->documents->toPlainText($document);
 

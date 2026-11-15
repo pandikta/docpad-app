@@ -57,6 +57,10 @@ onMounted(() => {
         if (message) {
             toast.add({ severity: 'success', summary: 'Success', detail: message, life: 3000 });
         }
+        const warning = event.detail.page.props.flash?.warning;
+        if (warning) {
+            toast.add({ severity: 'warn', summary: 'Skipped Files', detail: warning, life: 6000 });
+        }
     });
 
     removeFinishListener = router.on('finish', () => {

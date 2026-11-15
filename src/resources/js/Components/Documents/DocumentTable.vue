@@ -316,7 +316,15 @@ const actionBtnClass =
                         class="flex items-center gap-3 text-left font-medium text-slate-700 dark:text-surface-100 hover:text-[#1f6f46] dark:hover:text-emerald-400 hover:underline cursor-pointer"
                         @click="$emit('open', data)"
                     >
-                        <i class="pi pi-file-edit text-[#1f6f46] dark:text-emerald-400"></i>
+                        <i
+                            :class="
+                                data.name?.toLowerCase().endsWith('.pdf')
+                                    ? 'pi pi-file-pdf text-red-500'
+                                    : data.is_stored_file
+                                      ? 'pi pi-file text-slate-500'
+                                      : 'pi pi-file-edit text-[#1f6f46] dark:text-emerald-400'
+                            "
+                        ></i>
                         <span>{{ data.name }}</span>
                     </button>
                 </template>

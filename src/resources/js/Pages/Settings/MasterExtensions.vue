@@ -6,6 +6,7 @@ import Column from 'primevue/column';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
+import InputNumber from 'primevue/inputnumber';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Tag from 'primevue/tag';
 import IconField from 'primevue/iconfield';
@@ -28,8 +29,18 @@ const form = useForm({
     extension: '',
     label: '',
     description: '',
+    max_size_kb: 1024,
     is_active: true,
 });
+
+const formatMaxSize = (kb) => {
+    const val = Number(kb ?? 1024);
+    if (val >= 1024) {
+        const mb = val / 1024;
+        return `${Number.isInteger(mb) ? mb : mb.toFixed(1)} MB`;
+    }
+    return `${val} KB`;
+};
 
 const filteredExtensions = computed(() => {
     const q = search.value.trim().toLowerCase();
@@ -46,6 +57,7 @@ const openCreate = () => {
     editingItem.value = null;
     form.reset();
     form.clearErrors();
+    form.max_size_kb = 1024;
     form.is_active = true;
     dialogVisible.value = true;
 };
@@ -56,6 +68,7 @@ const openEdit = (item) => {
     form.extension = item.extension;
     form.label = item.label;
     form.description = item.description ?? '';
+    form.max_size_kb = Number(item.max_size_kb ?? 1024);
     form.is_active = Boolean(item.is_active);
     dialogVisible.value = true;
 };
@@ -88,6 +101,7 @@ const toggleActive = (item, value) => {
             extension: item.extension,
             label: item.label,
             description: item.description,
+            max_size_kb: Number(item.max_size_kb ?? 1024),
             is_active: value,
         },
         { preserveScroll: true },
@@ -180,6 +194,14 @@ const deleteItem = () => {
                         </template>
                     </Column>
 
+                    <Column field="max_size_kb" header="Max Size">
+                        <template #body="{ data }">
+                            <span class="text-sm font-medium text-slate-700 dark:text-surface-200">
+                                {{ formatMaxSize(data.max_size_kb) }}
+                            </span>
+                        </template>
+                    </Column>
+
                     <Column field="is_active" header="Status">
                         <template #body="{ data }">
                             <div class="flex items-center gap-2.5">
@@ -262,6 +284,22 @@ const deleteItem = () => {
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-semibold">Description</label>
                     <InputText v-model="form.description" placeholder="Optional description" fluid />
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-semibold">Max Upload Size (KB)</label>
+                    <InputNumber
+                        v-model="form.max_size_kb"
+                        :min="1"
+                        :max="102400"
+                        suffix=" KB"
+                        fluid
+                        :invalid="Boolean(form.errors.max_size_kb)"
+                    />
+                    <small class="text-xs text-slate-500 dark:text-surface-400">
+                        Equivalent to {{ formatMaxSize(form.max_size_kb) }} (e.g. 1024 KB = 1 MB, 10240 KB = 10 MB)
+                    </small>
+                    <small v-if="form.errors.max_size_kb" class="text-red-500 text-xs">{{ form.errors.max_size_kb }}</small>
                 </div>
 
                 <div class="flex items-center justify-between pt-1">
