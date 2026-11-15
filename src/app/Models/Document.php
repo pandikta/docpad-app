@@ -14,6 +14,7 @@ class Document extends Model
 
     protected $fillable = [
         'user_id',
+        'folder_id',
         'name',
         'visibility',
         'content',
@@ -84,6 +85,17 @@ class Document extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function folder(): BelongsTo
+    {
+        return $this->belongsTo(DocumentFolder::class, 'folder_id');
+    }
+
+    public function favoritedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'doc_file_favorites', 'document_id', 'user_id')
+            ->withPivot('created_at');
+    }
+
     public function logs(): HasMany
     {
         return $this->hasMany(DocumentLog::class, 'document_id')->latest('id');
@@ -99,6 +111,9 @@ class Document extends Model
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
+            'folder_id' => $this->folder_id,
+            'folder_name' => $this->folder?->name,
+            'is_favorite' => (bool) ($this->is_favorite ?? false),
             'name' => $this->name,
             'visibility' => $this->visibility ?? 'publish',
             'is_stored_file' => $this->isStoredFile(),

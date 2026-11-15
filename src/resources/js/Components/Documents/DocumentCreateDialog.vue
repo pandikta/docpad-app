@@ -10,6 +10,7 @@ const props = defineProps({
     visible: { type: Boolean, default: false },
     extensions: { type: Array, default: () => ['txt', 'md'] },
     extensionMaxSizes: { type: Object, default: () => ({}) },
+    folders: { type: Array, default: () => [] },
     loading: { type: Boolean, default: false },
 });
 
@@ -18,7 +19,13 @@ const emit = defineEmits(['update:visible', 'submit']);
 const name = ref('');
 const selectedExtension = ref('txt');
 const visibility = ref('publish');
+const folderId = ref(null);
 const content = ref('');
+
+const folderOptions = computed(() => [
+    { id: null, name: 'Uncategorized (No Folder)' },
+    ...props.folders,
+]);
 
 const visibilityOptions = [
     { label: 'Publish (Shared with Team)', value: 'publish' },
@@ -55,6 +62,7 @@ watch(
             name.value = '';
             selectedExtension.value = editableExtensions.value[0] ?? 'txt';
             visibility.value = 'publish';
+            folderId.value = null;
             content.value = '';
         }
     },
@@ -86,6 +94,7 @@ const onSubmit = () => {
         name: normalizedBaseName.value,
         extension: selectedExtension.value,
         visibility: visibility.value,
+        folder_id: folderId.value,
         content: content.value,
     });
 };
@@ -155,6 +164,22 @@ const onSubmit = () => {
                         class="!rounded-xl"
                     />
                 </div>
+            </div>
+
+            <!-- Optional Folder -->
+            <div v-if="folders.length" class="flex flex-col gap-1.5">
+                <label for="create-doc-folder" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
+                    Folder <span class="text-xs font-normal text-slate-400">(optional)</span>
+                </label>
+                <Select
+                    input-id="create-doc-folder"
+                    v-model="folderId"
+                    :options="folderOptions"
+                    option-label="name"
+                    option-value="id"
+                    fluid
+                    class="!rounded-xl"
+                />
             </div>
 
             <!-- Live Preview Filename + Max Size Info -->

@@ -21,6 +21,7 @@ class DashboardController extends Controller
 
         return Inertia::render('Dashboard', [
             'documents' => $documents->listForUser($user, $search),
+            'folders' => $documents->listFolders(),
             'allowedExtensions' => allowed_document_extensions(),
             'extensionMaxSizes' => $extensions->listActiveWithLimits(),
             'teams' => is_superadmin($user) ? $teams->listActiveTeams() : [],

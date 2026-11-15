@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Models\DocumentFolder;
 use App\Services\DocumentService;
 use App\Services\ExtensionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DocumentController extends Controller
@@ -24,11 +26,13 @@ class DocumentController extends Controller
     {
         abort_unless(can_use_function('documents.upload', $request->user()), 403);
 
-        $request->validate([
+        $validated = $request->validate([
             'files' => ['required', 'array', 'min:1'],
             'files.*' => ['required', 'file'],
+            'folder_id' => ['nullable', 'integer', 'exists:doc_folders,id'],
         ]);
 
+        $folderId = isset($validated['folder_id']) ? (int) $validated['folder_id'] : null;
         $allowedExtensions = allowed_document_extensions();
         $uploaded = [];
         $failed = [];
@@ -49,7 +53,12 @@ class DocumentController extends Controller
                 continue;
             }
 
-            $uploaded[] = $this->documents->createFromUpload($request->user(), $file);
+            if ($this->documents->nameExistsForUser($request->user(), $originalName)) {
+                $failed[] = "\"{$originalName}\": a document with this name already exists.";
+                continue;
+            }
+
+            $uploaded[] = $this->documents->createFromUpload($request->user(), $file, $folderId);
         }
 
         $uploadedCount = count($uploaded);
@@ -83,8 +92,16 @@ class DocumentController extends Controller
             'name' => ['required', 'string', 'max:200'],
             'extension' => ['required', 'string', "in:{$allowed}"],
             'visibility' => ['nullable', 'string', 'in:publish,private'],
+            'folder_id' => ['nullable', 'integer', 'exists:doc_folders,id'],
             'content' => ['nullable', 'string', 'max:2000000'],
         ]);
+
+        $finalName = $this->documents->buildDocumentName($validated['name'], $validated['extension']);
+        if ($this->documents->nameExistsForUser($request->user(), $finalName)) {
+            return back()->withErrors([
+                'name' => "A document named \"{$finalName}\" already exists.",
+            ]);
+        }
 
         $document = $this->documents->createBlank(
             $request->user(),
@@ -92,6 +109,7 @@ class DocumentController extends Controller
             $validated['extension'],
             $validated['content'] ?? '',
             $validated['visibility'] ?? 'publish',
+            isset($validated['folder_id']) ? (int) $validated['folder_id'] : null,
         );
 
         return back()->with('success', "{$document->name} created successfully.");
@@ -135,6 +153,12 @@ class DocumentController extends Controller
                 },
             ],
         ]);
+
+        if ($this->documents->nameExistsForUser($request->user(), $validated['name'], $document->id)) {
+            return back()->withErrors([
+                'name' => "A document named \"{$validated['name']}\" already exists.",
+            ]);
+        }
 
         $this->documents->rename($document, $validated['name'], $request->user());
 
@@ -226,5 +250,130 @@ class DocumentController extends Controller
             $document->name,
             ['Content-Type' => 'text/plain; charset=UTF-8'],
         );
+    }
+
+    /**
+     * Toggle favorite/pin dokumen untuk user yang login.
+     */
+    public function toggleFavorite(Request $request, Document $document): RedirectResponse
+    {
+        $this->documents->authorizeAccess($request->user(), $document);
+        $isFav = $this->documents->toggleFavorite($document, $request->user());
+
+        return back()->with('success', $isFav ? "{$document->name} pinned to favorites." : "{$document->name} removed from favorites.");
+    }
+
+    /**
+     * Pindahkan satu dokumen ke folder tertentu.
+     */
+    public function moveFolder(Request $request, Document $document): RedirectResponse
+    {
+        $this->documents->authorizeAccess($request->user(), $document);
+
+        $validated = $request->validate([
+            'folder_id' => ['nullable', 'integer', 'exists:doc_folders,id'],
+        ]);
+
+        $folderId = isset($validated['folder_id']) ? (int) $validated['folder_id'] : null;
+        $this->documents->moveFolder($document, $folderId, $request->user());
+
+        return back()->with('success', "{$document->name} moved.");
+    }
+
+    /**
+     * Download beberapa dokumen sekaligus dalam format .zip.
+     */
+    public function bulkDownload(Request $request): BinaryFileResponse
+    {
+        abort_unless(can_use_function('documents.download', $request->user()), 403);
+
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $zipPath = $this->documents->createZipForDownload($request->user(), $validated['ids']);
+
+        return response()
+            ->download($zipPath, 'documents-'.now()->format('Ymd-His').'.zip')
+            ->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Hapus beberapa dokumen sekaligus.
+     */
+    public function bulkDelete(Request $request): RedirectResponse
+    {
+        abort_unless(can_use_function('documents.delete', $request->user()), 403);
+
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $count = $this->documents->bulkDelete($request->user(), $validated['ids']);
+
+        return back()->with('success', "{$count} document(s) deleted.");
+    }
+
+    /**
+     * Pindahkan beberapa dokumen sekaligus ke folder tertentu.
+     */
+    public function bulkMoveFolder(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+            'folder_id' => ['nullable', 'integer', 'exists:doc_folders,id'],
+        ]);
+
+        $folderId = isset($validated['folder_id']) ? (int) $validated['folder_id'] : null;
+        $count = $this->documents->bulkMoveFolder($request->user(), $validated['ids'], $folderId);
+
+        return back()->with('success', "{$count} document(s) moved.");
+    }
+
+    /**
+     * Assign teams ke beberapa dokumen publish sekaligus (khusus superadmin).
+     */
+    public function bulkAssignTeams(Request $request): RedirectResponse
+    {
+        abort_unless(is_superadmin($request->user()), 403);
+
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+            'team_ids' => ['present', 'array'],
+            'team_ids.*' => ['integer', 'exists:mst_teams,id'],
+        ]);
+
+        $count = $this->documents->bulkAssignTeams($request->user(), $validated['ids'], $validated['team_ids']);
+
+        return back()->with('success', "Team assignment updated for {$count} publish document(s).");
+    }
+
+    /**
+     * Buat folder/kategori baru.
+     */
+    public function storeFolder(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100', 'unique:doc_folders,name'],
+        ]);
+
+        $folder = $this->documents->createFolder($request->user(), $validated['name']);
+
+        return back()->with('success', "Folder \"{$folder->name}\" created.");
+    }
+
+    /**
+     * Hapus folder/kategori (dokumen di dalamnya menjadi Uncategorized).
+     */
+    public function destroyFolder(DocumentFolder $folder): RedirectResponse
+    {
+        $name = $folder->name;
+        $this->documents->deleteFolder($folder);
+
+        return back()->with('success', "Folder \"{$name}\" deleted.");
     }
 }

@@ -16,6 +16,10 @@ export function useDocumentActions() {
     const renaming = ref(false);
     const assigningTeams = ref(false);
     const updatingVisibility = ref(false);
+    const movingFolder = ref(false);
+    const bulkDownloading = ref(false);
+    const bulkDeleting = ref(false);
+    const managingFolder = ref(false);
     const deleting = ref(false);
 
     const notifyError = (summary, errors) => {
@@ -27,10 +31,10 @@ export function useDocumentActions() {
         });
     };
 
-    const upload = (files, { onSuccess } = {}) => {
+    const upload = (files, { folderId = null, onSuccess } = {}) => {
         router.post(
             route('documents.store'),
-            { files },
+            { files, folder_id: folderId },
             {
                 forceFormData: true,
                 preserveScroll: true,
@@ -126,6 +130,123 @@ export function useDocumentActions() {
         window.location.href = route('documents.download', document.id);
     };
 
+    const toggleFavorite = (document) => {
+        router.patch(
+            route('documents.favorite', document.id),
+            {},
+            {
+                preserveScroll: true,
+                onError: (errors) => notifyError('Favorite Failed', errors),
+            },
+        );
+    };
+
+    const moveFolder = (document, folderId, { onSuccess } = {}) => {
+        router.patch(
+            route('documents.folder', document.id),
+            { folder_id: folderId },
+            {
+                preserveScroll: true,
+                onStart: () => (movingFolder.value = true),
+                onSuccess,
+                onError: (errors) => notifyError('Move Folder Failed', errors),
+                onFinish: () => (movingFolder.value = false),
+            },
+        );
+    };
+
+    const bulkMoveFolder = (ids, folderId, { onSuccess } = {}) => {
+        router.post(
+            route('documents.bulk-folder'),
+            { ids, folder_id: folderId },
+            {
+                preserveScroll: true,
+                onStart: () => (movingFolder.value = true),
+                onSuccess,
+                onError: (errors) => notifyError('Move Folder Failed', errors),
+                onFinish: () => (movingFolder.value = false),
+            },
+        );
+    };
+
+    const bulkAssignTeams = (ids, teamIds, { onSuccess } = {}) => {
+        router.post(
+            route('documents.bulk-teams'),
+            { ids, team_ids: teamIds },
+            {
+                preserveScroll: true,
+                onStart: () => (assigningTeams.value = true),
+                onSuccess,
+                onError: (errors) => notifyError('Assign Teams Failed', errors),
+                onFinish: () => (assigningTeams.value = false),
+            },
+        );
+    };
+
+    const bulkDelete = (ids, { onSuccess } = {}) => {
+        router.post(
+            route('documents.bulk-delete'),
+            { ids },
+            {
+                preserveScroll: true,
+                onStart: () => (bulkDeleting.value = true),
+                onSuccess,
+                onError: (errors) => notifyError('Bulk Delete Failed', errors),
+                onFinish: () => (bulkDeleting.value = false),
+            },
+        );
+    };
+
+    const bulkDownload = async (ids) => {
+        if (!ids.length || bulkDownloading.value) return;
+        bulkDownloading.value = true;
+
+        try {
+            const response = await window.axios.post(
+                route('documents.bulk-download'),
+                { ids },
+                { responseType: 'blob' },
+            );
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `docpad-documents-${Date.now()}.zip`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch {
+            notifyError('Bulk Download Failed', { zip: 'Failed to generate ZIP archive.' });
+        } finally {
+            bulkDownloading.value = false;
+        }
+    };
+
+    const createFolder = (name, { onSuccess } = {}) => {
+        router.post(
+            route('document-folders.store'),
+            { name },
+            {
+                preserveScroll: true,
+                onStart: () => (managingFolder.value = true),
+                onSuccess,
+                onError: (errors) => notifyError('Create Folder Failed', errors),
+                onFinish: () => (managingFolder.value = false),
+            },
+        );
+    };
+
+    const deleteFolder = (folder, { onSuccess } = {}) => {
+        router.delete(route('document-folders.destroy', folder.id), {
+            preserveScroll: true,
+            onStart: () => (managingFolder.value = true),
+            onSuccess,
+            onError: (errors) => notifyError('Delete Folder Failed', errors),
+            onFinish: () => (managingFolder.value = false),
+        });
+    };
+
     return {
         uploading,
         creating,
@@ -133,6 +254,10 @@ export function useDocumentActions() {
         renaming,
         assigningTeams,
         updatingVisibility,
+        movingFolder,
+        bulkDownloading,
+        bulkDeleting,
+        managingFolder,
         deleting,
         upload,
         create,
@@ -140,6 +265,14 @@ export function useDocumentActions() {
         rename,
         assignTeams,
         updateVisibility,
+        toggleFavorite,
+        moveFolder,
+        bulkMoveFolder,
+        bulkAssignTeams,
+        bulkDelete,
+        bulkDownload,
+        createFolder,
+        deleteFolder,
         destroy,
         download,
     };

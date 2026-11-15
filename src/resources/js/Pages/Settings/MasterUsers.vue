@@ -54,6 +54,9 @@ const openCreate = () => {
     editingUser.value = null;
     form.reset();
     form.clearErrors();
+    form.name = '';
+    form.email = '';
+    form.password = '';
     form.team_id = props.teams[0]?.id ?? null;
     form.is_superadmin = false;
     dialogVisible.value = true;
@@ -73,7 +76,10 @@ const openEdit = (user) => {
 const submitForm = () => {
     const options = {
         preserveScroll: true,
-        onSuccess: () => (dialogVisible.value = false),
+        onSuccess: () => {
+            dialogVisible.value = false;
+            form.reset();
+        },
         onError: (errors) => {
             toast.add({
                 severity: 'error',
@@ -248,16 +254,16 @@ const deleteUser = () => {
                 </div>
             </template>
 
-            <form class="space-y-4 pt-1" @submit.prevent="submitForm">
+            <form class="space-y-4 pt-1" autocomplete="off" @submit.prevent="submitForm">
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-semibold">Full Name</label>
-                    <InputText v-model="form.name" placeholder="Full name" fluid :invalid="Boolean(form.errors.name)" />
+                    <InputText v-model="form.name" placeholder="Full name" autocomplete="off" fluid :invalid="Boolean(form.errors.name)" />
                     <small v-if="form.errors.name" class="text-red-500 text-xs">{{ form.errors.name }}</small>
                 </div>
 
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-semibold">Email</label>
-                    <InputText v-model="form.email" type="email" placeholder="user@example.com" fluid :invalid="Boolean(form.errors.email)" />
+                    <InputText v-model="form.email" type="email" placeholder="user@example.com" autocomplete="off" fluid :invalid="Boolean(form.errors.email)" />
                     <small v-if="form.errors.email" class="text-red-500 text-xs">{{ form.errors.email }}</small>
                 </div>
 
@@ -272,6 +278,7 @@ const deleteUser = () => {
                         toggle-mask
                         fluid
                         placeholder="Enter password"
+                        :inputProps="{ autocomplete: 'new-password' }"
                         :invalid="Boolean(form.errors.password)"
                     />
                     <small v-if="form.errors.password" class="text-red-500 text-xs">{{ form.errors.password }}</small>

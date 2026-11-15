@@ -30,13 +30,22 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
 Route::middleware('auth')->group(function () {
     Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
     Route::post('/documents/create', [DocumentController::class, 'create'])->name('documents.create');
+    Route::post('/documents/bulk-download', [DocumentController::class, 'bulkDownload'])->name('documents.bulk-download');
+    Route::post('/documents/bulk-delete', [DocumentController::class, 'bulkDelete'])->name('documents.bulk-delete');
+    Route::post('/documents/bulk-folder', [DocumentController::class, 'bulkMoveFolder'])->name('documents.bulk-folder');
+    Route::post('/documents/bulk-teams', [DocumentController::class, 'bulkAssignTeams'])->name('documents.bulk-teams');
     Route::put('/documents/{document}', [DocumentController::class, 'update'])->name('documents.update');
     Route::patch('/documents/{document}/rename', [DocumentController::class, 'rename'])->name('documents.rename');
     Route::patch('/documents/{document}/visibility', [DocumentController::class, 'updateVisibility'])->name('documents.visibility');
+    Route::patch('/documents/{document}/favorite', [DocumentController::class, 'toggleFavorite'])->name('documents.favorite');
+    Route::patch('/documents/{document}/folder', [DocumentController::class, 'moveFolder'])->name('documents.folder');
     Route::put('/documents/{document}/teams', [DocumentController::class, 'assignTeams'])->name('documents.assign-teams');
     Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
     Route::get('/documents/{document}/preview', [DocumentController::class, 'preview'])->name('documents.preview');
     Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
+
+    Route::post('/document-folders', [DocumentController::class, 'storeFolder'])->name('document-folders.store');
+    Route::delete('/document-folders/{folder}', [DocumentController::class, 'destroyFolder'])->name('document-folders.destroy');
 
     Route::middleware('menu.auth:menu.profile')->group(function () {
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

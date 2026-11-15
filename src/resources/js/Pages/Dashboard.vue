@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue';
 import { Head, usePage } from '@inertiajs/vue3';
 import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import WelcomeBanner from '@/Components/Dashboard/WelcomeBanner.vue';
 import StatCard from '@/Components/Dashboard/StatCard.vue';
@@ -11,6 +13,7 @@ import DocumentEditorDialog from '@/Components/Documents/DocumentEditorDialog.vu
 import DocumentLogsDialog from '@/Components/Documents/DocumentLogsDialog.vue';
 import DocumentRenameDialog from '@/Components/Documents/DocumentRenameDialog.vue';
 import DocumentAssignTeamsDialog from '@/Components/Documents/DocumentAssignTeamsDialog.vue';
+import DocumentMoveFolderDialog from '@/Components/Documents/DocumentMoveFolderDialog.vue';
 import DocumentDeleteDialog from '@/Components/Documents/DocumentDeleteDialog.vue';
 import DocumentUploadConfirmDialog from '@/Components/Documents/DocumentUploadConfirmDialog.vue';
 import { useAuth } from '@/composables/useAuth';
@@ -18,6 +21,7 @@ import { useDocumentActions } from '@/composables/useDocumentActions';
 
 const props = defineProps({
     documents: { type: Array, default: () => [] },
+    folders: { type: Array, default: () => [] },
     allowedExtensions: { type: Array, default: () => ['txt', 'md'] },
     extensionMaxSizes: { type: Object, default: () => ({}) },
     teams: { type: Array, default: () => [] },
@@ -31,6 +35,10 @@ const {
     saving,
     renaming,
     assigningTeams,
+    movingFolder,
+    bulkDownloading,
+    bulkDeleting,
+    managingFolder,
     deleting,
     upload,
     create,
@@ -38,6 +46,14 @@ const {
     rename,
     assignTeams,
     updateVisibility,
+    toggleFavorite,
+    moveFolder,
+    bulkMoveFolder,
+    bulkAssignTeams,
+    bulkDelete,
+    bulkDownload,
+    createFolder,
+    deleteFolder,
     destroy,
     download,
 } = useDocumentActions();
@@ -123,11 +139,136 @@ const confirmDelete = (doc) => {
     destroy(doc, { onSuccess: () => (deleteVisible.value = false) });
 };
 
-// --- Upload --------------------------------------------------------------
+// --- Upload & Folders & Bulk Actions -------------------------------------
+const tableRef = ref(null);
 const uploadDialogVisible = ref(false);
+const activeFolderFilter = ref('all'); // 'all' | 'uncategorized' | folder.id
 
-const confirmUpload = (files) => {
+const folderFilteredDocuments = computed(() => {
+    if (activeFolderFilter.value === 'all') return props.documents;
+    if (activeFolderFilter.value === 'uncategorized') {
+        return props.documents.filter((d) => !d.folder_id);
+    }
+    return props.documents.filter((d) => Number(d.folder_id) === Number(activeFolderFilter.value));
+});
+
+const folderDocCount = (folderId) => {
+    if (folderId === 'all') return props.documents.length;
+    if (folderId === 'uncategorized') return props.documents.filter((d) => !d.folder_id).length;
+    return props.documents.filter((d) => Number(d.folder_id) === Number(folderId)).length;
+};
+
+const newFolderDialogVisible = ref(false);
+const newFolderName = ref('');
+const submitCreateFolder = () => {
+    const trimmed = newFolderName.value.trim();
+    if (!trimmed) return;
+    createFolder(trimmed, {
+        onSuccess: () => {
+            newFolderName.value = '';
+            newFolderDialogVisible.value = false;
+        },
+    });
+};
+
+const deleteFolderVisible = ref(false);
+const selectedDeleteFolder = ref(null);
+
+const openDeleteFolder = (folder) => {
+    selectedDeleteFolder.value = folder;
+    deleteFolderVisible.value = true;
+};
+
+const confirmDeleteFolder = () => {
+    const folder = selectedDeleteFolder.value;
+    if (!folder) return;
+
+    deleteFolder(folder, {
+        onSuccess: () => {
+            if (Number(activeFolderFilter.value) === Number(folder.id)) {
+                activeFolderFilter.value = 'all';
+            }
+            deleteFolderVisible.value = false;
+            selectedDeleteFolder.value = null;
+        },
+    });
+};
+
+// Move Folder (Single or Bulk)
+const moveFolderVisible = ref(false);
+const moveFolderTargetDoc = ref(null);
+const moveFolderBulkIds = ref([]);
+
+const openMoveFolder = (doc) => {
+    moveFolderTargetDoc.value = doc;
+    moveFolderBulkIds.value = [];
+    moveFolderVisible.value = true;
+};
+
+const openBulkMoveFolder = (ids) => {
+    moveFolderTargetDoc.value = null;
+    moveFolderBulkIds.value = ids;
+    moveFolderVisible.value = true;
+};
+
+const submitMoveFolder = (folderId) => {
+    if (moveFolderBulkIds.value.length) {
+        bulkMoveFolder(moveFolderBulkIds.value, folderId, {
+            onSuccess: () => {
+                moveFolderVisible.value = false;
+                tableRef.value?.clearSelection();
+            },
+        });
+    } else if (moveFolderTargetDoc.value) {
+        moveFolder(moveFolderTargetDoc.value, folderId, {
+            onSuccess: () => (moveFolderVisible.value = false),
+        });
+    }
+};
+
+// Bulk Assign Teams (Superadmin)
+const bulkAssignIds = ref([]);
+const openBulkAssignTeams = (ids) => {
+    bulkAssignIds.value = ids;
+    selectedAssignDocument.value = { id: 'bulk', name: `${ids.length} selected documents`, teams: [] };
+    assignTeamsVisible.value = true;
+};
+
+const submitAssignTeamsOrBulk = ({ document, teamIds }) => {
+    if (bulkAssignIds.value.length) {
+        bulkAssignTeams(bulkAssignIds.value, teamIds, {
+            onSuccess: () => {
+                assignTeamsVisible.value = false;
+                bulkAssignIds.value = [];
+                tableRef.value?.clearSelection();
+            },
+        });
+        return;
+    }
+
+    assignTeams(document, teamIds, { onSuccess: () => (assignTeamsVisible.value = false) });
+};
+
+// Bulk Delete Confirmation
+const bulkDeleteVisible = ref(false);
+const bulkDeleteIds = ref([]);
+const openBulkDelete = (ids) => {
+    bulkDeleteIds.value = ids;
+    bulkDeleteVisible.value = true;
+};
+const confirmBulkDelete = () => {
+    bulkDelete(bulkDeleteIds.value, {
+        onSuccess: () => {
+            bulkDeleteVisible.value = false;
+            bulkDeleteIds.value = [];
+            tableRef.value?.clearSelection();
+        },
+    });
+};
+
+const confirmUpload = ({ files, folderId }) => {
     upload(files, {
+        folderId,
         onSuccess: () => {
             uploadDialogVisible.value = false;
         },
@@ -167,14 +308,85 @@ const confirmUpload = (files) => {
                 </div>
             </div>
 
+            <!-- Folder Filter Bar -->
+            <div class="flex flex-wrap items-center gap-2">
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer"
+                    :class="
+                        activeFolderFilter === 'all'
+                            ? 'bg-[#1f6f46] text-white border-[#1f6f46]'
+                            : 'bg-white dark:bg-surface-900 text-slate-600 dark:text-surface-300 border-slate-200 dark:border-surface-700 hover:border-[#1f6f46]'
+                    "
+                    @click="activeFolderFilter = 'all'"
+                >
+                    <i class="pi pi-th-large text-[11px]"></i>
+                    <span>All ({{ folderDocCount('all') }})</span>
+                </button>
+
+                <button
+                    v-for="folder in folders"
+                    :key="folder.id"
+                    type="button"
+                    class="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer"
+                    :class="
+                        Number(activeFolderFilter) === Number(folder.id)
+                            ? 'bg-[#1f6f46] text-white border-[#1f6f46]'
+                            : 'bg-white dark:bg-surface-900 text-slate-600 dark:text-surface-300 border-slate-200 dark:border-surface-700 hover:border-[#1f6f46]'
+                    "
+                    @click="activeFolderFilter = folder.id"
+                >
+                    <i class="pi pi-folder text-[11px]"></i>
+                    <span>{{ folder.name }} ({{ folderDocCount(folder.id) }})</span>
+                    <span
+                        class="ml-1 opacity-60 hover:opacity-100"
+                        title="Delete folder"
+                        @click.stop="openDeleteFolder(folder)"
+                    >
+                        <i class="pi pi-times text-[10px]"></i>
+                    </span>
+                </button>
+
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer"
+                    :class="
+                        activeFolderFilter === 'uncategorized'
+                            ? 'bg-[#1f6f46] text-white border-[#1f6f46]'
+                            : 'bg-white dark:bg-surface-900 text-slate-600 dark:text-surface-300 border-slate-200 dark:border-surface-700 hover:border-[#1f6f46]'
+                    "
+                    @click="activeFolderFilter = 'uncategorized'"
+                >
+                    <span>Uncategorized ({{ folderDocCount('uncategorized') }})</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold border border-dashed border-slate-300 dark:border-surface-700 text-slate-600 dark:text-surface-300 hover:border-[#1f6f46] hover:text-[#1f6f46] cursor-pointer transition-colors"
+                    @click="newFolderDialogVisible = true"
+                >
+                    <i class="pi pi-folder-plus text-[11px]"></i>
+                    <span>New Folder</span>
+                </button>
+            </div>
+
             <DocumentTable
-                :documents="documents"
+                ref="tableRef"
+                :documents="folderFilteredDocuments"
+                :bulk-downloading="bulkDownloading"
+                :bulk-deleting="bulkDeleting"
                 @open="openEditor"
                 @logs="openLogs"
                 @download="download"
                 @rename="openRename"
                 @assign-teams="openAssignTeams"
                 @toggle-visibility="onToggleVisibility"
+                @toggle-favorite="toggleFavorite"
+                @move-folder="openMoveFolder"
+                @bulk-download="bulkDownload"
+                @bulk-delete="openBulkDelete"
+                @bulk-move-folder="openBulkMoveFolder"
+                @bulk-assign-teams="openBulkAssignTeams"
                 @delete="openDelete"
             />
         </div>
@@ -183,6 +395,7 @@ const confirmUpload = (files) => {
             v-model:visible="createVisible"
             :extensions="allowedExtensions"
             :extension-max-sizes="extensionMaxSizes"
+            :folders="folders"
             :loading="creating"
             @submit="submitCreate"
         />
@@ -213,7 +426,16 @@ const confirmUpload = (files) => {
             :document="selectedAssignDocument"
             :teams="teams"
             :loading="assigningTeams"
-            @submit="submitAssignTeams"
+            @submit="submitAssignTeamsOrBulk"
+        />
+
+        <DocumentMoveFolderDialog
+            v-model:visible="moveFolderVisible"
+            :folders="folders"
+            :initial-folder-id="moveFolderTargetDoc?.folder_id ?? null"
+            :count="moveFolderBulkIds.length || 1"
+            :loading="movingFolder"
+            @submit="submitMoveFolder"
         />
 
         <DocumentDeleteDialog
@@ -227,8 +449,112 @@ const confirmUpload = (files) => {
             v-model:visible="uploadDialogVisible"
             :allowed-extensions="allowedExtensions"
             :extension-max-sizes="extensionMaxSizes"
+            :folders="folders"
             :loading="uploading"
             @confirm="confirmUpload"
         />
+
+        <!-- New Folder Dialog -->
+        <Dialog
+            v-model:visible="newFolderDialogVisible"
+            modal
+            :draggable="false"
+            :style="{ width: '24rem' }"
+            :breakpoints="{ '640px': '92vw' }"
+        >
+            <template #header>
+                <div class="flex items-center gap-2.5">
+                    <i class="pi pi-folder-plus text-[#1f6f46] dark:text-emerald-400"></i>
+                    <span class="text-lg font-bold text-slate-800 dark:text-surface-0">New Folder</span>
+                </div>
+            </template>
+            <form id="new-folder-form" class="space-y-3 pt-1" @submit.prevent="submitCreateFolder">
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-semibold text-slate-700 dark:text-surface-200">Folder Name</label>
+                    <InputText
+                        v-model="newFolderName"
+                        placeholder="e.g. SOP, Meeting Notes"
+                        autofocus
+                        required
+                        fluid
+                        class="!rounded-xl"
+                    />
+                </div>
+            </form>
+            <template #footer>
+                <Button label="Cancel" severity="secondary" variant="outlined" @click="newFolderDialogVisible = false" />
+                <Button
+                    type="submit"
+                    form="new-folder-form"
+                    label="Create Folder"
+                    icon="pi pi-check"
+                    :loading="managingFolder"
+                    :disabled="!newFolderName.trim()"
+                    class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white"
+                />
+            </template>
+        </Dialog>
+
+        <!-- Delete Folder Confirm Dialog -->
+        <Dialog
+            v-model:visible="deleteFolderVisible"
+            modal
+            :draggable="false"
+            :style="{ width: '26rem' }"
+            :breakpoints="{ '640px': '92vw' }"
+        >
+            <template #header>
+                <div class="flex items-center gap-2.5">
+                    <i class="pi pi-exclamation-triangle text-red-500"></i>
+                    <span class="text-lg font-bold text-slate-800 dark:text-surface-0">Delete Folder</span>
+                </div>
+            </template>
+            <p class="text-sm text-slate-600 dark:text-surface-300 leading-relaxed">
+                Are you sure you want to delete folder
+                <span class="font-semibold text-slate-900 dark:text-surface-0">{{ selectedDeleteFolder?.name }}</span>?
+                Documents inside it will not be deleted and will become <span class="font-medium">Uncategorized</span>.
+            </p>
+            <template #footer>
+                <Button label="Cancel" severity="secondary" variant="outlined" @click="deleteFolderVisible = false" />
+                <Button
+                    label="Delete Folder"
+                    icon="pi pi-trash"
+                    severity="danger"
+                    :loading="managingFolder"
+                    @click="confirmDeleteFolder"
+                />
+            </template>
+        </Dialog>
+
+        <!-- Bulk Delete Confirm Dialog -->
+        <Dialog
+            v-model:visible="bulkDeleteVisible"
+            modal
+            :draggable="false"
+            :style="{ width: '26rem' }"
+            :breakpoints="{ '640px': '92vw' }"
+        >
+            <template #header>
+                <div class="flex items-center gap-2.5">
+                    <i class="pi pi-exclamation-triangle text-red-500"></i>
+                    <span class="text-lg font-bold text-slate-800 dark:text-surface-0">Delete Selected Documents</span>
+                </div>
+            </template>
+            <p class="text-sm text-slate-600 dark:text-surface-300 leading-relaxed">
+                Are you sure you want to delete
+                <span class="font-semibold text-slate-900 dark:text-surface-0">{{ bulkDeleteIds.length }}</span>
+                selected documents? This action cannot be undone.
+            </p>
+            <template #footer>
+                <Button label="Cancel" severity="secondary" variant="outlined" @click="bulkDeleteVisible = false" />
+                <Button
+                    label="Delete All"
+                    icon="pi pi-trash"
+                    severity="danger"
+                    :loading="bulkDeleting"
+                    @click="confirmBulkDelete"
+                />
+            </template>
+        </Dialog>
     </AppLayout>
 </template>

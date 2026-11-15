@@ -92,7 +92,7 @@ class UserService
     {
         $isSuperAdmin = (bool) ($data['is_superadmin'] ?? false);
 
-        return User::make([
+        $user = User::make([
             'team_id' => $isSuperAdmin ? null : ($data['team_id'] ?? null),
             'name' => trim($data['name']),
             'email' => strtolower(trim($data['email'])),
@@ -100,7 +100,11 @@ class UserService
         ])->forceFill([
             'is_superadmin' => $isSuperAdmin,
             'email_verified_at' => now(),
-        ])->tap(fn (User $user) => $user->save());
+        ]);
+
+        $user->save();
+
+        return $user;
     }
 
     /**

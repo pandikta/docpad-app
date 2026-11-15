@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
@@ -12,19 +12,28 @@ import { useDocumentSearch } from '@/composables/useDocumentSearch';
 import { formatFileSize, formatDateTime } from '@/utils/formatters';
 
 const props = defineProps({
-    // [{ id, name, size (bytes), created_by, created_at (ISO), updated_at (ISO), content, teams, logs }]
+    // [{ id, name, folder_id, folder_name, is_favorite, size (bytes), created_by, created_at (ISO), updated_at (ISO), content, teams, logs }]
     documents: { type: Array, default: () => [] },
     rows: { type: Number, default: 10 },
+    bulkDownloading: { type: Boolean, default: false },
+    bulkDeleting: { type: Boolean, default: false },
 });
 
-// open              : nama dokumen diklik (buka editor)
-// logs              : tombol log aktivitas diklik
-// download          : tombol download diklik
-// rename            : aksi rename dipilih dari menu titik tiga
-// assign-teams      : aksi assign ke tim dipilih dari menu titik tiga (khusus superadmin)
-// toggle-visibility : aksi ubah publish/private dipilih dari menu titik tiga (khusus pemilik)
-// delete            : aksi delete dipilih dari menu titik tiga
-const emit = defineEmits(['open', 'logs', 'download', 'rename', 'assign-teams', 'toggle-visibility', 'delete']);
+const emit = defineEmits([
+    'open',
+    'logs',
+    'download',
+    'rename',
+    'assign-teams',
+    'toggle-visibility',
+    'toggle-favorite',
+    'move-folder',
+    'bulk-download',
+    'bulk-delete',
+    'bulk-move-folder',
+    'bulk-assign-teams',
+    'delete',
+]);
 
 const { user, isSuperAdmin, can } = useAuth();
 
@@ -32,8 +41,26 @@ const isOwner = (doc) => Boolean(doc && user.value?.id && Number(doc.user_id) ==
 
 const { searchQuery, clearSearch, matchesDocument } = useDocumentSearch();
 
+const favoritesOnly = ref(false);
+const selectedDocuments = ref([]);
+
+watch(
+    () => props.documents,
+    (docs) => {
+        const validIds = new Set(docs.map((d) => d.id));
+        selectedDocuments.value = selectedDocuments.value.filter((d) => validIds.has(d.id));
+    },
+);
+
+const clearSelection = () => {
+    selectedDocuments.value = [];
+};
+
+defineExpose({ clearSelection });
+
 const columnFilters = ref({
     name: '',
+    folder: '',
     visibility: null,
     size: '',
     teams: '',
@@ -48,6 +75,7 @@ const visibilityFilterOptions = [
 
 const columnLabels = {
     name: 'Name',
+    folder: 'Folder',
     visibility: 'Visibility',
     size: 'Size',
     teams: 'Teams',
@@ -87,7 +115,9 @@ const resetActiveColumnFilter = () => {
 
 const hasActiveColumnFilters = computed(() =>
     Boolean(
-        columnFilters.value.name.trim() ||
+        favoritesOnly.value ||
+            columnFilters.value.name.trim() ||
+            columnFilters.value.folder.trim() ||
             columnFilters.value.visibility ||
             columnFilters.value.size.trim() ||
             columnFilters.value.teams.trim() ||
@@ -97,8 +127,10 @@ const hasActiveColumnFilters = computed(() =>
 );
 
 const clearColumnFilters = () => {
+    favoritesOnly.value = false;
     columnFilters.value = {
         name: '',
+        folder: '',
         visibility: null,
         size: '',
         teams: '',
@@ -110,8 +142,19 @@ const clearColumnFilters = () => {
 const matchesColumnFilters = (doc) => {
     const f = columnFilters.value;
 
+    if (favoritesOnly.value && !doc.is_favorite) {
+        return false;
+    }
+
     if (f.name.trim() && !String(doc.name ?? '').toLowerCase().includes(f.name.trim().toLowerCase())) {
         return false;
+    }
+
+    if (f.folder.trim()) {
+        const folderText = (doc.folder_name || 'uncategorized').toLowerCase();
+        if (!folderText.includes(f.folder.trim().toLowerCase())) {
+            return false;
+        }
     }
 
     if (f.visibility && (doc.visibility ?? 'publish') !== f.visibility) {
@@ -195,6 +238,12 @@ const moreMenuItems = computed(() => {
         });
     }
 
+    items.push({
+        label: 'Move to Folder',
+        icon: 'pi pi-folder',
+        command: () => activeRowDocument.value && emit('move-folder', activeRowDocument.value),
+    });
+
     if (can('documents.delete')) {
         items.push({
             label: 'Delete',
@@ -238,10 +287,23 @@ const actionBtnClass =
 <template>
     <section class="rounded-2xl bg-white dark:bg-surface-900 border border-slate-200 dark:border-surface-800 shadow-sm overflow-hidden">
         <!-- Header -->
-        <header class="flex items-center justify-between gap-3 px-6 py-5">
-            <div class="flex items-center gap-3">
+        <header class="flex flex-wrap items-center justify-between gap-3 px-6 py-5">
+            <div class="flex flex-wrap items-center gap-3">
                 <i class="pi pi-file text-xl text-[#1f6f46] dark:text-emerald-400"></i>
                 <h2 class="text-lg font-bold text-slate-800 dark:text-surface-0">List Documents</h2>
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer"
+                    :class="
+                        favoritesOnly
+                            ? 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-700'
+                            : 'bg-white text-slate-600 border-slate-200 hover:border-amber-300 dark:bg-surface-900 dark:text-surface-300 dark:border-surface-700'
+                    "
+                    @click="favoritesOnly = !favoritesOnly"
+                >
+                    <i :class="favoritesOnly ? 'pi pi-star-fill text-amber-500 text-[11px]' : 'pi pi-star text-[11px]'"></i>
+                    <span>Favorites</span>
+                </button>
                 <span
                     v-if="searchQuery.trim()"
                     class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-[#1f6f46] dark:bg-emerald-950/60 dark:text-emerald-300"
@@ -264,7 +326,71 @@ const actionBtnClass =
             <slot name="header-actions" />
         </header>
 
+        <!-- Bulk Action Bar -->
+        <div
+            v-if="selectedDocuments.length"
+            class="flex flex-wrap items-center justify-between gap-3 px-6 py-3 bg-emerald-50/80 dark:bg-emerald-950/40 border-y border-emerald-200/70 dark:border-emerald-800/60"
+        >
+            <div class="flex items-center gap-2.5 text-sm">
+                <span class="font-semibold text-[#1f6f46] dark:text-emerald-300">
+                    {{ selectedDocuments.length }} selected
+                </span>
+                <button
+                    type="button"
+                    class="text-xs text-slate-500 hover:text-slate-800 dark:text-surface-400 dark:hover:text-surface-100 underline cursor-pointer"
+                    @click="clearSelection"
+                >
+                    Clear
+                </button>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+                <Button
+                    v-if="can('documents.download')"
+                    label="Download ZIP"
+                    icon="pi pi-download"
+                    size="small"
+                    severity="secondary"
+                    variant="outlined"
+                    :loading="bulkDownloading"
+                    class="!rounded-lg"
+                    @click="$emit('bulk-download', selectedDocuments.map((d) => d.id))"
+                />
+                <Button
+                    label="Move Folder"
+                    icon="pi pi-folder"
+                    size="small"
+                    severity="secondary"
+                    variant="outlined"
+                    class="!rounded-lg"
+                    @click="$emit('bulk-move-folder', selectedDocuments.map((d) => d.id))"
+                />
+                <Button
+                    v-if="isSuperAdmin"
+                    label="Assign Teams"
+                    icon="pi pi-users"
+                    size="small"
+                    severity="secondary"
+                    variant="outlined"
+                    class="!rounded-lg"
+                    @click="$emit('bulk-assign-teams', selectedDocuments.map((d) => d.id))"
+                />
+                <Button
+                    v-if="can('documents.delete')"
+                    label="Delete"
+                    icon="pi pi-trash"
+                    size="small"
+                    severity="danger"
+                    variant="outlined"
+                    :loading="bulkDeleting"
+                    class="!rounded-lg"
+                    @click="$emit('bulk-delete', selectedDocuments.map((d) => d.id))"
+                />
+            </div>
+        </div>
+
         <DataTable
+            v-model:selection="selectedDocuments"
             :value="filteredDocuments"
             dataKey="id"
             paginator
@@ -304,6 +430,8 @@ const actionBtnClass =
                 </div>
             </template>
 
+            <Column selectionMode="multiple" headerStyle="width: 3rem" />
+
             <!-- Name -->
             <Column field="name" sortable>
                 <template #header>
@@ -321,14 +449,58 @@ const actionBtnClass =
                     </div>
                 </template>
                 <template #body="{ data }">
-                    <button
-                        type="button"
-                        class="flex items-center gap-3 text-left font-medium text-slate-700 dark:text-surface-100 hover:text-[#1f6f46] dark:hover:text-emerald-400 hover:underline cursor-pointer"
-                        @click="$emit('open', data)"
+                    <div class="flex items-center gap-2.5">
+                        <button
+                            type="button"
+                            v-tooltip.top="data.is_favorite ? 'Remove from Favorites' : 'Pin to Favorites'"
+                            class="p-1 rounded hover:bg-amber-50 dark:hover:bg-amber-950/40 cursor-pointer transition-colors shrink-0"
+                            @click.stop="$emit('toggle-favorite', data)"
+                        >
+                            <i
+                                :class="
+                                    data.is_favorite
+                                        ? 'pi pi-star-fill text-amber-400 text-sm'
+                                        : 'pi pi-star text-slate-300 hover:text-amber-400 dark:text-surface-600 text-sm'
+                                "
+                            ></i>
+                        </button>
+                        <button
+                            type="button"
+                            class="flex items-center gap-2.5 text-left font-medium text-slate-700 dark:text-surface-100 hover:text-[#1f6f46] dark:hover:text-emerald-400 hover:underline cursor-pointer"
+                            @click="$emit('open', data)"
+                        >
+                            <i :class="getDocumentIconClass(data)"></i>
+                            <span>{{ data.name }}</span>
+                        </button>
+                    </div>
+                </template>
+            </Column>
+
+            <!-- Folder -->
+            <Column field="folder_name" sortable>
+                <template #header>
+                    <div class="flex items-center justify-between gap-2 w-full">
+                        <span>Folder</span>
+                        <button
+                            type="button"
+                            v-tooltip.top="'Search Folder'"
+                            class="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-surface-800 cursor-pointer transition-colors"
+                            :class="isColumnFiltered('folder') ? 'text-[#1f6f46] dark:text-emerald-400' : 'text-slate-400 dark:text-surface-400'"
+                            @click.stop="openFilterPopover($event, 'folder')"
+                        >
+                            <i class="pi pi-search text-xs"></i>
+                        </button>
+                    </div>
+                </template>
+                <template #body="{ data }">
+                    <span
+                        v-if="data.folder_name"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 dark:bg-surface-800 dark:text-surface-200 border border-slate-200 dark:border-surface-700"
                     >
-                        <i :class="getDocumentIconClass(data)"></i>
-                        <span>{{ data.name }}</span>
-                    </button>
+                        <i class="pi pi-folder text-[10px] text-[#1f6f46] dark:text-emerald-400"></i>
+                        <span>{{ data.folder_name }}</span>
+                    </span>
+                    <span v-else class="text-xs text-slate-400 italic">Uncategorized</span>
                 </template>
             </Column>
 

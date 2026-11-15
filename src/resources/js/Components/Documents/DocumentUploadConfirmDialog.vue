@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import Dialog from 'primevue/dialog';
+import Select from 'primevue/select';
 import Button from 'primevue/button';
 import { formatFileSize } from '@/utils/formatters';
 
@@ -8,6 +9,7 @@ const props = defineProps({
     visible: { type: Boolean, default: false },
     allowedExtensions: { type: Array, default: () => ['txt', 'md'] },
     extensionMaxSizes: { type: Object, default: () => ({}) },
+    folders: { type: Array, default: () => [] },
     loading: { type: Boolean, default: false },
 });
 
@@ -15,7 +17,13 @@ const emit = defineEmits(['update:visible', 'confirm']);
 
 const fileInput = ref(null);
 const selectedFiles = ref([]);
+const folderId = ref(null);
 const isDragging = ref(false);
+
+const folderOptions = computed(() => [
+    { id: null, name: 'Uncategorized (No Folder)' },
+    ...props.folders,
+]);
 
 const acceptExtensions = computed(() =>
     props.allowedExtensions.map((ext) => `.${ext}`).join(','),
@@ -26,6 +34,7 @@ watch(
     (isOpen) => {
         if (isOpen) {
             selectedFiles.value = [];
+            folderId.value = null;
             isDragging.value = false;
         }
     },
@@ -94,7 +103,7 @@ const removeFile = (index) => {
 
 const onConfirm = () => {
     if (!selectedFiles.value.length) return;
-    emit('confirm', selectedFiles.value);
+    emit('confirm', { files: selectedFiles.value, folderId: folderId.value });
 };
 </script>
 
@@ -137,6 +146,21 @@ const onConfirm = () => {
                     <span class="font-semibold text-[#1f6f46] dark:text-emerald-400">Publish</span>
                     and shared with your team.
                 </p>
+            </div>
+
+            <!-- Optional Folder -->
+            <div v-if="folders.length" class="flex flex-col gap-1.5">
+                <label class="text-xs font-semibold text-slate-700 dark:text-surface-200">
+                    Destination Folder <span class="font-normal text-slate-400">(optional)</span>
+                </label>
+                <Select
+                    v-model="folderId"
+                    :options="folderOptions"
+                    option-label="name"
+                    option-value="id"
+                    fluid
+                    class="!rounded-xl"
+                />
             </div>
 
             <!-- Hidden File Input -->
