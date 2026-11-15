@@ -2,11 +2,35 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class NotificationController extends Controller
 {
+    /**
+     * Ambil daftar notifikasi terbaru user (dipakai untuk auto-check/polling ringan).
+     */
+    public function index(Request $request): JsonResponse
+    {
+        if (! Schema::hasTable('notifications')) {
+            return response()->json(['unread_count' => 0, 'items' => []]);
+        }
+
+        $user = $request->user();
+
+        return response()->json([
+            'unread_count' => $user->unreadNotifications()->limit(100)->toBase()->get(['id'])->count(),
+            'items' => $user->notifications()->latest()->limit(15)->get()->map(fn ($n) => [
+                'id' => $n->id,
+                'data' => $n->data,
+                'read_at' => $n->read_at?->toISOString(),
+                'created_at' => $n->created_at?->toISOString(),
+            ]),
+        ]);
+    }
+
     /**
      * Tandai satu notifikasi milik user sebagai sudah dibaca.
      */

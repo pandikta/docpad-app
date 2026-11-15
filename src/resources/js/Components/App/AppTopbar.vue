@@ -1,10 +1,11 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import InputText from 'primevue/inputtext';
 import Popover from 'primevue/popover';
+import { useToast } from 'primevue/usetoast';
 import { useDarkMode } from '@/composables/useDarkMode';
 import { useDocumentSearch } from '@/composables/useDocumentSearch';
 import { useLocale } from '@/composables/useLocale';
@@ -13,6 +14,7 @@ import { formatDateTime, getInitials } from '@/utils/formatters';
 defineEmits(['toggle-sidebar']);
 
 const page = usePage();
+const toast = useToast();
 const { isDark, toggleDarkMode } = useDarkMode();
 const { searchQuery, clearSearch } = useDocumentSearch();
 const { locale, setLocale, t } = useLocale();
@@ -37,13 +39,62 @@ const onSearchEnter = () => {
     }
 };
 
-onMounted(() => window.addEventListener('keydown', onShortcut));
-onBeforeUnmount(() => window.removeEventListener('keydown', onShortcut));
+onMounted(() => {
+    window.addEventListener('keydown', onShortcut);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    notifPollTimer = setInterval(fetchNotifications, 30000);
+});
+onBeforeUnmount(() => {
+    window.removeEventListener('keydown', onShortcut);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    if (notifPollTimer) clearInterval(notifPollTimer);
+});
 
-// Notifications
+// Notifications (auto-check tiap 30 detik saat tab aktif)
 const notifMenu = ref(null);
-const notifications = computed(() => page.props.notifications?.items ?? []);
-const unreadCount = computed(() => Number(page.props.notifications?.unread_count ?? 0));
+const notifications = ref(page.props.notifications?.items ?? []);
+const unreadCount = ref(Number(page.props.notifications?.unread_count ?? 0));
+let notifPollTimer = null;
+
+watch(
+    () => page.props.notifications,
+    (next) => {
+        if (!next) return;
+        notifications.value = next.items ?? [];
+        unreadCount.value = Number(next.unread_count ?? 0);
+    },
+);
+
+const fetchNotifications = async () => {
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+    if (!page.props.auth?.user) return;
+
+    try {
+        const { data } = await window.axios.get(route('notifications.index'));
+        const nextUnread = Number(data?.unread_count ?? 0);
+        const nextItems = Array.isArray(data?.items) ? data.items : [];
+
+        if (nextUnread > unreadCount.value && nextItems.length) {
+            toast.add({
+                severity: 'info',
+                summary: t('topbar.notifications'),
+                detail: formatNotifText(nextItems[0]),
+                life: 4000,
+            });
+        }
+
+        notifications.value = nextItems;
+        unreadCount.value = nextUnread;
+    } catch {
+        // Abaikan error polling (mis. saat session habis atau offline)
+    }
+};
+
+const onVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+        fetchNotifications();
+    }
+};
 
 const toggleNotifMenu = (event) => notifMenu.value?.toggle(event);
 
