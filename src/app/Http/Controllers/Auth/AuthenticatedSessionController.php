@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -48,5 +49,39 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login');
+    }
+
+    /**
+     * Ambil CSRF token baru saat session sebelumnya sudah kedaluwarsa.
+     */
+    public function reloginCsrf(Request $request): JsonResponse
+    {
+        return response()->json([
+            'csrf_token' => $request->session()->token(),
+        ]);
+    }
+
+    /**
+     * Re-autentikasi user dari modal Access Relogin tanpa kehilangan halaman aktif.
+     */
+    public function relogin(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
+        if (! Auth::attempt(['email' => $validated['email'], 'password' => $validated['password']])) {
+            return response()->json([
+                'message' => 'Incorrect password. Please try again.',
+            ], 422);
+        }
+
+        $request->session()->regenerate();
+
+        return response()->json([
+            'ok' => true,
+            'csrf_token' => $request->session()->token(),
+        ]);
     }
 }

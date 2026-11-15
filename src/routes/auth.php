@@ -57,3 +57,8 @@ Route::middleware('auth')->group(function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
 });
+
+Route::get('relogin/csrf', [AuthenticatedSessionController::class, 'reloginCsrf'])
+    ->name('relogin.csrf');
+Route::post('relogin', [AuthenticatedSessionController::class, 'relogin'])
+    ->name('relogin');

@@ -1,10 +1,11 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { router, usePage } from '@inertiajs/vue3';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
 import AppSidebar from '@/Components/App/AppSidebar.vue';
 import AppTopbar from '@/Components/App/AppTopbar.vue';
+import SessionReloginDialog from '@/Components/App/SessionReloginDialog.vue';
 
 // Layout utama halaman setelah login: Sidebar + Topbar + konten halaman (slot).
 const sidebarOpen = ref(false);
@@ -22,19 +23,61 @@ const setSidebarMinimized = (value) => {
 const toggleSidebarMinimize = () => setSidebarMinimized(!sidebarMinimized.value);
 
 // Tampilkan flash message `success` dari backend sebagai toast (berlaku untuk semua halaman).
+const page = usePage();
 const toast = useToast();
-let removeListener = null;
+const reloginVisible = ref(false);
+const userEmail = computed(() => page.props.auth?.user?.email ?? '');
+const sessionLifetimeMs = computed(() => Math.max(1, Number(page.props.sessionLifetime ?? 120)) * 60 * 1000);
+
+let removeSuccessListener = null;
+let removeFinishListener = null;
+let removeInvalidListener = null;
+let sessionTimer = null;
+
+const resetSessionTimer = () => {
+    if (sessionTimer) clearTimeout(sessionTimer);
+    if (!userEmail.value || reloginVisible.value) return;
+
+    sessionTimer = setTimeout(() => {
+        reloginVisible.value = true;
+    }, sessionLifetimeMs.value);
+};
+
+const onReloggedIn = () => {
+    reloginVisible.value = false;
+    resetSessionTimer();
+    toast.add({ severity: 'success', summary: 'Session Restored', detail: 'Welcome back!', life: 2500 });
+};
 
 onMounted(() => {
-    removeListener = router.on('success', (event) => {
+    resetSessionTimer();
+
+    removeSuccessListener = router.on('success', (event) => {
         const message = event.detail.page.props.flash?.success;
         if (message) {
             toast.add({ severity: 'success', summary: 'Success', detail: message, life: 3000 });
         }
     });
+
+    removeFinishListener = router.on('finish', () => {
+        resetSessionTimer();
+    });
+
+    removeInvalidListener = router.on('invalid', (event) => {
+        const status = event.detail.response?.status;
+        if (status === 419 || status === 401) {
+            event.preventDefault();
+            reloginVisible.value = true;
+        }
+    });
 });
 
-onBeforeUnmount(() => removeListener?.());
+onBeforeUnmount(() => {
+    if (sessionTimer) clearTimeout(sessionTimer);
+    removeSuccessListener?.();
+    removeFinishListener?.();
+    removeInvalidListener?.();
+});
 </script>
 
 <template>
@@ -59,5 +102,11 @@ onBeforeUnmount(() => removeListener?.());
                 <slot />
             </main>
         </div>
+
+        <SessionReloginDialog
+            :visible="reloginVisible"
+            :email="userEmail"
+            @relogged-in="onReloggedIn"
+        />
     </div>
 </template>
