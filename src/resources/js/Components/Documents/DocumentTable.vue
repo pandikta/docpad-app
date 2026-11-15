@@ -4,6 +4,9 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import Menu from 'primevue/menu';
+import Popover from 'primevue/popover';
+import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
 import { useAuth } from '@/composables/useAuth';
 import { useDocumentSearch } from '@/composables/useDocumentSearch';
 import { formatFileSize, formatDateTime } from '@/utils/formatters';
@@ -29,8 +32,130 @@ const isOwner = (doc) => Boolean(doc && user.value?.id && Number(doc.user_id) ==
 
 const { searchQuery, clearSearch, matchesDocument } = useDocumentSearch();
 
+const columnFilters = ref({
+    name: '',
+    visibility: null,
+    size: '',
+    teams: '',
+    created: '',
+    updated: '',
+});
+
+const visibilityFilterOptions = [
+    { label: 'Publish', value: 'publish' },
+    { label: 'Private', value: 'private' },
+];
+
+const columnLabels = {
+    name: 'Name',
+    visibility: 'Visibility',
+    size: 'Size',
+    teams: 'Teams',
+    created: 'Created At',
+    updated: 'Updated At',
+};
+
+const filterPopover = ref(null);
+const activeFilterColumn = ref(null);
+const draftFilterValue = ref('');
+
+const activeColumnLabel = computed(() => columnLabels[activeFilterColumn.value] ?? '');
+
+const isColumnFiltered = (key) => {
+    const val = columnFilters.value[key];
+    return typeof val === 'string' ? val.trim() !== '' : Boolean(val);
+};
+
+const openFilterPopover = (event, key) => {
+    activeFilterColumn.value = key;
+    draftFilterValue.value = columnFilters.value[key] ?? (key === 'visibility' ? null : '');
+    filterPopover.value.toggle(event);
+};
+
+const applyColumnFilter = () => {
+    if (!activeFilterColumn.value) return;
+    columnFilters.value[activeFilterColumn.value] = draftFilterValue.value;
+    filterPopover.value.hide();
+};
+
+const resetActiveColumnFilter = () => {
+    if (!activeFilterColumn.value) return;
+    columnFilters.value[activeFilterColumn.value] = activeFilterColumn.value === 'visibility' ? null : '';
+    draftFilterValue.value = columnFilters.value[activeFilterColumn.value];
+    filterPopover.value.hide();
+};
+
+const hasActiveColumnFilters = computed(() =>
+    Boolean(
+        columnFilters.value.name.trim() ||
+            columnFilters.value.visibility ||
+            columnFilters.value.size.trim() ||
+            columnFilters.value.teams.trim() ||
+            columnFilters.value.created.trim() ||
+            columnFilters.value.updated.trim(),
+    ),
+);
+
+const clearColumnFilters = () => {
+    columnFilters.value = {
+        name: '',
+        visibility: null,
+        size: '',
+        teams: '',
+        created: '',
+        updated: '',
+    };
+};
+
+const matchesColumnFilters = (doc) => {
+    const f = columnFilters.value;
+
+    if (f.name.trim() && !String(doc.name ?? '').toLowerCase().includes(f.name.trim().toLowerCase())) {
+        return false;
+    }
+
+    if (f.visibility && (doc.visibility ?? 'publish') !== f.visibility) {
+        return false;
+    }
+
+    if (f.size.trim()) {
+        const sizeText = `${formatFileSize(doc.size)} ${doc.size ?? ''}`.toLowerCase();
+        if (!sizeText.includes(f.size.trim().toLowerCase())) {
+            return false;
+        }
+    }
+
+    if (f.teams.trim()) {
+        const teamText =
+            doc.visibility === 'private'
+                ? 'private only'
+                : doc.teams?.length
+                  ? doc.teams.map((t) => t.name).join(' ')
+                  : 'unassigned';
+        if (!teamText.toLowerCase().includes(f.teams.trim().toLowerCase())) {
+            return false;
+        }
+    }
+
+    if (f.created.trim()) {
+        const createdText = `${doc.created_by ?? ''} ${formatDateTime(doc.created_at)}`.toLowerCase();
+        if (!createdText.includes(f.created.trim().toLowerCase())) {
+            return false;
+        }
+    }
+
+    if (f.updated.trim()) {
+        const updatedText = formatDateTime(doc.updated_at).toLowerCase();
+        if (!updatedText.includes(f.updated.trim().toLowerCase())) {
+            return false;
+        }
+    }
+
+    return true;
+};
+
 const filteredDocuments = computed(() => {
-    return props.documents.filter((doc) => matchesDocument(doc));
+    return props.documents.filter((doc) => matchesDocument(doc) && matchesColumnFilters(doc));
 });
 
 // Menu popup untuk tombol titik tiga (More actions)
@@ -116,6 +241,15 @@ const actionBtnClass =
                         <i class="pi pi-times text-[10px]"></i>
                     </button>
                 </span>
+                <button
+                    v-if="hasActiveColumnFilters"
+                    type="button"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-[#1f6f46] hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 cursor-pointer transition-colors"
+                    @click="clearColumnFilters"
+                >
+                    <i class="pi pi-filter-slash text-[10px]"></i>
+                    <span>Clear filters</span>
+                </button>
             </div>
             <slot name="header-actions" />
         </header>
@@ -135,20 +269,47 @@ const actionBtnClass =
                     <p v-if="searchQuery.trim()">
                         No documents matching <span class="font-semibold">"{{ searchQuery.trim() }}"</span>.
                     </p>
+                    <p v-else-if="hasActiveColumnFilters">
+                        No documents matching your column filters.
+                    </p>
                     <p v-else>No documents found.</p>
-                    <button
-                        v-if="searchQuery.trim()"
-                        type="button"
-                        class="mt-2 text-xs font-semibold text-[#1f6f46] dark:text-emerald-400 hover:underline cursor-pointer"
-                        @click="clearSearch"
-                    >
-                        Clear search
-                    </button>
+                    <div v-if="searchQuery.trim() || hasActiveColumnFilters" class="mt-2 flex items-center justify-center gap-3">
+                        <button
+                            v-if="searchQuery.trim()"
+                            type="button"
+                            class="text-xs font-semibold text-[#1f6f46] dark:text-emerald-400 hover:underline cursor-pointer"
+                            @click="clearSearch"
+                        >
+                            Clear search
+                        </button>
+                        <button
+                            v-if="hasActiveColumnFilters"
+                            type="button"
+                            class="text-xs font-semibold text-[#1f6f46] dark:text-emerald-400 hover:underline cursor-pointer"
+                            @click="clearColumnFilters"
+                        >
+                            Clear column filters
+                        </button>
+                    </div>
                 </div>
             </template>
 
             <!-- Name -->
-            <Column field="name" header="Name">
+            <Column field="name" sortable>
+                <template #header>
+                    <div class="flex items-center justify-between gap-2 w-full">
+                        <span>Name</span>
+                        <button
+                            type="button"
+                            v-tooltip.top="'Search Name'"
+                            class="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-surface-800 cursor-pointer transition-colors"
+                            :class="isColumnFiltered('name') ? 'text-[#1f6f46] dark:text-emerald-400' : 'text-slate-400 dark:text-surface-400'"
+                            @click.stop="openFilterPopover($event, 'name')"
+                        >
+                            <i class="pi pi-search text-xs"></i>
+                        </button>
+                    </div>
+                </template>
                 <template #body="{ data }">
                     <button
                         type="button"
@@ -162,7 +323,21 @@ const actionBtnClass =
             </Column>
 
             <!-- Visibility -->
-            <Column field="visibility" header="Visibility">
+            <Column field="visibility" sortable>
+                <template #header>
+                    <div class="flex items-center justify-between gap-2 w-full">
+                        <span>Visibility</span>
+                        <button
+                            type="button"
+                            v-tooltip.top="'Filter Visibility'"
+                            class="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-surface-800 cursor-pointer transition-colors"
+                            :class="isColumnFiltered('visibility') ? 'text-[#1f6f46] dark:text-emerald-400' : 'text-slate-400 dark:text-surface-400'"
+                            @click.stop="openFilterPopover($event, 'visibility')"
+                        >
+                            <i class="pi pi-search text-xs"></i>
+                        </button>
+                    </div>
+                </template>
                 <template #body="{ data }">
                     <span
                         v-if="data.visibility === 'private'"
@@ -182,12 +357,40 @@ const actionBtnClass =
             </Column>
 
             <!-- Size -->
-            <Column field="size" header="Size">
+            <Column field="size" sortable>
+                <template #header>
+                    <div class="flex items-center justify-between gap-2 w-full">
+                        <span>Size</span>
+                        <button
+                            type="button"
+                            v-tooltip.top="'Search Size'"
+                            class="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-surface-800 cursor-pointer transition-colors"
+                            :class="isColumnFiltered('size') ? 'text-[#1f6f46] dark:text-emerald-400' : 'text-slate-400 dark:text-surface-400'"
+                            @click.stop="openFilterPopover($event, 'size')"
+                        >
+                            <i class="pi pi-search text-xs"></i>
+                        </button>
+                    </div>
+                </template>
                 <template #body="{ data }">{{ formatFileSize(data.size) }}</template>
             </Column>
 
             <!-- Teams (khusus Superadmin) -->
-            <Column v-if="isSuperAdmin" header="Teams">
+            <Column v-if="isSuperAdmin">
+                <template #header>
+                    <div class="flex items-center justify-between gap-2 w-full">
+                        <span>Teams</span>
+                        <button
+                            type="button"
+                            v-tooltip.top="'Search Teams'"
+                            class="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-surface-800 cursor-pointer transition-colors"
+                            :class="isColumnFiltered('teams') ? 'text-[#1f6f46] dark:text-emerald-400' : 'text-slate-400 dark:text-surface-400'"
+                            @click.stop="openFilterPopover($event, 'teams')"
+                        >
+                            <i class="pi pi-search text-xs"></i>
+                        </button>
+                    </div>
+                </template>
                 <template #body="{ data }">
                     <span
                         v-if="data.visibility === 'private'"
@@ -221,7 +424,21 @@ const actionBtnClass =
             </Column>
 
             <!-- Created At (siapa yang membuat & jamnya) -->
-            <Column field="created_at" header="Created At">
+            <Column field="created_at" sortable>
+                <template #header>
+                    <div class="flex items-center justify-between gap-2 w-full">
+                        <span>Created At</span>
+                        <button
+                            type="button"
+                            v-tooltip.top="'Search Created At'"
+                            class="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-surface-800 cursor-pointer transition-colors"
+                            :class="isColumnFiltered('created') ? 'text-[#1f6f46] dark:text-emerald-400' : 'text-slate-400 dark:text-surface-400'"
+                            @click.stop="openFilterPopover($event, 'created')"
+                        >
+                            <i class="pi pi-search text-xs"></i>
+                        </button>
+                    </div>
+                </template>
                 <template #body="{ data }">
                     <div class="flex flex-col">
                         <span class="text-sm font-medium text-slate-700 dark:text-surface-100">
@@ -235,7 +452,21 @@ const actionBtnClass =
             </Column>
 
             <!-- Updated At -->
-            <Column field="updated_at" header="Updated At">
+            <Column field="updated_at" sortable>
+                <template #header>
+                    <div class="flex items-center justify-between gap-2 w-full">
+                        <span>Updated At</span>
+                        <button
+                            type="button"
+                            v-tooltip.top="'Search Updated At'"
+                            class="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-surface-800 cursor-pointer transition-colors"
+                            :class="isColumnFiltered('updated') ? 'text-[#1f6f46] dark:text-emerald-400' : 'text-slate-400 dark:text-surface-400'"
+                            @click.stop="openFilterPopover($event, 'updated')"
+                        >
+                            <i class="pi pi-search text-xs"></i>
+                        </button>
+                    </div>
+                </template>
                 <template #body="{ data }">{{ formatDateTime(data.updated_at) }}</template>
             </Column>
 
@@ -283,5 +514,47 @@ const actionBtnClass =
         </DataTable>
 
         <Menu ref="moreMenu" :model="moreMenuItems" popup />
+
+        <Popover ref="filterPopover" class="w-72">
+            <div class="space-y-3 p-1">
+                <Select
+                    v-if="activeFilterColumn === 'visibility'"
+                    v-model="draftFilterValue"
+                    :options="visibilityFilterOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Select Visibility"
+                    appendTo="self"
+                    showClear
+                    class="w-full"
+                />
+                <InputText
+                    v-else
+                    v-model="draftFilterValue"
+                    :placeholder="`Search ${activeColumnLabel}`"
+                    class="w-full"
+                    autofocus
+                    @keydown.enter="applyColumnFilter"
+                />
+
+                <div class="flex items-center gap-2">
+                    <Button
+                        label="Search"
+                        size="small"
+                        class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white !rounded-full !px-4"
+                        @click="applyColumnFilter"
+                    />
+                    <Button
+                        v-if="activeFilterColumn && isColumnFiltered(activeFilterColumn)"
+                        label="Reset"
+                        severity="secondary"
+                        variant="outlined"
+                        size="small"
+                        class="!rounded-full"
+                        @click="resetActiveColumnFilter"
+                    />
+                </div>
+            </div>
+        </Popover>
     </section>
 </template>
