@@ -12,6 +12,7 @@ import DocumentLogsDialog from '@/Components/Documents/DocumentLogsDialog.vue';
 import DocumentRenameDialog from '@/Components/Documents/DocumentRenameDialog.vue';
 import DocumentAssignTeamsDialog from '@/Components/Documents/DocumentAssignTeamsDialog.vue';
 import DocumentDeleteDialog from '@/Components/Documents/DocumentDeleteDialog.vue';
+import DocumentUploadConfirmDialog from '@/Components/Documents/DocumentUploadConfirmDialog.vue';
 import { useAuth } from '@/composables/useAuth';
 import { useDocumentActions } from '@/composables/useDocumentActions';
 
@@ -110,13 +111,27 @@ const confirmDelete = (doc) => {
 
 // --- Upload --------------------------------------------------------------
 const fileInput = ref(null);
+const uploadConfirmVisible = ref(false);
+const pendingUploadFiles = ref([]);
 
 const onFileSelected = (event) => {
     const files = Array.from(event.target.files ?? []);
-    if (files.length) upload(files);
+    if (files.length) {
+        pendingUploadFiles.value = files;
+        uploadConfirmVisible.value = true;
+    }
 
     // reset supaya file yang sama bisa dipilih lagi
     event.target.value = '';
+};
+
+const confirmUpload = (files) => {
+    upload(files, {
+        onSuccess: () => {
+            uploadConfirmVisible.value = false;
+            pendingUploadFiles.value = [];
+        },
+    });
 };
 </script>
 
@@ -213,6 +228,13 @@ const onFileSelected = (event) => {
             :document="selectedDeleteDocument"
             :loading="deleting"
             @confirm="confirmDelete"
+        />
+
+        <DocumentUploadConfirmDialog
+            v-model:visible="uploadConfirmVisible"
+            :files="pendingUploadFiles"
+            :loading="uploading"
+            @confirm="confirmUpload"
         />
     </AppLayout>
 </template>

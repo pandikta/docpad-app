@@ -26,7 +26,7 @@ export function useDocumentActions() {
         });
     };
 
-    const upload = (files) => {
+    const upload = (files, { onSuccess } = {}) => {
         router.post(
             route('documents.store'),
             { files },
@@ -34,6 +34,7 @@ export function useDocumentActions() {
                 forceFormData: true,
                 preserveScroll: true,
                 onStart: () => (uploading.value = true),
+                onSuccess,
                 onError: (errors) => notifyError('Upload Failed', errors),
                 onFinish: () => (uploading.value = false),
             },
