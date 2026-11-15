@@ -195,6 +195,13 @@ const deleteUser = () => {
                         </template>
                     </Column>
 
+                    <Column field="last_login" header="Last Login">
+                        <template #body="{ data }">
+                            <span v-if="data.last_login">{{ formatDateTime(data.last_login) }}</span>
+                            <span v-else class="text-xs text-slate-400 italic">Never</span>
+                        </template>
+                    </Column>
+
                     <Column field="created_at" header="Joined">
                         <template #body="{ data }">{{ formatDateTime(data.created_at) }}</template>
                     </Column>

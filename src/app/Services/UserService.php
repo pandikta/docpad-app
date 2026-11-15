@@ -70,7 +70,7 @@ class UserService
         return User::with('team:id,team_name')
             ->orderByDesc('is_superadmin')
             ->orderBy('name')
-            ->get(['id', 'team_id', 'name', 'email', 'is_superadmin', 'created_at'])
+            ->get(['id', 'team_id', 'name', 'email', 'is_superadmin', 'last_login', 'created_at'])
             ->map(fn (User $user) => [
                 'id' => $user->id,
                 'team_id' => $user->team_id,
@@ -78,6 +78,7 @@ class UserService
                 'name' => $user->name,
                 'email' => $user->email,
                 'is_superadmin' => (bool) $user->is_superadmin,
+                'last_login' => $user->last_login?->toIso8601String(),
                 'created_at' => $user->created_at?->toIso8601String(),
             ]);
     }
