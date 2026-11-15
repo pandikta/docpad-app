@@ -1,10 +1,13 @@
 <script setup>
 import { ref } from 'vue';
+import { useLocale } from '@/composables/useLocale';
 
 defineProps({
     name: { type: String, default: '' },
-    subtitle: { type: String, default: "Manage your team's documents easily." },
+    subtitle: { type: String, default: '' },
 });
+
+const { t } = useLocale();
 
 const STORAGE_KEY = 'docpad_welcome_banner_hidden';
 
@@ -46,10 +49,10 @@ const dismiss = () => {
             <span class="hidden sm:block w-1 self-stretch rounded-full bg-[#1f6f46]"></span>
             <div>
                 <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#0f3d28] dark:text-surface-0">
-                    Welcome back, {{ name }}!
+                    {{ t('dashboard.welcome_title', { name }) }}
                 </h1>
                 <p class="mt-1 text-sm sm:text-base text-[#35574a] dark:text-surface-300">
-                    {{ subtitle }}
+                    {{ subtitle || t('dashboard.welcome_subtitle') }}
                 </p>
             </div>
         </div>

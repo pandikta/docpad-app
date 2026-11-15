@@ -4,6 +4,9 @@ import Dialog from 'primevue/dialog';
 import Select from 'primevue/select';
 import Button from 'primevue/button';
 import { formatFileSize } from '@/utils/formatters';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps({
     visible: { type: Boolean, default: false },
@@ -21,7 +24,7 @@ const folderId = ref(null);
 const isDragging = ref(false);
 
 const folderOptions = computed(() => [
-    { id: null, name: 'Uncategorized (No Folder)' },
+    { id: null, name: t('dashboard.uncategorized') },
     ...props.folders,
 ]);
 
@@ -119,7 +122,7 @@ const onConfirm = () => {
         <template #header>
             <div class="flex items-center gap-2.5">
                 <i class="pi pi-cloud-upload text-xl text-[#1f6f46] dark:text-emerald-400"></i>
-                <span class="text-lg font-bold text-slate-800 dark:text-surface-0">Upload Documents</span>
+                <span class="text-lg font-bold text-slate-800 dark:text-surface-0">{{ t('dialogs.upload_title') }}</span>
             </div>
         </template>
 
@@ -128,7 +131,7 @@ const onConfirm = () => {
             <div class="rounded-xl border border-slate-200 dark:border-surface-700 bg-slate-50/80 dark:bg-surface-900/50 p-3.5 space-y-2">
                 <div class="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-surface-200">
                     <i class="pi pi-info-circle text-[#1f6f46] dark:text-emerald-400"></i>
-                    <span>Allowed File Types &amp; Max Size</span>
+                    <span>{{ t('dialogs.upload_allowed') }}</span>
                 </div>
                 <div class="flex flex-wrap gap-1.5">
                     <span
@@ -199,14 +202,14 @@ const onConfirm = () => {
             <div v-if="selectedFiles.length" class="space-y-2">
                 <div class="flex items-center justify-between text-xs">
                     <span class="font-semibold text-slate-700 dark:text-surface-200">
-                        Selected Files ({{ selectedFiles.length }})
+                        {{ t('dialogs.upload_selected', { count: selectedFiles.length }) }}
                     </span>
                     <button
                         type="button"
                         class="text-slate-500 hover:text-red-500 font-medium cursor-pointer"
                         @click="selectedFiles = []"
                     >
-                        Clear all
+                        {{ t('table.clear') }}
                     </button>
                 </div>
 
@@ -251,9 +254,9 @@ const onConfirm = () => {
         </div>
 
         <template #footer>
-            <Button label="Cancel" severity="secondary" variant="outlined" :disabled="loading" @click="close" />
+            <Button :label="t('common.cancel')" severity="secondary" variant="outlined" :disabled="loading" @click="close" />
             <Button
-                :label="selectedFiles.length ? `Upload & Publish (${selectedFiles.length})` : 'Upload & Publish'"
+                :label="selectedFiles.length ? `${t('dialogs.upload_submit')} (${selectedFiles.length})` : t('dialogs.upload_submit')"
                 icon="pi pi-cloud-upload"
                 :loading="loading"
                 :disabled="!selectedFiles.length"

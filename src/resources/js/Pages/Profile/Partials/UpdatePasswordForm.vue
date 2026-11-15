@@ -3,6 +3,9 @@ import { computed } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import Password from 'primevue/password';
 import Button from 'primevue/button';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const form = useForm({
     current_password: '',
@@ -39,9 +42,9 @@ const updatePassword = () => {
                 <i class="pi pi-lock text-lg"></i>
             </div>
             <div>
-                <h2 class="text-lg font-bold text-slate-800 dark:text-surface-0">Update Password</h2>
+                <h2 class="text-lg font-bold text-slate-800 dark:text-surface-0">{{ t('profile.password_title') }}</h2>
                 <p class="mt-0.5 text-sm text-slate-500 dark:text-surface-400">
-                    Ensure your account is using a strong, random password to stay secure.
+                    {{ t('profile.password_desc') }}
                 </p>
             </div>
         </header>
@@ -50,7 +53,7 @@ const updatePassword = () => {
             <!-- Current Password -->
             <div class="flex flex-col gap-1.5">
                 <label for="current_password" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                    Current Password
+                    {{ t('profile.current_password') }}
                 </label>
                 <Password
                     input-id="current_password"
@@ -70,7 +73,7 @@ const updatePassword = () => {
             <!-- New Password -->
             <div class="flex flex-col gap-1.5">
                 <label for="password" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                    New Password
+                    {{ t('profile.new_password') }}
                 </label>
                 <Password
                     input-id="password"
@@ -89,7 +92,7 @@ const updatePassword = () => {
             <!-- Confirm Password -->
             <div class="flex flex-col gap-1.5">
                 <label for="password_confirmation" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                    Confirm New Password
+                    {{ t('profile.confirm_password') }}
                 </label>
                 <Password
                     input-id="password_confirmation"
@@ -118,7 +121,7 @@ const updatePassword = () => {
             <div class="pt-2 flex items-center gap-3">
                 <Button
                     type="submit"
-                    label="Update Password"
+                    :label="t('profile.password_title')"
                     icon="pi pi-key"
                     :loading="form.processing"
                     :disabled="passwordMismatch"

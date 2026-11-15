@@ -12,6 +12,9 @@ import InputText from 'primevue/inputtext';
 import Tag from 'primevue/tag';
 import { useToast } from 'primevue/usetoast';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps({
     menus: { type: Array, default: () => [] },
@@ -217,7 +220,7 @@ const resetUserOverride = (menu) => {
 </script>
 
 <template>
-    <Head title="Menu Authorization" />
+    <Head :title="t('settings.menu_auth')" />
 
     <AppLayout>
         <div class="mx-auto max-w-6xl space-y-6">
@@ -234,7 +237,7 @@ const resetUserOverride = (menu) => {
                         </div>
                         <div>
                             <h1 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-surface-0">
-                                Menu Authorization
+                                {{ t('settings.menu_auth') }}
                             </h1>
                             <p class="mt-0.5 text-sm text-slate-600 dark:text-surface-300">
                                 Manage dynamic sidebar/settings menus and control access per team or user.

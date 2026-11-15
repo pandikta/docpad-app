@@ -11,6 +11,9 @@ import InputText from 'primevue/inputtext';
 import Tag from 'primevue/tag';
 import { useToast } from 'primevue/usetoast';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps({
     functions: { type: Array, default: () => [] },
@@ -180,7 +183,7 @@ const resetUserOverride = (fn) => {
 </script>
 
 <template>
-    <Head title="Function Authorization" />
+    <Head :title="t('settings.function_auth')" />
 
     <AppLayout>
         <div class="mx-auto max-w-6xl space-y-6">
@@ -197,7 +200,7 @@ const resetUserOverride = (fn) => {
                         </div>
                         <div>
                             <h1 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-surface-0">
-                                Function Authorization
+                                {{ t('settings.function_auth') }}
                             </h1>
                             <p class="mt-0.5 text-sm text-slate-600 dark:text-surface-300">
                                 Register function permissions and control which actions each team or user can perform.

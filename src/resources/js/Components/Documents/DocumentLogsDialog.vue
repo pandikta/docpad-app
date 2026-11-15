@@ -1,6 +1,9 @@
 <script setup>
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 import { formatDateTime } from '@/utils/formatters';
 
 defineProps({
@@ -27,7 +30,7 @@ const close = () => emit('update:visible', false);
             <div class="flex flex-col">
                 <div class="flex items-center gap-2.5">
                     <i class="pi pi-history text-lg text-[#1f6f46] dark:text-emerald-400"></i>
-                    <span class="text-lg font-bold text-slate-800 dark:text-surface-0">Document Logs</span>
+                    <span class="text-lg font-bold text-slate-800 dark:text-surface-0">{{ t('dialogs.logs_title') }}</span>
                 </div>
                 <span v-if="document?.name" class="text-xs text-slate-500 dark:text-surface-400 mt-0.5">
                     {{ document.name }}
@@ -41,7 +44,7 @@ const close = () => emit('update:visible', false);
                 v-if="!document?.logs?.length"
                 class="py-8 text-center text-sm text-slate-500 dark:text-surface-400"
             >
-                No activity logs recorded yet.
+                {{ t('dialogs.logs_empty') }}
             </div>
 
             <!-- Timeline list -->
@@ -86,7 +89,7 @@ const close = () => emit('update:visible', false);
         </div>
 
         <template #footer>
-            <Button label="Close" severity="secondary" variant="outlined" @click="close" />
+            <Button :label="t('common.close')" severity="secondary" variant="outlined" @click="close" />
         </template>
     </Dialog>
 </template>

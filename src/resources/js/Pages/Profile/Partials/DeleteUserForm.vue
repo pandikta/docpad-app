@@ -4,6 +4,9 @@ import { useForm } from '@inertiajs/vue3';
 import Dialog from 'primevue/dialog';
 import Password from 'primevue/password';
 import Button from 'primevue/button';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const confirmingUserDeletion = ref(false);
 
@@ -37,21 +40,21 @@ const deleteUser = () => {
                 <i class="pi pi-exclamation-triangle text-lg"></i>
             </div>
             <div>
-                <h2 class="text-lg font-bold text-slate-800 dark:text-surface-0">Danger Zone</h2>
+                <h2 class="text-lg font-bold text-slate-800 dark:text-surface-0">{{ t('profile.delete_title') }}</h2>
                 <p class="mt-0.5 text-sm text-slate-500 dark:text-surface-400">
-                    Once your account is deleted, all of its resources and data will be permanently deleted.
+                    {{ t('profile.delete_desc') }}
                 </p>
             </div>
         </header>
 
         <div class="mt-5 flex flex-wrap items-center justify-between gap-4">
             <p class="text-sm text-slate-600 dark:text-surface-300 max-w-xl">
-                Before deleting your account, please download any documents or information that you wish to retain.
+                {{ t('profile.delete_desc') }}
             </p>
 
             <Button
                 type="button"
-                label="Delete Account"
+                :label="t('profile.delete_button')"
                 icon="pi pi-trash"
                 severity="danger"
                 class="!rounded-xl !font-semibold !px-5"
@@ -70,18 +73,18 @@ const deleteUser = () => {
             <template #header>
                 <div class="flex items-center gap-2.5">
                     <i class="pi pi-exclamation-triangle text-red-500"></i>
-                    <span class="text-lg font-bold text-slate-800 dark:text-surface-0">Delete Account</span>
+                    <span class="text-lg font-bold text-slate-800 dark:text-surface-0">{{ t('profile.delete_title') }}</span>
                 </div>
             </template>
 
             <form class="space-y-4" @submit.prevent="deleteUser">
                 <p class="text-sm text-slate-600 dark:text-surface-300 leading-relaxed">
-                    Are you sure you want to delete your account? Please enter your password to confirm permanent deletion.
+                    {{ t('profile.delete_confirm_desc') }}
                 </p>
 
                 <div class="flex flex-col gap-1.5">
                     <label for="delete_password" class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-surface-400">
-                        Confirm Password
+                        {{ t('profile.confirm_password') }}
                     </label>
                     <Password
                         input-id="delete_password"
@@ -99,9 +102,9 @@ const deleteUser = () => {
             </form>
 
             <template #footer>
-                <Button label="Cancel" severity="secondary" variant="outlined" @click="closeModal" />
+                <Button :label="t('common.cancel')" severity="secondary" variant="outlined" @click="closeModal" />
                 <Button
-                    label="Delete Account"
+                    :label="t('profile.delete_button')"
                     icon="pi pi-trash"
                     severity="danger"
                     :loading="form.processing"

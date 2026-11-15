@@ -3,6 +3,9 @@ import { ref, computed, watch } from 'vue';
 import Dialog from 'primevue/dialog';
 import Select from 'primevue/select';
 import Button from 'primevue/button';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps({
     visible: { type: Boolean, default: false },
@@ -46,17 +49,17 @@ const submit = () => emit('submit', selectedFolderId.value);
         <template #header>
             <div class="flex items-center gap-2.5">
                 <i class="pi pi-folder text-[#1f6f46] dark:text-emerald-400"></i>
-                <span class="text-lg font-bold text-slate-800 dark:text-surface-0">Move to Folder</span>
+                <span class="text-lg font-bold text-slate-800 dark:text-surface-0">{{ t('dialogs.move_folder_title') }}</span>
             </div>
         </template>
 
         <div class="space-y-3 pt-1">
             <p class="text-sm text-slate-600 dark:text-surface-300">
-                Choose a destination folder for {{ count }} selected {{ count === 1 ? 'document' : 'documents' }}.
+                {{ t('dialogs.move_folder_desc', { count }) }}
             </p>
 
             <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-semibold text-slate-700 dark:text-surface-200">Folder</label>
+                <label class="text-sm font-semibold text-slate-700 dark:text-surface-200">{{ t('dialogs.folder') }}</label>
                 <Select
                     v-model="selectedFolderId"
                     :options="folderOptions"
@@ -70,9 +73,9 @@ const submit = () => emit('submit', selectedFolderId.value);
         </div>
 
         <template #footer>
-            <Button label="Cancel" severity="secondary" variant="outlined" :disabled="loading" @click="close" />
+            <Button :label="t('common.cancel')" severity="secondary" variant="outlined" :disabled="loading" @click="close" />
             <Button
-                label="Move"
+                :label="t('table.move_folder')"
                 icon="pi pi-check"
                 :loading="loading"
                 class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white"

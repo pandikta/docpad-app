@@ -5,6 +5,9 @@ import Password from 'primevue/password';
 import Button from 'primevue/button';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps({
     visible: { type: Boolean, default: false },
@@ -117,18 +120,15 @@ const logout = async () => {
                 </div>
                 <div>
                     <h3 class="text-lg font-bold text-slate-800 dark:text-surface-0 leading-tight">
-                        Session Expired
+                        {{ t('session.title') }}
                     </h3>
-                    <p class="text-xs text-slate-500 dark:text-surface-400 mt-0.5">
-                        Re-authenticate to continue working
-                    </p>
                 </div>
             </div>
         </template>
 
         <form id="relogin-form" class="space-y-4 pt-1" @submit.prevent="submit">
             <p class="text-sm text-slate-600 dark:text-surface-300 leading-relaxed">
-                Sorry, your access session has expired. Please enter your password to unlock your session.
+                {{ t('session.subtitle') }}
             </p>
 
             <div
@@ -141,7 +141,7 @@ const logout = async () => {
 
             <div class="flex flex-col gap-2">
                 <label for="relogin-password" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                    Password
+                    {{ t('session.password') }}
                 </label>
                 <IconField>
                     <InputIcon class="pi pi-lock text-slate-400 z-10" />
@@ -168,7 +168,7 @@ const logout = async () => {
 
         <template #footer>
             <Button
-                label="Logout"
+                :label="t('session.logout')"
                 icon="pi pi-sign-out"
                 severity="secondary"
                 variant="outlined"
@@ -180,7 +180,7 @@ const logout = async () => {
             <Button
                 type="submit"
                 form="relogin-form"
-                label="Unlock Session"
+                :label="t('session.sign_in')"
                 icon="pi pi-unlock"
                 :loading="submitting"
                 :disabled="!password || loggingOut"

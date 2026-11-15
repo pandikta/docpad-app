@@ -15,7 +15,7 @@ defineEmits(['toggle-sidebar']);
 const page = usePage();
 const { isDark, toggleDarkMode } = useDarkMode();
 const { searchQuery, clearSearch } = useDocumentSearch();
-const { locale, setLocale } = useLocale();
+const { locale, setLocale, t } = useLocale();
 
 const userName = computed(() => page.props.auth.user?.name ?? '');
 const userEmail = computed(() => page.props.auth.user?.email ?? '');
@@ -74,7 +74,7 @@ const handleLogout = () => {
             <InputText
                 ref="searchInput"
                 v-model="searchQuery"
-                placeholder="Search by file name, content, or author...  (Ctrl + K)"
+                :placeholder="t('topbar.search_placeholder')"
                 fluid
                 class="!rounded-xl !pr-9 !bg-slate-50 dark:!bg-surface-800 !border-slate-200 dark:!border-surface-700"
                 @keydown.esc="clearSearch"
@@ -83,7 +83,7 @@ const handleLogout = () => {
             <button
                 v-if="searchQuery"
                 type="button"
-                title="Clear search (Esc)"
+                :title="t('topbar.clear_search')"
                 class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-surface-200 cursor-pointer"
                 @click="clearSearch"
             >
@@ -95,7 +95,7 @@ const handleLogout = () => {
             <!-- Dark mode -->
             <button
                 type="button"
-                :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+                :title="isDark ? t('topbar.switch_light') : t('topbar.switch_dark')"
                 class="flex items-center justify-center w-9 h-9 rounded-lg text-slate-600 dark:text-surface-300 hover:bg-slate-100 dark:hover:bg-surface-800 cursor-pointer"
                 @click="toggleDarkMode"
             >
@@ -134,7 +134,7 @@ const handleLogout = () => {
 
                     <!-- Change Language -->
                     <div class="border-b border-slate-100 pb-3 dark:border-surface-800">
-                        <p class="mb-2.5 text-xs font-semibold text-slate-600 dark:text-surface-300">Change Language</p>
+                        <p class="mb-2.5 text-xs font-semibold text-slate-600 dark:text-surface-300">{{ t('topbar.change_language') }}</p>
                         <div class="flex items-center gap-3">
                             <!-- English (UK Flag) -->
                             <button
@@ -197,7 +197,7 @@ const handleLogout = () => {
                             @click="goToProfile"
                         >
                             <i class="pi pi-user text-xs"></i>
-                            <span>Profile</span>
+                            <span>{{ t('topbar.profile') }}</span>
                         </button>
                         <button
                             type="button"
@@ -205,7 +205,7 @@ const handleLogout = () => {
                             @click="handleLogout"
                         >
                             <i class="pi pi-sign-out text-xs"></i>
-                            <span>Logout</span>
+                            <span>{{ t('topbar.logout') }}</span>
                         </button>
                     </div>
                 </div>

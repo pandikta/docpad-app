@@ -9,6 +9,9 @@ import Select from 'primevue/select';
 import ToggleSwitch from 'primevue/toggleswitch';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { formatDateTime } from '@/utils/formatters';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps({
     teamName: { type: String, default: 'My Team' },
@@ -142,7 +145,7 @@ const resetPermission = (member, fn) => {
 </script>
 
 <template>
-    <Head title="Team Control" />
+    <Head :title="t('team_control.page_title')" />
 
     <AppLayout>
         <div class="mx-auto max-w-6xl space-y-6">
@@ -151,16 +154,16 @@ const resetPermission = (member, fn) => {
                 <div>
                     <div class="flex items-center gap-2.5">
                         <i class="pi pi-shield text-2xl text-[#1f6f46] dark:text-emerald-400"></i>
-                        <h1 class="text-2xl font-bold text-slate-800 dark:text-surface-0">Team Control</h1>
+                        <h1 class="text-2xl font-bold text-slate-800 dark:text-surface-0">{{ t('team_control.page_title') }}</h1>
                         <Tag :value="teamName" severity="success" />
                     </div>
                     <p class="mt-1 text-sm text-slate-500 dark:text-surface-400">
-                        Manage active public share links and member document permissions for your team.
+                        {{ t('team_control.subtitle') }}
                     </p>
                 </div>
 
                 <Link :href="route('dashboard')">
-                    <Button label="Back to Documents" icon="pi pi-arrow-left" severity="secondary" variant="outlined" />
+                    <Button :label="t('common.back_to_dashboard')" icon="pi pi-arrow-left" severity="secondary" variant="outlined" />
                 </Link>
             </div>
 
@@ -177,7 +180,7 @@ const resetPermission = (member, fn) => {
                     @click="activeTab = 'links'"
                 >
                     <i class="pi pi-link text-xs"></i>
-                    <span>Active Share Links ({{ shareLinks.length }})</span>
+                    <span>{{ t('team_control.tab_links', { count: shareLinks.length }) }}</span>
                 </button>
 
                 <button
@@ -191,7 +194,7 @@ const resetPermission = (member, fn) => {
                     @click="activeTab = 'permissions'"
                 >
                     <i class="pi pi-users text-xs"></i>
-                    <span>Member Permissions ({{ members.length }})</span>
+                    <span>{{ t('team_control.tab_permissions', { count: members.length }) }}</span>
                 </button>
             </div>
 
@@ -204,11 +207,11 @@ const resetPermission = (member, fn) => {
                     <template #empty>
                         <div class="py-12 text-center text-slate-500 dark:text-surface-400">
                             <i class="pi pi-link-slash mb-2 text-3xl"></i>
-                            <p>No active public share links in this team.</p>
+                            <p>{{ t('team_control.empty_links') }}</p>
                         </div>
                     </template>
 
-                    <Column field="document_name" header="Document">
+                    <Column field="document_name" :header="t('team_control.col_document')">
                         <template #body="{ data }">
                             <div class="flex flex-col">
                                 <span class="font-semibold text-slate-800 dark:text-surface-0">{{ data.document_name }}</span>
@@ -217,16 +220,16 @@ const resetPermission = (member, fn) => {
                         </template>
                     </Column>
 
-                    <Column field="creator_name" header="Shared By" />
+                    <Column field="creator_name" :header="t('team_control.col_shared_by')" />
 
-                    <Column field="expires_at" header="Expires">
+                    <Column field="expires_at" :header="t('team_control.col_expires')">
                         <template #body="{ data }">
                             <span v-if="data.expires_at" class="text-sm">{{ formatDateTime(data.expires_at) }}</span>
-                            <Tag v-else value="Never Expires" severity="secondary" />
+                            <Tag v-else :value="t('team_control.never_expires')" severity="secondary" />
                         </template>
                     </Column>
 
-                    <Column header="Actions" headerClass="!text-right" bodyClass="!text-right">
+                    <Column :header="t('common.actions')" headerClass="!text-right" bodyClass="!text-right">
                         <template #body="{ data }">
                             <div class="flex justify-end gap-2">
                                 <Button
@@ -249,7 +252,7 @@ const resetPermission = (member, fn) => {
                                     rel="noopener noreferrer"
                                 />
                                 <Button
-                                    label="Revoke"
+                                    :label="t('team_control.revoke')"
                                     icon="pi pi-ban"
                                     severity="danger"
                                     variant="outlined"
@@ -270,7 +273,7 @@ const resetPermission = (member, fn) => {
                     class="rounded-2xl border border-slate-200 bg-white py-12 text-center text-slate-500 shadow-sm dark:border-surface-800 dark:bg-surface-900 dark:text-surface-400"
                 >
                     <i class="pi pi-users mb-2 text-3xl"></i>
-                    <p>No team members found to manage.</p>
+                    <p>{{ t('team_control.no_members') }}</p>
                 </div>
 
                 <template v-else>
@@ -278,7 +281,7 @@ const resetPermission = (member, fn) => {
                     <div class="flex flex-wrap items-end gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-surface-800 dark:bg-surface-900">
                         <div v-if="teamOptions.length > 2" class="flex w-full flex-col gap-1.5 sm:w-56">
                             <label class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-surface-400">
-                                Team
+                                {{ t('team_control.team_label') }}
                             </label>
                             <Select
                                 v-model="selectedTeamId"
@@ -291,7 +294,7 @@ const resetPermission = (member, fn) => {
 
                         <div class="flex min-w-0 flex-1 flex-col gap-1.5">
                             <label class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-surface-400">
-                                Select Member
+                                {{ t('team_control.select_member') }}
                             </label>
                             <Select
                                 v-model="selectedMemberId"
@@ -299,7 +302,7 @@ const resetPermission = (member, fn) => {
                                 optionLabel="label"
                                 optionValue="id"
                                 filter
-                                placeholder="Choose a team member"
+                                :placeholder="t('team_control.choose_member')"
                                 fluid
                             />
                         </div>
@@ -336,7 +339,7 @@ const resetPermission = (member, fn) => {
                                             v-if="hasUserOverride(selectedMember, fn)"
                                             class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
                                         >
-                                            Custom
+                                            {{ t('team_control.custom') }}
                                         </span>
                                     </div>
                                     <div class="flex items-center gap-2">
@@ -348,7 +351,7 @@ const resetPermission = (member, fn) => {
                                             :disabled="busyKey === `reset-${selectedMember.id}-${fn.id}`"
                                             @click="resetPermission(selectedMember, fn)"
                                         >
-                                            Reset
+                                            {{ t('common.reset') }}
                                         </button>
                                     </div>
                                 </div>

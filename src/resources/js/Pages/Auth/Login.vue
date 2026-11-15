@@ -8,6 +8,9 @@ import Button from 'primevue/button';
 import Message from 'primevue/message';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 defineProps({
     status: {
@@ -45,7 +48,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Sign In" />
+    <Head :title="t('auth.login_title')" />
 
     <div class="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-white dark:bg-surface-950">
         <!-- Left Column: Branding & Illustration Area -->
@@ -308,7 +311,7 @@ const submit = () => {
                     <!-- Password Field -->
                     <div class="flex flex-col gap-2">
                         <label for="password" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                            Password
+                            {{ t('auth.password') }}
                         </label>
                         <IconField>
                             <InputIcon class="pi pi-lock text-slate-400 z-10" />
@@ -340,7 +343,7 @@ const submit = () => {
                                 :binary="true"
                             />
                             <label for="remember" class="font-medium text-slate-600 dark:text-surface-300 cursor-pointer select-none">
-                                Remember me
+                                {{ t('auth.remember_me') }}
                             </label>
                         </div>
 
@@ -349,14 +352,14 @@ const submit = () => {
                             :href="route('password.request')"
                             class="font-semibold text-[#1f6f46] hover:text-[#165334] dark:text-emerald-400 transition-colors"
                         >
-                            Forgot password?
+                            {{ t('auth.forgot_password') }}
                         </Link>
                     </div>
 
                     <!-- Submit Button -->
                     <Button
                         type="submit"
-                        label="Sign In"
+                        :label="t('auth.login_button')"
                         icon="pi pi-arrow-right"
                         iconPos="left"
                         fluid

@@ -13,6 +13,9 @@ import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import { useToast } from 'primevue/usetoast';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps({
     extensions: { type: Array, default: () => [] },
@@ -138,7 +141,7 @@ const deleteItem = () => {
                         </div>
                         <div>
                             <h1 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-surface-0">
-                                Master Extensions
+                                {{ t('settings.master_extensions') }}
                             </h1>
                             <p class="mt-0.5 text-sm text-slate-600 dark:text-surface-300">
                                 Manage allowed file extensions for Create, Upload, and Rename document actions.
@@ -147,7 +150,7 @@ const deleteItem = () => {
                     </div>
 
                     <Button
-                        label="Add Extension"
+                        :label="t('settings.add_extension')"
                         icon="pi pi-plus"
                         class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white !font-semibold !rounded-xl !px-5"
                         @click="openCreate"
@@ -217,7 +220,7 @@ const deleteItem = () => {
                         </template>
                     </Column>
 
-                    <Column header="Actions" headerClass="!text-right" bodyClass="!text-right">
+                    <Column :header="t('common.actions')" headerClass="!text-right" bodyClass="!text-right">
                         <template #body="{ data }">
                             <div class="flex justify-end gap-2">
                                 <Button
@@ -254,7 +257,7 @@ const deleteItem = () => {
             <template #header>
                 <div class="flex items-center gap-2.5">
                     <i class="pi pi-file-check text-[#1f6f46] dark:text-emerald-400"></i>
-                    <span class="text-lg font-bold">{{ editingItem ? 'Edit Extension' : 'Add Extension' }}</span>
+                    <span class="text-lg font-bold">{{ editingItem ? t('settings.edit_extension') : t('settings.add_extension') }}</span>
                 </div>
             </template>
 
@@ -309,9 +312,9 @@ const deleteItem = () => {
             </form>
 
             <template #footer>
-                <Button label="Cancel" severity="secondary" variant="outlined" @click="dialogVisible = false" />
+                <Button :label="t('common.cancel')" severity="secondary" variant="outlined" @click="dialogVisible = false" />
                 <Button
-                    :label="editingItem ? 'Save Changes' : 'Create Extension'"
+                    :label="editingItem ? t('common.save_changes') : t('settings.add_extension')"
                     icon="pi pi-check"
                     :loading="form.processing"
                     class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white"

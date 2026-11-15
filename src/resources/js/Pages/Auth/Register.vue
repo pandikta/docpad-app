@@ -8,6 +8,9 @@ import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const toast = useToast();
 
@@ -61,7 +64,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
 </script>
 
 <template>
-    <Head title="Register" />
+    <Head :title="t('auth.register_title')" />
 
     <!-- Toast notification (top-center) -->
     <Toast position="top-center" />
@@ -261,7 +264,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                     <!-- Name -->
                     <div class="flex flex-col gap-2">
                         <label for="name" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                            Full Name
+                            {{ t('auth.name') }}
                         </label>
                         <IconField>
                             <InputIcon class="pi pi-user text-slate-400" />
@@ -283,7 +286,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                     <!-- Email -->
                     <div class="flex flex-col gap-2">
                         <label for="email" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                            Email Address
+                            {{ t('auth.email') }}
                         </label>
                         <IconField>
                             <InputIcon class="pi pi-envelope text-slate-400" />
@@ -305,7 +308,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                     <!-- Password -->
                     <div class="flex flex-col gap-2">
                         <label for="password" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                            Password
+                            {{ t('auth.password') }}
                         </label>
                         <IconField>
                             <InputIcon class="pi pi-lock text-slate-400 z-10" />
@@ -329,7 +332,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                     <!-- Confirm Password -->
                     <div class="flex flex-col gap-2">
                         <label for="password_confirmation" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                            Confirm Password
+                            {{ t('auth.confirm_password') }}
                         </label>
                         <IconField>
                             <InputIcon class="pi pi-lock text-slate-400 z-10" />
@@ -367,7 +370,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                     <!-- Submit -->
                     <Button
                         type="submit"
-                        label="Create Account"
+                        :label="t('auth.register_button')"
                         icon="pi pi-user-plus"
                         iconPos="left"
                         fluid
@@ -379,12 +382,12 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
 
                 <!-- Back to Login -->
                 <div class="mt-7 text-center text-sm text-slate-500 dark:text-surface-400">
-                    Already have an account?
+                    {{ t('auth.already_registered') }}
                     <Link
                         :href="route('login')"
                         class="font-semibold text-[#1f6f46] hover:text-[#165334] dark:text-emerald-400 transition-colors ml-1"
                     >
-                        Sign in
+                        {{ t('auth.login_button') }}
                     </Link>
                 </div>
             </div>

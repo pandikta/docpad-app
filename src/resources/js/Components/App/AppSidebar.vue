@@ -7,6 +7,7 @@ import InputText from 'primevue/inputtext';
 import { useToast } from 'primevue/usetoast';
 import AppLogo from '@/Components/App/AppLogo.vue';
 import { useAuth } from '@/composables/useAuth';
+import { useLocale } from '@/composables/useLocale';
 
 const props = defineProps({
     // Dipakai untuk membuka/menutup sidebar di layar kecil
@@ -19,6 +20,7 @@ const emit = defineEmits(['close', 'toggle-minimize', 'set-minimized']);
 
 const toast = useToast();
 const { isSuperAdmin, visibleMenus } = useAuth();
+const { t } = useLocale();
 
 // Fallback jika tabel mst_menus belum di-seed
 const fallbackMainMenus = [
@@ -284,7 +286,7 @@ const openSettingItem = (item) => {
             <!-- Menu Settings (Dikontrol Menu Authorization, Superadmin selalu bisa akses) -->
             <button
                 v-if="hasSettingsAccess"
-                v-tooltip.right="minimized ? 'Settings' : null"
+                v-tooltip.right="minimized ? t('sidebar.settings') : null"
                 type="button"
                 class="w-full flex items-center rounded-xl text-sm font-medium transition-colors cursor-pointer"
                 :class="[
@@ -298,7 +300,7 @@ const openSettingItem = (item) => {
                 @click="toggleSettingsPanel"
             >
                 <i class="pi pi-cog text-base leading-none"></i>
-                <span :class="minimized ? 'lg:hidden' : ''">Settings</span>
+                <span :class="minimized ? 'lg:hidden' : ''">{{ t('sidebar.settings') }}</span>
                 <span :class="minimized ? 'lg:hidden' : ''" class="ml-auto flex items-center">
                     <i
                         class="pi pi-chevron-right text-xs transition-transform"
@@ -342,7 +344,7 @@ const openSettingItem = (item) => {
             </button>
 
             <Link
-                v-tooltip.right="minimized ? 'Logout' : null"
+                v-tooltip.right="minimized ? t('sidebar.logout') : null"
                 :href="route('logout')"
                 method="post"
                 as="button"
@@ -354,7 +356,7 @@ const openSettingItem = (item) => {
                 "
             >
                 <i class="pi pi-sign-out text-base leading-none"></i>
-                <span :class="minimized ? 'lg:hidden' : ''">Logout</span>
+                <span :class="minimized ? 'lg:hidden' : ''">{{ t('sidebar.logout') }}</span>
             </Link>
         </div>
     </aside>
@@ -377,7 +379,7 @@ const openSettingItem = (item) => {
             <div class="flex items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
                     <i class="pi pi-cog text-2xl text-[#1f6f46] dark:text-emerald-400"></i>
-                    <h2 class="text-2xl font-bold text-slate-800 dark:text-surface-0">Settings</h2>
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-surface-0">{{ t('sidebar.settings') }}</h2>
                 </div>
                 <button
                     type="button"
@@ -394,7 +396,7 @@ const openSettingItem = (item) => {
                     <InputIcon class="pi pi-search" />
                     <InputText
                         v-model="settingsSearch"
-                        placeholder="  Find Menu Settings"
+                        :placeholder="t('sidebar.search_settings')"
                         fluid
                         class="!rounded-full !py-2.5 !px-5 !bg-slate-50 dark:!bg-surface-800 !border-slate-200 dark:!border-surface-700"
                     />
@@ -433,7 +435,7 @@ const openSettingItem = (item) => {
             </div>
 
             <div v-else class="mt-12 text-center text-slate-400 dark:text-surface-500 text-sm">
-                No setting menus matching "{{ settingsSearch.trim() }}".
+                {{ t('sidebar.no_settings_found') }}
             </div>
         </div>
     </Transition>

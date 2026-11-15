@@ -3,6 +3,9 @@ import { ref, computed, watch } from 'vue';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps({
     visible: { type: Boolean, default: false },
@@ -60,13 +63,13 @@ const onSubmit = () => {
         <template #header>
             <div class="flex items-center gap-2.5">
                 <i class="pi pi-pencil text-[#1f6f46] dark:text-emerald-400"></i>
-                <span class="text-lg font-bold text-slate-800 dark:text-surface-0">Rename Document</span>
+                <span class="text-lg font-bold text-slate-800 dark:text-surface-0">{{ t('dialogs.rename_title') }}</span>
             </div>
         </template>
 
         <form class="space-y-2 pt-1" @submit.prevent="onSubmit">
             <label for="doc-new-name" class="block text-sm font-medium text-slate-700 dark:text-surface-200">
-                Document Name
+                {{ t('dialogs.new_name') }}
             </label>
             <InputText
                 id="doc-new-name"
@@ -83,14 +86,14 @@ const onSubmit = () => {
                 <span>{{ validationError }}</span>
             </small>
             <small v-else class="text-slate-400 dark:text-surface-500 text-xs block">
-                Allowed extensions: .{{ extensions.join(', .') }}
+                {{ t('dialogs.upload_allowed') }} .{{ extensions.join(', .') }}
             </small>
         </form>
 
         <template #footer>
-            <Button label="Cancel" severity="secondary" variant="outlined" @click="close" />
+            <Button :label="t('common.cancel')" severity="secondary" variant="outlined" @click="close" />
             <Button
-                label="Save"
+                :label="t('common.save')"
                 icon="pi pi-check"
                 :loading="loading"
                 :disabled="!!validationError"

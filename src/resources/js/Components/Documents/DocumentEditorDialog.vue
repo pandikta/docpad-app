@@ -4,6 +4,9 @@ import Dialog from 'primevue/dialog';
 import Editor from 'primevue/editor';
 import Button from 'primevue/button';
 import { renderAsync } from 'docx-preview';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps({
     // v-model:visible
@@ -112,13 +115,13 @@ const save = () => emit('save', { ...props.document, content: content.value });
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1f6f46] hover:bg-[#185a38] text-white font-medium transition-colors"
                     >
                         <i class="pi pi-download text-[11px]"></i>
-                        <span>Download</span>
+                        <span>{{ t('share.download') }}</span>
                     </a>
                 </div>
 
                 <div v-if="docxLoading" class="py-16 text-center text-slate-500 dark:text-surface-400 space-y-2">
                     <i class="pi pi-spin pi-spinner text-2xl text-[#1f6f46]"></i>
-                    <p class="text-sm">Rendering document preview...</p>
+                    <p class="text-sm">{{ t('share.loading_preview') }}</p>
                 </div>
 
                 <div
@@ -149,14 +152,14 @@ const save = () => emit('save', { ...props.document, content: content.value });
                             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-surface-600 bg-white dark:bg-surface-900 text-slate-700 dark:text-surface-200 hover:border-[#1f6f46] hover:text-[#1f6f46] font-medium transition-colors"
                         >
                             <i class="pi pi-external-link text-[11px]"></i>
-                            <span>Open in New Tab</span>
+                            <span>{{ t('share.open_new_tab') }}</span>
                         </a>
                         <a
                             :href="route('documents.download', document.id)"
                             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1f6f46] hover:bg-[#185a38] text-white font-medium transition-colors"
                         >
                             <i class="pi pi-download text-[11px]"></i>
-                            <span>Download</span>
+                            <span>{{ t('share.download') }}</span>
                         </a>
                     </div>
                 </div>
@@ -172,14 +175,14 @@ const save = () => emit('save', { ...props.document, content: content.value });
             >
                 <i class="pi pi-file text-4xl text-slate-400"></i>
                 <p class="text-sm text-slate-600 dark:text-surface-300">
-                    Inline preview is not available for this file type.
+                    {{ t('share.preview_unavailable') }}
                 </p>
                 <a
                     :href="route('documents.download', document.id)"
                     class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1f6f46] hover:bg-[#185a38] text-white text-sm font-semibold transition-colors"
                 >
                     <i class="pi pi-download text-xs"></i>
-                    <span>Download File</span>
+                    <span>{{ t('share.download_file') }}</span>
                 </a>
             </div>
         </template>
@@ -187,10 +190,10 @@ const save = () => emit('save', { ...props.document, content: content.value });
         <Editor v-else v-model="content" :readonly="!canEdit" editorStyle="height: 22rem" />
 
         <template #footer>
-            <Button label="Close" severity="secondary" variant="outlined" @click="close" />
+            <Button :label="t('common.close')" severity="secondary" variant="outlined" @click="close" />
             <Button
                 v-if="canEdit && !isStoredFile"
-                label="Save"
+                :label="t('common.save')"
                 icon="pi pi-save"
                 :loading="saving"
                 class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white"

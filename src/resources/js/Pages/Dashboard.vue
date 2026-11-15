@@ -19,6 +19,7 @@ import DocumentShareDialog from '@/Components/Documents/DocumentShareDialog.vue'
 import DocumentUploadConfirmDialog from '@/Components/Documents/DocumentUploadConfirmDialog.vue';
 import { useAuth } from '@/composables/useAuth';
 import { useDocumentActions } from '@/composables/useDocumentActions';
+import { useLocale } from '@/composables/useLocale';
 
 const props = defineProps({
     documents: { type: Array, default: () => [] },
@@ -31,6 +32,7 @@ const props = defineProps({
 
 const page = usePage();
 const { can, isSuperAdmin, isTeamLeader } = useAuth();
+const { t } = useLocale();
 const {
     uploading,
     creating,
@@ -76,7 +78,7 @@ const formatStorageBytes = (bytes) => {
 const storageUsageLabel = computed(() => {
     const used = formatStorageBytes(props.storageQuota?.used_bytes ?? 0);
     const limitMb = props.storageQuota?.limit_mb;
-    const limit = limitMb === null || limitMb === undefined ? 'Unlimited' : `${limitMb} MB`;
+    const limit = limitMb === null || limitMb === undefined ? t('common.unlimited') : `${limitMb} MB`;
     return `${used} / ${limit}`;
 });
 
@@ -319,7 +321,7 @@ const confirmUpload = ({ files, folderId }) => {
 </script>
 
 <template>
-    <Head title="Documents" />
+    <Head :title="t('dashboard.page_title')" />
 
     <AppLayout>
         <div class="mx-auto max-w-6xl space-y-6">
@@ -327,13 +329,13 @@ const confirmUpload = ({ files, folderId }) => {
 
             <!-- Stats + Upload -->
             <div class="flex flex-wrap items-center gap-4">
-                <StatCard icon="pi pi-database" label="Storage Used" :value="storageUsageLabel" />
-                <StatCard icon="pi pi-file" label="Total Documents" :value="documents.length" />
+                <StatCard icon="pi pi-database" :label="t('dashboard.storage_used')" :value="storageUsageLabel" />
+                <StatCard icon="pi pi-file" :label="t('dashboard.total_documents')" :value="documents.length" />
 
                 <div v-if="can('documents.create') || can('documents.upload')" class="sm:ml-auto flex flex-wrap items-center gap-3">
                     <Button
                         v-if="can('documents.create')"
-                        label="Create File"
+                        :label="t('dashboard.create_file')"
                         icon="pi pi-plus"
                         severity="secondary"
                         variant="outlined"
@@ -342,7 +344,7 @@ const confirmUpload = ({ files, folderId }) => {
                     />
                     <Button
                         v-if="can('documents.upload')"
-                        label="Upload File"
+                        :label="t('dashboard.upload_file')"
                         icon="pi pi-cloud-upload"
                         :loading="uploading"
                         class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white !font-semibold !rounded-xl !px-6 !py-3"
@@ -364,7 +366,7 @@ const confirmUpload = ({ files, folderId }) => {
                     @click="activeFolderFilter = 'all'"
                 >
                     <i class="pi pi-th-large text-[11px]"></i>
-                    <span>All ({{ folderDocCount('all') }})</span>
+                    <span>{{ t('dashboard.all') }} ({{ folderDocCount('all') }})</span>
                 </button>
 
                 <button
@@ -383,7 +385,7 @@ const confirmUpload = ({ files, folderId }) => {
                     <span>{{ folder.name }} ({{ folderDocCount(folder.id) }})</span>
                     <span
                         class="ml-1 opacity-60 hover:opacity-100"
-                        title="Delete folder"
+                        :title="t('dashboard.delete_folder_tooltip')"
                         @click.stop="openDeleteFolder(folder)"
                     >
                         <i class="pi pi-times text-[10px]"></i>
@@ -400,7 +402,7 @@ const confirmUpload = ({ files, folderId }) => {
                     "
                     @click="activeFolderFilter = 'uncategorized'"
                 >
-                    <span>Uncategorized ({{ folderDocCount('uncategorized') }})</span>
+                    <span>{{ t('dashboard.uncategorized') }} ({{ folderDocCount('uncategorized') }})</span>
                 </button>
 
                 <button
@@ -409,7 +411,7 @@ const confirmUpload = ({ files, folderId }) => {
                     @click="newFolderDialogVisible = true"
                 >
                     <i class="pi pi-folder-plus text-[11px]"></i>
-                    <span>New Folder</span>
+                    <span>{{ t('dashboard.new_folder') }}</span>
                 </button>
             </div>
 
@@ -517,15 +519,15 @@ const confirmUpload = ({ files, folderId }) => {
             <template #header>
                 <div class="flex items-center gap-2.5">
                     <i class="pi pi-folder-plus text-[#1f6f46] dark:text-emerald-400"></i>
-                    <span class="text-lg font-bold text-slate-800 dark:text-surface-0">New Folder</span>
+                    <span class="text-lg font-bold text-slate-800 dark:text-surface-0">{{ t('dashboard.new_folder_title') }}</span>
                 </div>
             </template>
             <form id="new-folder-form" class="space-y-3 pt-1" @submit.prevent="submitCreateFolder">
                 <div class="flex flex-col gap-1.5">
-                    <label class="text-sm font-semibold text-slate-700 dark:text-surface-200">Folder Name</label>
+                    <label class="text-sm font-semibold text-slate-700 dark:text-surface-200">{{ t('dashboard.folder_name_label') }}</label>
                     <InputText
                         v-model="newFolderName"
-                        placeholder="e.g. SOP, Meeting Notes"
+                        :placeholder="t('dashboard.folder_name_placeholder')"
                         autofocus
                         required
                         fluid
@@ -534,11 +536,11 @@ const confirmUpload = ({ files, folderId }) => {
                 </div>
             </form>
             <template #footer>
-                <Button label="Cancel" severity="secondary" variant="outlined" @click="newFolderDialogVisible = false" />
+                <Button :label="t('common.cancel')" severity="secondary" variant="outlined" @click="newFolderDialogVisible = false" />
                 <Button
                     type="submit"
                     form="new-folder-form"
-                    label="Create Folder"
+                    :label="t('common.create')"
                     icon="pi pi-check"
                     :loading="managingFolder"
                     :disabled="!newFolderName.trim()"
@@ -558,18 +560,16 @@ const confirmUpload = ({ files, folderId }) => {
             <template #header>
                 <div class="flex items-center gap-2.5">
                     <i class="pi pi-exclamation-triangle text-red-500"></i>
-                    <span class="text-lg font-bold text-slate-800 dark:text-surface-0">Delete Folder</span>
+                    <span class="text-lg font-bold text-slate-800 dark:text-surface-0">{{ t('dashboard.delete_folder_title') }}</span>
                 </div>
             </template>
             <p class="text-sm text-slate-600 dark:text-surface-300 leading-relaxed">
-                Are you sure you want to delete folder
-                <span class="font-semibold text-slate-900 dark:text-surface-0">{{ selectedDeleteFolder?.name }}</span>?
-                Documents inside it will not be deleted and will become <span class="font-medium">Uncategorized</span>.
+                {{ t('dashboard.delete_folder_confirm', { name: selectedDeleteFolder?.name }) }}
             </p>
             <template #footer>
-                <Button label="Cancel" severity="secondary" variant="outlined" @click="deleteFolderVisible = false" />
+                <Button :label="t('common.cancel')" severity="secondary" variant="outlined" @click="deleteFolderVisible = false" />
                 <Button
-                    label="Delete Folder"
+                    :label="t('common.delete')"
                     icon="pi pi-trash"
                     severity="danger"
                     :loading="managingFolder"

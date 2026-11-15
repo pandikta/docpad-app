@@ -6,6 +6,9 @@ import { getInitials } from '@/utils/formatters';
 import DeleteUserForm from './Partials/DeleteUserForm.vue';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 defineProps({
     mustVerifyEmail: { type: Boolean, default: false },
@@ -19,7 +22,7 @@ const initials = computed(() => getInitials(user.value.name));
 </script>
 
 <template>
-    <Head title="Profile" />
+    <Head :title="t('profile.page_title')" />
 
     <AppLayout>
         <div class="mx-auto max-w-6xl space-y-6">

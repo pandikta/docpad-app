@@ -16,6 +16,9 @@ import InputIcon from 'primevue/inputicon';
 import { useToast } from 'primevue/usetoast';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { formatDateTime } from '@/utils/formatters';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps({
     users: { type: Array, default: () => [] },
@@ -157,7 +160,7 @@ const deleteUser = () => {
                         </div>
                         <div>
                             <h1 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-surface-0">
-                                Master Users
+                                {{ t('settings.master_users') }}
                             </h1>
                             <p class="mt-0.5 text-sm text-slate-600 dark:text-surface-300">
                                 Manage registered users, team assignments, and Superadmin roles.
@@ -166,7 +169,7 @@ const deleteUser = () => {
                     </div>
 
                     <Button
-                        label="Add User"
+                        :label="t('settings.add_user')"
                         icon="pi pi-user-plus"
                         class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white !font-semibold !rounded-xl !px-5"
                         @click="openCreate"
@@ -184,7 +187,7 @@ const deleteUser = () => {
 
                     <IconField class="w-full sm:w-72">
                         <InputIcon class="pi pi-search" />
-                        <InputText v-model="search" placeholder="Search name, email, or team..." fluid class="!rounded-xl" />
+                        <InputText v-model="search" :placeholder="t('settings.search_users')" fluid class="!rounded-xl" />
                     </IconField>
                 </header>
 
@@ -195,7 +198,7 @@ const deleteUser = () => {
                         </div>
                     </template>
 
-                    <Column field="name" header="Name">
+                    <Column field="name" :header="t('profile.name')">
                         <template #body="{ data }">
                             <div class="flex flex-col">
                                 <span class="font-semibold text-slate-800 dark:text-surface-0">{{ data.name }}</span>
@@ -204,7 +207,7 @@ const deleteUser = () => {
                         </template>
                     </Column>
 
-                    <Column header="Role">
+                    <Column :header="t('settings.role')">
                         <template #body="{ data }">
                             <Tag
                                 :value="data.is_superadmin ? 'Superadmin' : data.is_team_leader ? 'PM / Team Lead' : 'Member'"
@@ -213,22 +216,22 @@ const deleteUser = () => {
                         </template>
                     </Column>
 
-                    <Column header="Team">
+                    <Column :header="t('settings.team')">
                         <template #body="{ data }">
                             <span v-if="data.is_superadmin" class="text-xs text-slate-400 italic">All Teams</span>
                             <span v-else-if="data.team_name" class="text-sm font-medium text-slate-700 dark:text-surface-200">
                                 {{ data.team_name }}
                             </span>
-                            <span v-else class="text-xs text-slate-400">Unassigned</span>
+                            <span v-else class="text-xs text-slate-400">{{ t('table.unassigned') }}</span>
                         </template>
                     </Column>
 
-                    <Column header="Storage">
+                    <Column :header="t('settings.storage')">
                         <template #body="{ data }">
                             <div class="flex min-w-[8.5rem] flex-col gap-1">
                                 <span class="text-xs font-medium text-slate-700 dark:text-surface-200">
                                     {{ formatStorageBytes(data.storage_used_bytes) }} /
-                                    {{ data.storage_limit_mb ? `${data.storage_limit_mb} MB` : 'Unlimited' }}
+                                    {{ data.storage_limit_mb ? `${data.storage_limit_mb} MB` : t('common.unlimited') }}
                                 </span>
                                 <div
                                     v-if="data.storage_limit_mb"
@@ -244,18 +247,18 @@ const deleteUser = () => {
                         </template>
                     </Column>
 
-                    <Column field="last_login" header="Last Login">
+                    <Column field="last_login" :header="t('settings.last_login')">
                         <template #body="{ data }">
                             <span v-if="data.last_login">{{ formatDateTime(data.last_login) }}</span>
-                            <span v-else class="text-xs text-slate-400 italic">Never</span>
+                            <span v-else class="text-xs text-slate-400 italic">{{ t('common.never') }}</span>
                         </template>
                     </Column>
 
-                    <Column field="created_at" header="Joined">
+                    <Column field="created_at" :header="t('settings.joined')">
                         <template #body="{ data }">{{ formatDateTime(data.created_at) }}</template>
                     </Column>
 
-                    <Column header="Actions" headerClass="!text-right" bodyClass="!text-right">
+                    <Column :header="t('common.actions')" headerClass="!text-right" bodyClass="!text-right">
                         <template #body="{ data }">
                             <div class="flex justify-end gap-2">
                                 <Button
@@ -293,7 +296,7 @@ const deleteUser = () => {
             <template #header>
                 <div class="flex items-center gap-2.5">
                     <i class="pi pi-user text-[#1f6f46] dark:text-emerald-400"></i>
-                    <span class="text-lg font-bold">{{ editingUser ? 'Edit User' : 'Add User' }}</span>
+                    <span class="text-lg font-bold">{{ editingUser ? t('settings.edit_user') : t('settings.add_user') }}</span>
                 </div>
             </template>
 

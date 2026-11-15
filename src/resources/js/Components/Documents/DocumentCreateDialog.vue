@@ -5,6 +5,9 @@ import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
 import Editor from 'primevue/editor';
 import Button from 'primevue/button';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps({
     visible: { type: Boolean, default: false },
@@ -23,14 +26,14 @@ const folderId = ref(null);
 const content = ref('');
 
 const folderOptions = computed(() => [
-    { id: null, name: 'Uncategorized (No Folder)' },
+    { id: null, name: t('dashboard.uncategorized') },
     ...props.folders,
 ]);
 
-const visibilityOptions = [
-    { label: 'Publish (Shared with Team)', value: 'publish' },
-    { label: 'Private (Only Me)', value: 'private' },
-];
+const visibilityOptions = computed(() => [
+    { label: 'Publish', value: 'publish' },
+    { label: 'Private', value: 'private' },
+]);
 
 const BINARY_EXTENSIONS = new Set(['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx']);
 
@@ -113,7 +116,7 @@ const onSubmit = () => {
         <template #header>
             <div class="flex items-center gap-2.5">
                 <i class="pi pi-file-plus text-xl text-[#1f6f46] dark:text-emerald-400"></i>
-                <span class="text-lg font-bold text-slate-800 dark:text-surface-0">Create New File</span>
+                <span class="text-lg font-bold text-slate-800 dark:text-surface-0">{{ t('dialogs.create_title') }}</span>
             </div>
         </template>
 
@@ -122,7 +125,7 @@ const onSubmit = () => {
             <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
                 <div class="sm:col-span-6 flex flex-col gap-1.5">
                     <label for="create-doc-name" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                        File Name
+                        {{ t('dialogs.file_name') }}
                     </label>
                     <InputText
                         id="create-doc-name"
@@ -137,7 +140,7 @@ const onSubmit = () => {
 
                 <div class="sm:col-span-2 flex flex-col gap-1.5">
                     <label for="create-doc-ext" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                        Extension
+                        {{ t('dialogs.extension') }}
                     </label>
                     <Select
                         input-id="create-doc-ext"
@@ -152,7 +155,7 @@ const onSubmit = () => {
 
                 <div class="sm:col-span-4 flex flex-col gap-1.5">
                     <label for="create-doc-visibility" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                        Visibility
+                        {{ t('dialogs.visibility') }}
                     </label>
                     <Select
                         input-id="create-doc-visibility"
@@ -169,7 +172,7 @@ const onSubmit = () => {
             <!-- Optional Folder -->
             <div v-if="folders.length" class="flex flex-col gap-1.5">
                 <label for="create-doc-folder" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                    Folder <span class="text-xs font-normal text-slate-400">(optional)</span>
+                    {{ t('dialogs.folder') }}
                 </label>
                 <Select
                     input-id="create-doc-folder"
@@ -198,16 +201,16 @@ const onSubmit = () => {
             <!-- Content Editor (Optional) -->
             <div class="flex flex-col gap-1.5">
                 <label class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                    Content <span class="text-xs font-normal text-slate-400">(optional)</span>
+                    {{ t('dialogs.content_optional') }}
                 </label>
                 <Editor v-model="content" editorStyle="height: 16rem" />
             </div>
         </form>
 
         <template #footer>
-            <Button label="Cancel" severity="secondary" variant="outlined" @click="close" />
+            <Button :label="t('common.cancel')" severity="secondary" variant="outlined" @click="close" />
             <Button
-                label="Create File"
+                :label="t('common.create')"
                 icon="pi pi-check"
                 :loading="loading"
                 :disabled="!isValid"

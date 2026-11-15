@@ -4,6 +4,9 @@ import Dialog from 'primevue/dialog';
 import Select from 'primevue/select';
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps({
     visible: { type: Boolean, default: false },
@@ -39,7 +42,7 @@ const shareLink = computed(() => props.document?.share_link ?? null);
 
 const formattedExpiry = computed(() => {
     const expiresAt = shareLink.value?.expires_at;
-    if (!expiresAt) return 'Never expires';
+    if (!expiresAt) return t('dialogs.share_never_expires');
 
     return new Date(expiresAt).toLocaleString(undefined, {
         dateStyle: 'medium',
@@ -79,7 +82,7 @@ const revoke = () => emit('revoke');
         <template #header>
             <div class="flex items-center gap-2.5">
                 <i class="pi pi-share-alt text-[#1f6f46] dark:text-emerald-400"></i>
-                <span class="text-lg font-bold text-slate-800 dark:text-surface-0">Share Read-Only Link</span>
+                <span class="text-lg font-bold text-slate-800 dark:text-surface-0">{{ t('dialogs.share_title') }}</span>
             </div>
         </template>
 
@@ -89,13 +92,13 @@ const revoke = () => emit('revoke');
                     {{ document?.name }}
                 </p>
                 <p class="mt-0.5 text-xs text-slate-500 dark:text-surface-400">
-                    Anyone with this link can view this document in read-only mode without signing in.
+                    {{ t('dialogs.share_desc') }}
                 </p>
             </div>
 
             <div v-if="shareLink" class="space-y-3">
                 <div class="flex flex-col gap-1.5">
-                    <label class="text-sm font-semibold text-slate-700 dark:text-surface-200">Public Link</label>
+                    <label class="text-sm font-semibold text-slate-700 dark:text-surface-200">{{ t('dialogs.share_public_link') }}</label>
                     <div class="flex items-center gap-2">
                         <InputText
                             :modelValue="shareLink.url"
@@ -106,7 +109,7 @@ const revoke = () => emit('revoke');
                         />
                         <Button
                             :icon="copied ? 'pi pi-check' : 'pi pi-copy'"
-                            :label="copied ? 'Copied' : 'Copy'"
+                            :label="copied ? t('dialogs.share_copied') : t('dialogs.share_copy')"
                             :severity="copied ? 'success' : 'secondary'"
                             variant="outlined"
                             class="shrink-0"
@@ -118,10 +121,10 @@ const revoke = () => emit('revoke');
                 <div class="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50/70 px-3.5 py-2.5 text-xs text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300">
                     <span class="flex items-center gap-2 font-medium">
                         <i class="pi pi-clock"></i>
-                        Expires: {{ formattedExpiry }}
+                        {{ t('dialogs.share_expires', { date: formattedExpiry }) }}
                     </span>
                     <Button
-                        label="Open"
+                        :label="t('dialogs.share_open')"
                         icon="pi pi-external-link"
                         text
                         size="small"
@@ -136,7 +139,7 @@ const revoke = () => emit('revoke');
 
             <div class="flex flex-col gap-1.5">
                 <label class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                    {{ shareLink ? 'Generate New Link (replaces current link)' : 'Link Expiration' }}
+                    {{ shareLink ? t('dialogs.share_new_label') : t('dialogs.share_expiration_label') }}
                 </label>
                 <div class="flex items-center gap-2">
                     <Select
@@ -148,7 +151,7 @@ const revoke = () => emit('revoke');
                         class="!rounded-xl"
                     />
                     <Button
-                        :label="shareLink ? 'Regenerate' : 'Generate Link'"
+                        :label="shareLink ? t('dialogs.share_regenerate') : t('dialogs.share_generate')"
                         icon="pi pi-link"
                         :loading="loading"
                         class="shrink-0 !bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white"
@@ -161,14 +164,14 @@ const revoke = () => emit('revoke');
         <template #footer>
             <Button
                 v-if="shareLink"
-                label="Revoke Link"
+                :label="t('dialogs.share_revoke')"
                 icon="pi pi-ban"
                 severity="danger"
                 variant="outlined"
                 :loading="loading"
                 @click="revoke"
             />
-            <Button label="Close" severity="secondary" variant="outlined" :disabled="loading" @click="close" />
+            <Button :label="t('common.close')" severity="secondary" variant="outlined" :disabled="loading" @click="close" />
         </template>
     </Dialog>
 </template>

@@ -3,6 +3,9 @@ import { ref, watch } from 'vue';
 import Dialog from 'primevue/dialog';
 import MultiSelect from 'primevue/multiselect';
 import Button from 'primevue/button';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps({
     visible: { type: Boolean, default: false },
@@ -49,19 +52,18 @@ const onSubmit = () => {
         <template #header>
             <div class="flex items-center gap-2.5">
                 <i class="pi pi-users text-[#1f6f46] dark:text-emerald-400"></i>
-                <span class="text-lg font-bold text-slate-800 dark:text-surface-0">Assign Teams</span>
+                <span class="text-lg font-bold text-slate-800 dark:text-surface-0">{{ t('dialogs.assign_teams_title') }}</span>
             </div>
         </template>
 
         <form class="space-y-4 pt-1" @submit.prevent="onSubmit">
             <p class="text-sm text-slate-600 dark:text-surface-300 leading-relaxed">
-                Select which teams can view and edit
-                <span class="font-semibold text-slate-900 dark:text-surface-0">{{ document?.name }}</span>:
+                {{ t('dialogs.assign_teams_desc', { name: document?.name ?? '' }) }}
             </p>
 
             <div class="flex flex-col gap-1.5">
                 <label class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                    Assigned Teams
+                    {{ t('dialogs.assign_teams_title') }}
                 </label>
                 <MultiSelect
                     v-model="selectedTeamIds"
@@ -82,9 +84,9 @@ const onSubmit = () => {
         </form>
 
         <template #footer>
-            <Button label="Cancel" severity="secondary" variant="outlined" @click="close" />
+            <Button :label="t('common.cancel')" severity="secondary" variant="outlined" @click="close" />
             <Button
-                label="Save Assignment"
+                :label="t('common.save')"
                 icon="pi pi-check"
                 :loading="loading"
                 class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white !font-semibold"

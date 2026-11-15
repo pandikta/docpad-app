@@ -2,12 +2,14 @@
 import { computed } from 'vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import Button from 'primevue/button';
+import { useLocale } from '@/composables/useLocale';
 
 const props = defineProps({
     status: { type: Number, default: 500 },
 });
 
 const page = usePage();
+const { t } = useLocale();
 const user = computed(() => page.props.auth?.user ?? null);
 
 const userInitials = computed(() => {
@@ -20,74 +22,13 @@ const userInitials = computed(() => {
 });
 
 const errorCopy = computed(() => {
-    switch (props.status) {
-        case 400:
-            return {
-                title: 'Permintaan Tidak Valid',
-                line1: 'Permintaan yang dikirim tidak dapat dipahami oleh server.',
-                line2: 'Silakan muat ulang halaman dan coba lagi.',
-            };
-        case 401:
-            return {
-                title: 'Autentikasi Diperlukan',
-                line1: 'Sesi Anda belum terautentikasi atau telah berakhir.',
-                line2: 'Silakan login kembali untuk melanjutkan.',
-            };
-        case 404:
-            return {
-                title: 'Halaman Tidak Ditemukan',
-                line1: 'Halaman atau dokumen yang Anda cari tidak ditemukan atau telah dipindahkan.',
-                line2: 'Periksa kembali URL atau kembali ke Dashboard.',
-            };
-        case 405:
-            return {
-                title: 'Metode Tidak Diizinkan',
-                line1: 'Metode akses yang digunakan untuk halaman ini tidak diperbolehkan.',
-                line2: 'Silakan kembali ke Dashboard untuk melanjutkan.',
-            };
-        case 413:
-            return {
-                title: 'Ukuran File Terlalu Besar',
-                line1: 'File yang Anda unggah melebihi batas maksimal yang diizinkan server.',
-                line2: 'Silakan perkecil ukuran file atau unggah secara bertahap.',
-            };
-        case 503:
-            return {
-                title: 'Layanan Sedang Dalam Perbaikan',
-                line1: 'Sistem sedang dalam pemeliharaan atau sementara tidak tersedia.',
-                line2: 'Silakan coba lagi beberapa saat lagi.',
-            };
-        case 419:
-            return {
-                title: 'Sesi Telah Berakhir',
-                line1: 'Halaman sudah kedaluwarsa karena terlalu lama tidak aktif.',
-                line2: 'Silakan muat ulang halaman dan coba lagi.',
-            };
-        case 422:
-            return {
-                title: 'Data Tidak Valid',
-                line1: 'Permintaan yang dikirim tidak dapat diproses karena data tidak valid.',
-                line2: 'Periksa kembali input Anda lalu coba lagi.',
-            };
-        case 429:
-            return {
-                title: 'Terlalu Banyak Permintaan',
-                line1: 'Anda melakukan terlalu banyak permintaan dalam waktu singkat.',
-                line2: 'Silakan tunggu beberapa saat sebelum mencoba lagi.',
-            };
-        case 500:
-            return {
-                title: 'Terjadi Kesalahan pada Server',
-                line1: 'Maaf, saat ini kami mengalami kendala teknis.',
-                line2: 'Silakan coba lagi beberapa saat lagi.',
-            };
-        default:
-            return {
-                title: 'Terjadi Kesalahan',
-                line1: 'Maaf, permintaan Anda tidak dapat diproses saat ini.',
-                line2: 'Silakan coba lagi beberapa saat lagi.',
-            };
-    }
+    const knownStatuses = [400, 401, 404, 405, 413, 419, 422, 429, 500, 503];
+    const keyPrefix = knownStatuses.includes(props.status) ? `errors.${props.status}` : 'errors.default';
+    return {
+        title: t(`${keyPrefix}_title`),
+        line1: t(`${keyPrefix}_line1`),
+        line2: t(`${keyPrefix}_line2`),
+    };
 });
 
 const reloadPage = () => {
@@ -229,14 +170,14 @@ const reloadPage = () => {
 
             <div class="mt-7 flex flex-wrap items-center justify-center gap-3">
                 <Button
-                    label="Coba Lagi"
+                    :label="t('errors.try_again')"
                     icon="pi pi-refresh"
                     class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white !font-semibold !rounded-xl !px-6 !py-3 shadow-sm"
                     @click="reloadPage"
                 />
                 <Link href="/dashboard">
                     <Button
-                        label="Kembali ke Dashboard"
+                        :label="t('errors.back_dashboard')"
                         icon="pi pi-home"
                         severity="secondary"
                         variant="outlined"

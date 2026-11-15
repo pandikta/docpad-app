@@ -3,6 +3,9 @@ import { ref, computed, onMounted, nextTick } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import Button from 'primevue/button';
 import { renderAsync } from 'docx-preview';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps({
     expired: { type: Boolean, default: false },
@@ -92,7 +95,7 @@ onMounted(async () => {
                             <span class="text-sm font-bold tracking-tight text-slate-900 dark:text-surface-0">DocPad</span>
                             <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-[#1f6f46] dark:bg-emerald-950/60 dark:text-emerald-300">
                                 <i class="pi pi-eye text-[10px]"></i>
-                                Read-Only
+                                {{ t('share.read_only') }}
                             </span>
                         </div>
                         <p v-if="!expired && document" class="truncate text-xs text-slate-500 dark:text-surface-400">
@@ -104,7 +107,7 @@ onMounted(async () => {
                 <div v-if="!expired && document" class="flex items-center gap-2">
                     <Button
                         v-if="isPdf && document.preview_url"
-                        label="Open in New Tab"
+                        :label="t('share.open_new_tab')"
                         icon="pi pi-external-link"
                         severity="secondary"
                         variant="outlined"
@@ -115,7 +118,7 @@ onMounted(async () => {
                         rel="noopener noreferrer"
                     />
                     <Button
-                        label="Download"
+                        :label="t('share.download')"
                         icon="pi pi-download"
                         size="small"
                         as="a"
@@ -132,13 +135,13 @@ onMounted(async () => {
                 <i class="pi pi-link-slash text-2xl"></i>
             </div>
             <h1 class="mt-5 text-2xl font-bold text-slate-900 dark:text-surface-0">
-                Link Expired or Revoked
+                {{ t('share.expired_title') }}
             </h1>
             <p class="mt-2 text-sm text-slate-500 dark:text-surface-400">
-                This shared document link is no longer active. Please ask the document owner to generate a new share link.
+                {{ t('share.expired_desc') }}
             </p>
             <Link href="/login" class="mt-6">
-                <Button label="Go to DocPad Login" icon="pi pi-sign-in" severity="secondary" variant="outlined" />
+                <Button :label="t('share.go_login')" icon="pi pi-sign-in" severity="secondary" variant="outlined" />
             </Link>
         </main>
 
@@ -148,12 +151,12 @@ onMounted(async () => {
             <div class="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-500 shadow-xs dark:border-surface-800 dark:bg-surface-900 dark:text-surface-400">
                 <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
                     <span class="font-semibold text-slate-800 dark:text-surface-100">{{ document.name }}</span>
-                    <span>Size: {{ formattedSize }}</span>
-                    <span v-if="formattedUpdatedAt">Updated: {{ formattedUpdatedAt }}</span>
+                    <span>{{ t('share.size') }}: {{ formattedSize }}</span>
+                    <span v-if="formattedUpdatedAt">{{ t('share.updated') }}: {{ formattedUpdatedAt }}</span>
                 </div>
                 <span class="flex items-center gap-1.5">
                     <i class="pi pi-clock text-[11px]"></i>
-                    Expires: {{ formattedExpiresAt }}
+                    {{ t('share.expires') }}: {{ formattedExpiresAt }}
                 </span>
             </div>
 
@@ -172,7 +175,7 @@ onMounted(async () => {
             >
                 <div v-if="docxLoading" class="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
                     <i class="pi pi-spin pi-spinner"></i>
-                    <span>Loading document preview...</span>
+                    <span>{{ t('share.loading_preview') }}</span>
                 </div>
                 <div v-else-if="docxError" class="py-12 text-center text-sm text-red-500">
                     {{ docxError }}
@@ -189,13 +192,13 @@ onMounted(async () => {
                     <i class="pi pi-file text-2xl"></i>
                 </div>
                 <h2 class="mt-4 text-base font-semibold text-slate-800 dark:text-surface-100">
-                    Preview is not available for this file type
+                    {{ t('share.preview_unavailable') }}
                 </h2>
                 <p class="mt-1 text-sm text-slate-500 dark:text-surface-400">
-                    You can download the file to view it on your device.
+                    {{ t('share.preview_unavailable_desc') }}
                 </p>
                 <Button
-                    label="Download File"
+                    :label="t('share.download_file')"
                     icon="pi pi-download"
                     as="a"
                     :href="document.download_url"

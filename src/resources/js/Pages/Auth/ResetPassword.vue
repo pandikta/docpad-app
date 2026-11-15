@@ -6,6 +6,9 @@ import Password from 'primevue/password';
 import Button from 'primevue/button';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 const props = defineProps({
     email: {
@@ -46,7 +49,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Reset Password" />
+    <Head :title="t('auth.reset_title')" />
 
     <div class="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-white dark:bg-surface-950">
         <!-- Left Column: Branding & Illustration Area -->
@@ -190,7 +193,7 @@ const submit = () => {
                     <!-- Email Field -->
                     <div class="flex flex-col gap-2">
                         <label for="email" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                            Email Address
+                            {{ t('auth.email') }}
                         </label>
                         <IconField>
                             <InputIcon class="pi pi-envelope text-slate-400" />
@@ -214,7 +217,7 @@ const submit = () => {
                     <!-- New Password Field -->
                     <div class="flex flex-col gap-2">
                         <label for="password" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                            New Password
+                            {{ t('profile.new_password') }}
                         </label>
                         <IconField>
                             <InputIcon class="pi pi-lock text-slate-400 z-10" />
@@ -240,7 +243,7 @@ const submit = () => {
                     <!-- Confirm Password Field -->
                     <div class="flex flex-col gap-2">
                         <label for="password_confirmation" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                            Confirm Password
+                            {{ t('auth.confirm_password') }}
                         </label>
                         <IconField>
                             <InputIcon class="pi pi-lock text-slate-400 z-10" />
@@ -266,7 +269,7 @@ const submit = () => {
                     <!-- Submit Button -->
                     <Button
                         type="submit"
-                        label="Reset Password"
+                        :label="t('auth.reset_button')"
                         icon="pi pi-check-circle"
                         iconPos="left"
                         fluid

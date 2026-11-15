@@ -5,6 +5,9 @@ import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import Button from 'primevue/button';
 import Message from 'primevue/message';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 defineProps({
     mustVerifyEmail: { type: Boolean, default: false },
@@ -32,9 +35,9 @@ const submit = () => {
                 <i class="pi pi-id-card text-lg"></i>
             </div>
             <div>
-                <h2 class="text-lg font-bold text-slate-800 dark:text-surface-0">Profile Information</h2>
+                <h2 class="text-lg font-bold text-slate-800 dark:text-surface-0">{{ t('profile.info_title') }}</h2>
                 <p class="mt-0.5 text-sm text-slate-500 dark:text-surface-400">
-                    Update your account's profile information and email address.
+                    {{ t('profile.info_desc') }}
                 </p>
             </div>
         </header>
@@ -43,7 +46,7 @@ const submit = () => {
             <!-- Name -->
             <div class="flex flex-col gap-1.5">
                 <label for="name" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                    Full Name
+                    {{ t('profile.name') }}
                 </label>
                 <IconField>
                     <InputIcon class="pi pi-user" />
@@ -66,7 +69,7 @@ const submit = () => {
             <!-- Email -->
             <div class="flex flex-col gap-1.5">
                 <label for="email" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                    Email Address
+                    {{ t('profile.email') }}
                 </label>
                 <IconField>
                     <InputIcon class="pi pi-envelope" />
@@ -111,7 +114,7 @@ const submit = () => {
             <div class="pt-2 flex items-center gap-3">
                 <Button
                     type="submit"
-                    label="Save Changes"
+                    :label="t('common.save_changes')"
                     icon="pi pi-check"
                     :loading="form.processing"
                     class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white !font-semibold !rounded-xl !px-5"

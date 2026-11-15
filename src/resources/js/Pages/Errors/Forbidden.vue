@@ -2,8 +2,10 @@
 import { computed } from 'vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import Button from 'primevue/button';
+import { useLocale } from '@/composables/useLocale';
 
 const page = usePage();
+const { t } = useLocale();
 const user = computed(() => page.props.auth?.user ?? null);
 
 const userInitials = computed(() => {
@@ -137,17 +139,17 @@ const userInitials = computed(() => {
                 403
             </h1>
             <h2 class="mt-1 text-2xl font-bold text-[#0f3d28] dark:text-surface-100 sm:text-3xl">
-                Forbidden
+                {{ t('errors.forbidden_title') }}
             </h2>
 
             <p class="mt-4 text-sm leading-relaxed text-slate-600 dark:text-surface-300 sm:text-base">
-                Anda tidak memiliki akses untuk mengakses halaman ini.<br />
-                Silakan hubungi administrator jika Anda merasa ini adalah kesalahan.
+                {{ t('errors.forbidden_line1') }}<br />
+                {{ t('errors.forbidden_line2') }}
             </p>
 
             <Link :href="route('dashboard')" class="mt-7">
                 <Button
-                    label="Kembali ke Dashboard"
+                    :label="t('errors.back_dashboard')"
                     icon="pi pi-home"
                     class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white !font-semibold !rounded-xl !px-6 !py-3 shadow-sm"
                 />

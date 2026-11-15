@@ -6,6 +6,9 @@ import Button from 'primevue/button';
 import Message from 'primevue/message';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 defineProps({
     status: {
@@ -36,7 +39,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Forgot Password" />
+    <Head :title="t('auth.forgot_title')" />
 
     <div class="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-white dark:bg-surface-950">
         <!-- Left Column: Branding & Illustration Area -->
@@ -248,10 +251,10 @@ const submit = () => {
                 <!-- Title Section -->
                 <div class="mb-7">
                     <h2 class="text-3xl font-bold tracking-tight text-[#18221d] dark:text-surface-0">
-                        Reset Your Password
+                        {{ t('auth.forgot_title') }}
                     </h2>
                     <p class="text-base text-slate-500 dark:text-surface-400 mt-2">
-                        We'll send a password reset link to your email.
+                        {{ t('auth.forgot_desc') }}
                     </p>
                 </div>
 
@@ -265,7 +268,7 @@ const submit = () => {
                     <!-- Email Field -->
                     <div class="flex flex-col gap-2">
                         <label for="email" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                            Email Address
+                            {{ t('auth.email') }}
                         </label>
                         <IconField>
                             <InputIcon class="pi pi-envelope text-slate-400" />
@@ -290,7 +293,7 @@ const submit = () => {
                     <!-- Submit Button -->
                     <Button
                         type="submit"
-                        label="Send Reset Link"
+                        :label="t('auth.send_reset_link')"
                         icon="pi pi-send"
                         iconPos="left"
                         fluid

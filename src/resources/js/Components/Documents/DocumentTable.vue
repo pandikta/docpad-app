@@ -10,6 +10,7 @@ import Select from 'primevue/select';
 import Checkbox from 'primevue/checkbox';
 import { useAuth } from '@/composables/useAuth';
 import { useDocumentSearch } from '@/composables/useDocumentSearch';
+import { useLocale } from '@/composables/useLocale';
 import { formatFileSize, formatDateTime } from '@/utils/formatters';
 
 const props = defineProps({
@@ -38,6 +39,7 @@ const emit = defineEmits([
 ]);
 
 const { user, isSuperAdmin, can } = useAuth();
+const { t } = useLocale();
 
 const isOwner = (doc) => Boolean(doc && user.value?.id && Number(doc.user_id) === Number(user.value.id));
 
@@ -212,7 +214,7 @@ const moreMenuItems = computed(() => {
 
     if (isSuperAdmin.value && activeRowDocument.value?.visibility !== 'private') {
         items.push({
-            label: 'Assign Teams',
+            label: t('table.action_assign_teams'),
             icon: 'pi pi-users text-[#1f6f46]',
             command: () => activeRowDocument.value && emit('assign-teams', activeRowDocument.value),
         });
@@ -221,7 +223,7 @@ const moreMenuItems = computed(() => {
     if (isOwner(activeRowDocument.value)) {
         const isPrivate = activeRowDocument.value?.visibility === 'private';
         items.push({
-            label: isPrivate ? 'Make Publish' : 'Make Private',
+            label: isPrivate ? t('table.action_make_publish') : t('table.action_make_private'),
             icon: isPrivate ? 'pi pi-globe text-[#1f6f46]' : 'pi pi-lock text-amber-500',
             command: () =>
                 activeRowDocument.value &&
@@ -234,27 +236,27 @@ const moreMenuItems = computed(() => {
 
     if (can('documents.rename')) {
         items.push({
-            label: 'Rename',
+            label: t('table.action_rename'),
             icon: 'pi pi-pencil',
             command: () => activeRowDocument.value && emit('rename', activeRowDocument.value),
         });
     }
 
     items.push({
-        label: 'Share Link',
+        label: t('table.action_share_link'),
         icon: 'pi pi-share-alt text-[#1f6f46]',
         command: () => activeRowDocument.value && emit('share', activeRowDocument.value),
     });
 
     items.push({
-        label: 'Move to Folder',
+        label: t('table.action_move_folder'),
         icon: 'pi pi-folder',
         command: () => activeRowDocument.value && emit('move-folder', activeRowDocument.value),
     });
 
     if (can('documents.delete')) {
         items.push({
-            label: 'Delete',
+            label: t('table.action_delete'),
             icon: 'pi pi-trash text-red-500',
             command: () => activeRowDocument.value && emit('delete', activeRowDocument.value),
         });
@@ -383,14 +385,14 @@ const columnsPopoverRef = ref(null);
 
 const toggleableColumns = computed(() => {
     const cols = [
-        { key: 'folder', label: 'Folder' },
-        { key: 'visibility', label: 'Visibility' },
-        { key: 'size', label: 'Size' },
+        { key: 'folder', label: t('table.col_folder') },
+        { key: 'visibility', label: t('table.col_visibility') },
+        { key: 'size', label: t('table.col_size') },
     ];
     if (isSuperAdmin.value) {
-        cols.push({ key: 'teams', label: 'Teams' });
+        cols.push({ key: 'teams', label: t('table.col_teams') });
     }
-    cols.push({ key: 'created', label: 'Created' }, { key: 'updated', label: 'Updated' });
+    cols.push({ key: 'created', label: t('table.col_created') }, { key: 'updated', label: t('table.col_updated') });
     return cols;
 });
 
@@ -425,7 +427,7 @@ watch(
         <header class="flex flex-wrap items-center justify-between gap-3 px-6 py-5">
             <div class="flex flex-wrap items-center gap-3">
                 <i class="pi pi-file text-xl text-[#1f6f46] dark:text-emerald-400"></i>
-                <h2 class="text-lg font-bold text-slate-800 dark:text-surface-0">List Documents</h2>
+                <h2 class="text-lg font-bold text-slate-800 dark:text-surface-0">{{ t('table.title') }}</h2>
                 <button
                     type="button"
                     class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer"
@@ -437,7 +439,7 @@ watch(
                     @click="favoritesOnly = !favoritesOnly"
                 >
                     <i :class="favoritesOnly ? 'pi pi-star-fill text-amber-500 text-[11px]' : 'pi pi-star text-[11px]'"></i>
-                    <span>Favorites</span>
+                    <span>{{ t('table.favorites') }}</span>
                 </button>
                 <span
                     v-if="searchQuery.trim()"
@@ -455,7 +457,7 @@ watch(
                     @click="clearColumnFilters"
                 >
                     <i class="pi pi-filter-slash text-[10px]"></i>
-                    <span>Clear filters</span>
+                    <span>{{ t('table.clear_filters') }}</span>
                 </button>
             </div>
             <div class="flex items-center gap-2">
@@ -464,7 +466,7 @@ watch(
                     class="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 dark:border-surface-700 dark:bg-surface-800"
                 >
                     <Button
-                        v-tooltip.top="'Scroll Left (or Shift + Wheel)'"
+                        v-tooltip.top="t('table.scroll_left')"
                         icon="pi pi-chevron-left"
                         text
                         size="small"
@@ -473,7 +475,7 @@ watch(
                         @click="scrollTableBy(-280)"
                     />
                     <Button
-                        v-tooltip.top="'Scroll Right (or Shift + Wheel)'"
+                        v-tooltip.top="t('table.scroll_right')"
                         icon="pi pi-chevron-right"
                         text
                         size="small"
@@ -483,8 +485,8 @@ watch(
                     />
                 </div>
                 <Button
-                    v-tooltip.top="'Manage Columns (Show/Hide & Freeze)'"
-                    label="Columns"
+                    v-tooltip.top="t('table.manage_columns')"
+                    :label="t('table.columns')"
                     icon="pi pi-sliders-h"
                     size="small"
                     severity="secondary"
@@ -503,21 +505,21 @@ watch(
         >
             <div class="flex items-center gap-2.5 text-sm">
                 <span class="font-semibold text-[#1f6f46] dark:text-emerald-300">
-                    {{ selectedDocuments.length }} selected
+                    {{ t('table.selected', { count: selectedDocuments.length }) }}
                 </span>
                 <button
                     type="button"
                     class="text-xs text-slate-500 hover:text-slate-800 dark:text-surface-400 dark:hover:text-surface-100 underline cursor-pointer"
                     @click="clearSelection"
                 >
-                    Clear
+                    {{ t('table.clear') }}
                 </button>
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
                 <Button
                     v-if="can('documents.download')"
-                    label="Download ZIP"
+                    :label="t('table.download_zip')"
                     icon="pi pi-download"
                     size="small"
                     severity="secondary"
@@ -527,7 +529,7 @@ watch(
                     @click="$emit('bulk-download', selectedDocuments.map((d) => d.id))"
                 />
                 <Button
-                    label="Move Folder"
+                    :label="t('table.move_folder')"
                     icon="pi pi-folder"
                     size="small"
                     severity="secondary"
@@ -537,7 +539,7 @@ watch(
                 />
                 <Button
                     v-if="isSuperAdmin"
-                    label="Assign Teams"
+                    :label="t('table.assign_teams')"
                     icon="pi pi-users"
                     size="small"
                     severity="secondary"
@@ -547,7 +549,7 @@ watch(
                 />
                 <Button
                     v-if="can('documents.delete')"
-                    label="Delete"
+                    :label="t('table.delete')"
                     icon="pi pi-trash"
                     size="small"
                     severity="danger"
@@ -567,19 +569,19 @@ watch(
             paginator
             :rows="rows"
             paginatorTemplate="CurrentPageReport PrevPageLink PageLinks NextPageLink"
-            currentPageReportTemplate="Showing {first}–{last} of {totalRecords} items"
+            :currentPageReportTemplate="t('table.paginator_report')"
             :pt="paginatorPt"
         >
             <template #empty>
                 <div class="py-10 text-center text-slate-500 dark:text-surface-400">
                     <i class="pi pi-inbox text-3xl mb-2"></i>
                     <p v-if="searchQuery.trim()">
-                        No documents matching <span class="font-semibold">"{{ searchQuery.trim() }}"</span>.
+                        {{ t('table.empty_search', { query: searchQuery.trim() }) }}
                     </p>
                     <p v-else-if="hasActiveColumnFilters">
-                        No documents matching your column filters.
+                        {{ t('table.empty_filter') }}
                     </p>
-                    <p v-else>No documents found.</p>
+                    <p v-else>{{ t('table.empty') }}</p>
                     <div v-if="searchQuery.trim() || hasActiveColumnFilters" class="mt-2 flex items-center justify-center gap-3">
                         <button
                             v-if="searchQuery.trim()"
@@ -587,7 +589,7 @@ watch(
                             class="text-xs font-semibold text-[#1f6f46] dark:text-emerald-400 hover:underline cursor-pointer"
                             @click="clearSearch"
                         >
-                            Clear search
+                            {{ t('table.clear_search') }}
                         </button>
                         <button
                             v-if="hasActiveColumnFilters"
@@ -595,7 +597,7 @@ watch(
                             class="text-xs font-semibold text-[#1f6f46] dark:text-emerald-400 hover:underline cursor-pointer"
                             @click="clearColumnFilters"
                         >
-                            Clear column filters
+                            {{ t('table.clear_column_filters') }}
                         </button>
                     </div>
                 </div>
@@ -607,10 +609,10 @@ watch(
             <Column field="name" sortable :frozen="columnPrefs.freezeName">
                 <template #header>
                     <div class="flex items-center justify-between gap-2 w-full">
-                        <span>Name</span>
+                        <span>{{ t('table.col_name') }}</span>
                         <button
                             type="button"
-                            v-tooltip.top="'Search Name'"
+                            v-tooltip.top="t('table.search_col', { col: t('table.col_name') })"
                             class="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-surface-800 cursor-pointer transition-colors"
                             :class="isColumnFiltered('name') ? 'text-[#1f6f46] dark:text-emerald-400' : 'text-slate-400 dark:text-surface-400'"
                             @click.stop="openFilterPopover($event, 'name')"
@@ -661,10 +663,10 @@ watch(
             <Column v-if="columnPrefs.visible.folder" field="folder_name" sortable>
                 <template #header>
                     <div class="flex items-center justify-between gap-2 w-full">
-                        <span>Folder</span>
+                        <span>{{ t('table.col_folder') }}</span>
                         <button
                             type="button"
-                            v-tooltip.top="'Search Folder'"
+                            v-tooltip.top="t('table.search_col', { col: t('table.col_folder') })"
                             class="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-surface-800 cursor-pointer transition-colors"
                             :class="isColumnFiltered('folder') ? 'text-[#1f6f46] dark:text-emerald-400' : 'text-slate-400 dark:text-surface-400'"
                             @click.stop="openFilterPopover($event, 'folder')"
@@ -723,10 +725,10 @@ watch(
             <Column v-if="columnPrefs.visible.size" field="size" sortable>
                 <template #header>
                     <div class="flex items-center justify-between gap-2 w-full">
-                        <span>Size</span>
+                        <span>{{ t('table.col_size') }}</span>
                         <button
                             type="button"
-                            v-tooltip.top="'Search Size'"
+                            v-tooltip.top="t('table.search_col', { col: t('table.col_size') })"
                             class="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-surface-800 cursor-pointer transition-colors"
                             :class="isColumnFiltered('size') ? 'text-[#1f6f46] dark:text-emerald-400' : 'text-slate-400 dark:text-surface-400'"
                             @click.stop="openFilterPopover($event, 'size')"
@@ -742,10 +744,10 @@ watch(
             <Column v-if="isSuperAdmin && columnPrefs.visible.teams">
                 <template #header>
                     <div class="flex items-center justify-between gap-2 w-full">
-                        <span>Teams</span>
+                        <span>{{ t('table.col_teams') }}</span>
                         <button
                             type="button"
-                            v-tooltip.top="'Search Teams'"
+                            v-tooltip.top="t('table.search_col', { col: t('table.col_teams') })"
                             class="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-surface-800 cursor-pointer transition-colors"
                             :class="isColumnFiltered('teams') ? 'text-[#1f6f46] dark:text-emerald-400' : 'text-slate-400 dark:text-surface-400'"
                             @click.stop="openFilterPopover($event, 'teams')"
@@ -790,10 +792,10 @@ watch(
             <Column v-if="columnPrefs.visible.created" field="created_at" sortable>
                 <template #header>
                     <div class="flex items-center justify-between gap-2 w-full">
-                        <span>Created At</span>
+                        <span>{{ t('table.col_created') }}</span>
                         <button
                             type="button"
-                            v-tooltip.top="'Search Created At'"
+                            v-tooltip.top="t('table.search_col', { col: t('table.col_created') })"
                             class="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-surface-800 cursor-pointer transition-colors"
                             :class="isColumnFiltered('created') ? 'text-[#1f6f46] dark:text-emerald-400' : 'text-slate-400 dark:text-surface-400'"
                             @click.stop="openFilterPopover($event, 'created')"
@@ -818,10 +820,10 @@ watch(
             <Column v-if="columnPrefs.visible.updated" field="updated_at" sortable>
                 <template #header>
                     <div class="flex items-center justify-between gap-2 w-full">
-                        <span>Updated At</span>
+                        <span>{{ t('table.col_updated') }}</span>
                         <button
                             type="button"
-                            v-tooltip.top="'Search Updated At'"
+                            v-tooltip.top="t('table.search_col', { col: t('table.col_updated') })"
                             class="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-surface-800 cursor-pointer transition-colors"
                             :class="isColumnFiltered('updated') ? 'text-[#1f6f46] dark:text-emerald-400' : 'text-slate-400 dark:text-surface-400'"
                             @click.stop="openFilterPopover($event, 'updated')"
@@ -835,7 +837,7 @@ watch(
 
             <!-- Actions -->
             <Column
-                header="Actions"
+                :header="t('table.col_actions')"
                 :frozen="columnPrefs.freezeActions"
                 alignFrozen="right"
                 headerClass="!text-right"
@@ -930,14 +932,14 @@ watch(
             <div class="space-y-3 p-1">
                 <div class="flex items-center justify-between">
                     <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-surface-400">
-                        Visible Columns
+                        {{ t('table.visible_columns') }}
                     </span>
                     <button
                         type="button"
                         class="text-xs font-semibold text-[#1f6f46] hover:underline dark:text-emerald-400 cursor-pointer"
                         @click="resetColumnPrefs"
                     >
-                        Reset
+                        {{ t('common.reset') }}
                     </button>
                 </div>
 
@@ -954,15 +956,15 @@ watch(
 
                 <div class="border-t border-slate-200 pt-2.5 dark:border-surface-700 space-y-2">
                     <span class="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-surface-400">
-                        Freeze Columns
+                        {{ t('table.freeze_columns') }}
                     </span>
                     <label class="flex items-center gap-2.5 text-sm text-slate-700 dark:text-surface-200 cursor-pointer">
                         <Checkbox v-model="columnPrefs.freezeName" binary />
-                        <span>Freeze Name (Left)</span>
+                        <span>{{ t('table.freeze_name') }}</span>
                     </label>
                     <label class="flex items-center gap-2.5 text-sm text-slate-700 dark:text-surface-200 cursor-pointer">
                         <Checkbox v-model="columnPrefs.freezeActions" binary />
-                        <span>Freeze Actions (Right)</span>
+                        <span>{{ t('table.freeze_actions') }}</span>
                     </label>
                 </div>
             </div>
