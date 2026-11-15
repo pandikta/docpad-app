@@ -130,14 +130,14 @@ const openShare = (doc) => {
     shareVisible.value = true;
 };
 
-const submitGenerateShare = (expiry) => {
+const submitGenerateShare = (payload) => {
     if (!selectedShareDocument.value) return;
-    createShareLink(selectedShareDocument.value, expiry);
+    createShareLink(selectedShareDocument.value, payload);
 };
 
-const submitRevokeShare = () => {
+const submitRevokeShare = (payload) => {
     if (!selectedShareDocument.value) return;
-    revokeShareLink(selectedShareDocument.value);
+    revokeShareLink(selectedShareDocument.value, payload);
 };
 
 // --- Rename dialog -------------------------------------------------------
@@ -310,9 +310,10 @@ const confirmBulkDelete = () => {
     });
 };
 
-const confirmUpload = ({ files, folderId }) => {
+const confirmUpload = ({ files, folderId, notifyMembers }) => {
     upload(files, {
         folderId,
+        notifyMembers,
         onSuccess: () => {
             uploadDialogVisible.value = false;
         },

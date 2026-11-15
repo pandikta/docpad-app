@@ -4,6 +4,7 @@ import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
 import Editor from 'primevue/editor';
+import Checkbox from 'primevue/checkbox';
 import Button from 'primevue/button';
 import { useLocale } from '@/composables/useLocale';
 
@@ -24,6 +25,7 @@ const selectedExtension = ref('txt');
 const visibility = ref('publish');
 const folderId = ref(null);
 const content = ref('');
+const notifyMembers = ref(false);
 
 const folderOptions = computed(() => [
     { id: null, name: t('dashboard.uncategorized') },
@@ -67,9 +69,16 @@ watch(
             visibility.value = 'publish';
             folderId.value = null;
             content.value = '';
+            notifyMembers.value = false;
         }
     },
 );
+
+watch(visibility, (val) => {
+    if (val === 'private') {
+        notifyMembers.value = false;
+    }
+});
 
 // Bersihkan akhiran ekstensi ganda jika user tidak sengaja mengetik ".txt" di kolom nama
 const normalizedBaseName = computed(() => {
@@ -99,6 +108,7 @@ const onSubmit = () => {
         visibility: visibility.value,
         folder_id: folderId.value,
         content: content.value,
+        notify_members: visibility.value === 'publish' ? notifyMembers.value : false,
     });
 };
 </script>
@@ -204,6 +214,14 @@ const onSubmit = () => {
                     {{ t('dialogs.content_optional') }}
                 </label>
                 <Editor v-model="content" editorStyle="height: 16rem" />
+            </div>
+
+            <!-- Notify Team Members -->
+            <div v-if="visibility === 'publish'" class="flex items-center gap-2.5 pt-1">
+                <Checkbox v-model="notifyMembers" inputId="create-notify-members" binary />
+                <label for="create-notify-members" class="text-sm text-slate-700 dark:text-surface-200 cursor-pointer select-none">
+                    {{ t('dialogs.notify_members_create') }}
+                </label>
             </div>
         </form>
 

@@ -21,6 +21,14 @@
         "switch_light": "Ubah ke Mode Terang",
         "switch_dark": "Ubah ke Mode Gelap",
         "change_language": "Ganti Bahasa",
+        "notifications": "Notifikasi",
+        "mark_all_read": "Tandai semua dibaca",
+        "no_notifications": "Belum ada notifikasi.",
+        "notif_created": "{actor} membuat {name}",
+        "notif_uploaded": "{actor} mengunggah {name}",
+        "notif_uploaded_multi": "{actor} mengunggah {count} dokumen",
+        "notif_shared": "{actor} membagikan {name}",
+        "notif_revoked": "{actor} mencabut link berbagi {name}",
         "profile": "Profil",
         "logout": "Keluar"
     },
@@ -143,7 +151,10 @@
         "upload_selected": "File Terpilih ({count})",
         "upload_submit": "Unggah",
         "editor_readonly": "Baca Saja",
-        "editor_save": "Simpan Dokumen"
+        "editor_save": "Simpan Dokumen",
+        "notify_members_create": "Beri notifikasi ke semua anggota tim saat disimpan",
+        "notify_members_upload": "Beri notifikasi ke semua anggota tim saat diunggah",
+        "notify_members_share": "Beri notifikasi ke semua anggota tim saat link dibuat atau dicabut"
     },
     "team_control": {
         "page_title": "Kontrol Tim",

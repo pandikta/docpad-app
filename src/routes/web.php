@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Settings\ExtensionController;
 use App\Http\Controllers\Settings\FunctionAuthController;
@@ -50,6 +51,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/document-folders/{folder}', [DocumentController::class, 'destroyFolder'])->name('document-folders.destroy');
     Route::post('/documents/{document}/share', [DocumentController::class, 'createShareLink'])->name('documents.share.store');
     Route::delete('/documents/{document}/share', [DocumentController::class, 'revokeShareLink'])->name('documents.share.destroy');
+
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 
     // Team Control (dikontrol oleh Menu Authorization, Superadmin selalu punya akses penuh)
     Route::middleware('menu.auth:menu.team-control')->group(function () {

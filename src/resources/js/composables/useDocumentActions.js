@@ -32,10 +32,10 @@ export function useDocumentActions() {
         });
     };
 
-    const upload = (files, { folderId = null, onSuccess } = {}) => {
+    const upload = (files, { folderId = null, notifyMembers = false, onSuccess } = {}) => {
         router.post(
             route('documents.store'),
-            { files, folder_id: folderId },
+            { files, folder_id: folderId, notify_members: notifyMembers ? 1 : 0 },
             {
                 forceFormData: true,
                 preserveScroll: true,
@@ -248,10 +248,11 @@ export function useDocumentActions() {
         });
     };
 
-    const createShareLink = (document, expiry, { onSuccess } = {}) => {
+    const createShareLink = (document, payload, { onSuccess } = {}) => {
+        const data = typeof payload === 'string' ? { expiry: payload } : payload;
         router.post(
             route('documents.share.store', document.id),
-            { expiry },
+            data,
             {
                 preserveScroll: true,
                 onStart: () => (sharing.value = true),
@@ -262,8 +263,9 @@ export function useDocumentActions() {
         );
     };
 
-    const revokeShareLink = (document, { onSuccess } = {}) => {
+    const revokeShareLink = (document, payload = {}, { onSuccess } = {}) => {
         router.delete(route('documents.share.destroy', document.id), {
+            data: { notify_members: payload?.notify_members ? 1 : 0 },
             preserveScroll: true,
             onStart: () => (sharing.value = true),
             onSuccess,

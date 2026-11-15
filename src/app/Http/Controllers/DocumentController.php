@@ -30,6 +30,7 @@ class DocumentController extends Controller
             'files' => ['required', 'array', 'min:1'],
             'files.*' => ['required', 'file'],
             'folder_id' => ['nullable', 'integer', 'exists:doc_folders,id'],
+            'notify_members' => ['nullable', 'boolean'],
         ]);
 
         $folderId = isset($validated['folder_id']) ? (int) $validated['folder_id'] : null;
@@ -71,6 +72,10 @@ class DocumentController extends Controller
             return back()->withErrors(['files' => implode(' ', $failed)]);
         }
 
+        if ($request->boolean('notify_members')) {
+            $this->documents->notifyTeamMembers($request->user(), 'uploaded', $uploaded);
+        }
+
         $message = $uploadedCount === 1
             ? "{$uploaded[0]->name} uploaded successfully."
             : "{$uploadedCount} documents uploaded successfully.";
@@ -99,6 +104,7 @@ class DocumentController extends Controller
             'visibility' => ['nullable', 'string', 'in:publish,private'],
             'folder_id' => ['nullable', 'integer', 'exists:doc_folders,id'],
             'content' => ['nullable', 'string', 'max:2000000'],
+            'notify_members' => ['nullable', 'boolean'],
         ]);
 
         $finalName = $this->documents->buildDocumentName($validated['name'], $validated['extension']);
@@ -123,6 +129,10 @@ class DocumentController extends Controller
             $validated['visibility'] ?? 'publish',
             isset($validated['folder_id']) ? (int) $validated['folder_id'] : null,
         );
+
+        if ($request->boolean('notify_members') && $document->visibility === 'publish') {
+            $this->documents->notifyTeamMembers($request->user(), 'created', [$document]);
+        }
 
         return back()->with('success', "{$document->name} created successfully.");
     }
@@ -409,9 +419,14 @@ class DocumentController extends Controller
 
         $validated = $request->validate([
             'expiry' => ['required', 'string', 'in:1h,24h,7d,30d,never'],
+            'notify_members' => ['nullable', 'boolean'],
         ]);
 
         $this->documents->createShareLink($document, $request->user(), $validated['expiry']);
+
+        if ($request->boolean('notify_members')) {
+            $this->documents->notifyTeamMembers($request->user(), 'shared', [$document]);
+        }
 
         return back()->with('success', "Shareable link created for {$document->name}.");
     }
@@ -422,7 +437,16 @@ class DocumentController extends Controller
     public function revokeShareLink(Request $request, Document $document): RedirectResponse
     {
         $this->documents->authorizeAccess($request->user(), $document);
+
+        $request->validate([
+            'notify_members' => ['nullable', 'boolean'],
+        ]);
+
         $this->documents->revokeShareLinks($document, $request->user());
+
+        if ($request->boolean('notify_members')) {
+            $this->documents->notifyTeamMembers($request->user(), 'revoked', [$document]);
+        }
 
         return back()->with('success', "Shareable link revoked for {$document->name}.");
     }

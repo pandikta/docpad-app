@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue';
 import Dialog from 'primevue/dialog';
 import Select from 'primevue/select';
 import InputText from 'primevue/inputtext';
+import Checkbox from 'primevue/checkbox';
 import Button from 'primevue/button';
 import { useLocale } from '@/composables/useLocale';
 
@@ -25,6 +26,7 @@ const expiryOptions = [
 ];
 
 const selectedExpiry = ref('7d');
+const notifyMembers = ref(false);
 const copied = ref(false);
 let copiedTimer = null;
 
@@ -33,6 +35,7 @@ watch(
     (isOpen) => {
         if (isOpen) {
             selectedExpiry.value = '7d';
+            notifyMembers.value = false;
             copied.value = false;
         }
     },
@@ -66,8 +69,8 @@ const copyUrl = async () => {
 };
 
 const close = () => emit('update:visible', false);
-const generate = () => emit('generate', selectedExpiry.value);
-const revoke = () => emit('revoke');
+const generate = () => emit('generate', { expiry: selectedExpiry.value, notify_members: notifyMembers.value });
+const revoke = () => emit('revoke', { notify_members: notifyMembers.value });
 </script>
 
 <template>
@@ -158,6 +161,14 @@ const revoke = () => emit('revoke');
                         @click="generate"
                     />
                 </div>
+            </div>
+
+            <!-- Notify Team Members -->
+            <div class="flex items-center gap-2.5 pt-1">
+                <Checkbox v-model="notifyMembers" inputId="share-notify-members" binary />
+                <label for="share-notify-members" class="text-sm text-slate-700 dark:text-surface-200 cursor-pointer select-none">
+                    {{ t('dialogs.notify_members_share') }}
+                </label>
             </div>
         </div>
 

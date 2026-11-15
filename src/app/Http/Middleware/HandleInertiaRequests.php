@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Services\FunctionAuthService;
 use App\Services\MenuAuthService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -55,6 +56,15 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'warning' => fn () => $request->session()->get('warning'),
             ],
+            'notifications' => fn () => $request->user() && Schema::hasTable('notifications') ? [
+                'unread_count' => $request->user()->unreadNotifications()->limit(100)->toBase()->get(['id'])->count(),
+                'items' => $request->user()->notifications()->latest()->limit(15)->get()->map(fn ($n) => [
+                    'id' => $n->id,
+                    'data' => $n->data,
+                    'read_at' => $n->read_at?->toISOString(),
+                    'created_at' => $n->created_at?->toISOString(),
+                ]),
+            ] : ['unread_count' => 0, 'items' => []],
             'sessionLifetime' => (int) config('session.lifetime', 120),
         ];
     }

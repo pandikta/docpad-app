@@ -8,7 +8,7 @@ import Popover from 'primevue/popover';
 import { useDarkMode } from '@/composables/useDarkMode';
 import { useDocumentSearch } from '@/composables/useDocumentSearch';
 import { useLocale } from '@/composables/useLocale';
-import { getInitials } from '@/utils/formatters';
+import { formatDateTime, getInitials } from '@/utils/formatters';
 
 defineEmits(['toggle-sidebar']);
 
@@ -39,6 +39,47 @@ const onSearchEnter = () => {
 
 onMounted(() => window.addEventListener('keydown', onShortcut));
 onBeforeUnmount(() => window.removeEventListener('keydown', onShortcut));
+
+// Notifications
+const notifMenu = ref(null);
+const notifications = computed(() => page.props.notifications?.items ?? []);
+const unreadCount = computed(() => Number(page.props.notifications?.unread_count ?? 0));
+
+const toggleNotifMenu = (event) => notifMenu.value?.toggle(event);
+
+const formatNotifText = (item) => {
+    const data = item?.data ?? {};
+    const actor = data.actor_name ?? 'Someone';
+    if (data.action === 'uploaded') {
+        if (Number(data.document_count ?? 1) > 1) {
+            return t('topbar.notif_uploaded_multi', { actor, count: data.document_count });
+        }
+        return t('topbar.notif_uploaded', { actor, name: data.document_name ?? '' });
+    }
+    if (data.action === 'shared') {
+        return t('topbar.notif_shared', { actor, name: data.document_name ?? '' });
+    }
+    if (data.action === 'revoked') {
+        return t('topbar.notif_revoked', { actor, name: data.document_name ?? '' });
+    }
+    return t('topbar.notif_created', { actor, name: data.document_name ?? '' });
+};
+
+const handleNotifClick = (item) => {
+    if (!item?.id) return;
+    if (!item.read_at) {
+        router.post(route('notifications.read', item.id), {}, { preserveScroll: true });
+    }
+    notifMenu.value?.hide();
+    if (!route().current('dashboard')) {
+        router.visit(route('dashboard'));
+    }
+};
+
+const markAllAsRead = () => {
+    if (!unreadCount.value) return;
+    router.post(route('notifications.read-all'), {}, { preserveScroll: true });
+};
 
 // User menu
 const userMenu = ref(null);
@@ -105,11 +146,65 @@ const handleLogout = () => {
             <!-- Notifications -->
             <button
                 type="button"
+                :title="t('topbar.notifications')"
                 class="relative flex items-center justify-center w-9 h-9 rounded-lg text-slate-600 dark:text-surface-300 hover:bg-slate-100 dark:hover:bg-surface-800 cursor-pointer"
+                aria-haspopup="true"
+                @click="toggleNotifMenu"
             >
                 <i class="pi pi-bell"></i>
-                <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500"></span>
+                <span
+                    v-if="unreadCount > 0"
+                    class="absolute -top-0.5 -right-0.5 min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none"
+                >
+                    {{ unreadCount > 99 ? '99+' : unreadCount }}
+                </span>
             </button>
+
+            <Popover ref="notifMenu" class="w-80 sm:w-96">
+                <div class="space-y-2 p-1">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2 dark:border-surface-800">
+                        <span class="text-sm font-bold text-slate-800 dark:text-surface-0">
+                            {{ t('topbar.notifications') }}
+                        </span>
+                        <button
+                            v-if="unreadCount > 0"
+                            type="button"
+                            class="text-xs font-semibold text-[#1f6f46] hover:underline dark:text-emerald-400 cursor-pointer"
+                            @click="markAllAsRead"
+                        >
+                            {{ t('topbar.mark_all_read') }}
+                        </button>
+                    </div>
+
+                    <div v-if="!notifications.length" class="py-6 text-center text-xs text-slate-400 dark:text-surface-500">
+                        {{ t('topbar.no_notifications') }}
+                    </div>
+
+                    <ul v-else class="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-surface-800">
+                        <li v-for="item in notifications" :key="item.id">
+                            <button
+                                type="button"
+                                class="w-full flex items-start gap-2.5 px-2 py-2.5 rounded-lg text-left transition-colors hover:bg-slate-50 dark:hover:bg-surface-800/70 cursor-pointer"
+                                :class="!item.read_at ? 'bg-emerald-50/50 dark:bg-emerald-950/20' : ''"
+                                @click="handleNotifClick(item)"
+                            >
+                                <span
+                                    class="mt-1.5 w-2 h-2 rounded-full shrink-0"
+                                    :class="!item.read_at ? 'bg-[#1f6f46] dark:bg-emerald-400' : 'bg-transparent'"
+                                ></span>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-xs font-medium text-slate-700 dark:text-surface-200 leading-snug">
+                                        {{ formatNotifText(item) }}
+                                    </p>
+                                    <p class="mt-0.5 text-[11px] text-slate-400 dark:text-surface-500">
+                                        {{ formatDateTime(item.created_at) }}
+                                    </p>
+                                </div>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </Popover>
 
             <!-- User -->
             <button

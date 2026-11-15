@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue';
 import Dialog from 'primevue/dialog';
 import Select from 'primevue/select';
+import Checkbox from 'primevue/checkbox';
 import Button from 'primevue/button';
 import { formatFileSize } from '@/utils/formatters';
 import { useLocale } from '@/composables/useLocale';
@@ -22,6 +23,7 @@ const fileInput = ref(null);
 const selectedFiles = ref([]);
 const folderId = ref(null);
 const isDragging = ref(false);
+const notifyMembers = ref(false);
 
 const folderOptions = computed(() => [
     { id: null, name: t('dashboard.uncategorized') },
@@ -39,6 +41,7 @@ watch(
             selectedFiles.value = [];
             folderId.value = null;
             isDragging.value = false;
+            notifyMembers.value = false;
         }
     },
 );
@@ -106,7 +109,7 @@ const removeFile = (index) => {
 
 const onConfirm = () => {
     if (!selectedFiles.value.length) return;
-    emit('confirm', { files: selectedFiles.value, folderId: folderId.value });
+    emit('confirm', { files: selectedFiles.value, folderId: folderId.value, notifyMembers: notifyMembers.value });
 };
 </script>
 
@@ -250,6 +253,14 @@ const onConfirm = () => {
                         </div>
                     </li>
                 </ul>
+            </div>
+
+            <!-- Notify Team Members -->
+            <div class="flex items-center gap-2.5 pt-1">
+                <Checkbox v-model="notifyMembers" inputId="upload-notify-members" binary />
+                <label for="upload-notify-members" class="text-sm text-slate-700 dark:text-surface-200 cursor-pointer select-none">
+                    {{ t('dialogs.notify_members_upload') }}
+                </label>
             </div>
         </div>
 

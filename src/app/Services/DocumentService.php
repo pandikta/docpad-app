@@ -6,8 +6,10 @@ use App\Models\Document;
 use App\Models\DocumentFolder;
 use App\Models\DocumentShareLink;
 use App\Models\User;
+use App\Notifications\DocumentCreatedNotification;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use ZipArchive;
@@ -465,5 +467,42 @@ class DocumentService
         $limitBytes = (int) $user->storage_limit_mb * 1024 * 1024;
 
         return ($this->getStorageUsageBytes($user) + $additionalBytes) > $limitBytes;
+    }
+
+    /**
+     * Kirim notifikasi ke seluruh member tim (atau seluruh user jika superadmin tanpa tim).
+     *
+     * @param  'created'|'uploaded'|'shared'|'revoked'  $action
+     * @param  list<Document>  $documents
+     */
+    public function notifyTeamMembers(User $actor, string $action, array $documents): void
+    {
+        if (empty($documents)) {
+            return;
+        }
+
+        $recipients = User::query()
+            ->where('id', '!=', $actor->id)
+            ->when($actor->team_id !== null, fn ($q) => $q->where('team_id', $actor->team_id))
+            ->get();
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        $first = $documents[0];
+        $count = count($documents);
+
+        Notification::send(
+            $recipients,
+            new DocumentCreatedNotification(
+                action: $action,
+                actorId: $actor->id,
+                actorName: $actor->name,
+                documentId: $count === 1 ? $first->id : null,
+                documentName: $first->name,
+                documentCount: $count,
+            ),
+        );
     }
 }
