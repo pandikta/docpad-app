@@ -157,6 +157,31 @@ class DocumentService
     }
 
     /**
+     * Ubah status visibility dokumen (publish / private) dan catat log perubahannya.
+     */
+    public function updateVisibility(Document $document, string $visibility, ?User $user = null): Document
+    {
+        $visibility = $visibility === 'private' ? 'private' : 'publish';
+
+        if ($document->visibility === $visibility) {
+            return $document;
+        }
+
+        $document->update(['visibility' => $visibility]);
+
+        if ($visibility === 'private') {
+            $document->teams()->detach();
+        } elseif ($user?->team_id && $document->teams()->count() === 0) {
+            $document->teams()->syncWithoutDetaching([$user->team_id]);
+        }
+
+        $document->touch();
+        record_document_log($document, "changed visibility to {$visibility}", $user);
+
+        return $document;
+    }
+
+    /**
      * Hapus dokumen.
      */
     public function delete(Document $document): void

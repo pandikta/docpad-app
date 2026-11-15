@@ -36,6 +36,7 @@ const {
     save,
     rename,
     assignTeams,
+    updateVisibility,
     destroy,
     download,
 } = useDocumentActions();
@@ -94,6 +95,10 @@ const openAssignTeams = (doc) => {
 
 const submitAssignTeams = ({ document, teamIds }) => {
     assignTeams(document, teamIds, { onSuccess: () => (assignTeamsVisible.value = false) });
+};
+
+const onToggleVisibility = ({ document, visibility }) => {
+    updateVisibility(document, visibility);
 };
 
 // --- Delete dialog -------------------------------------------------------
@@ -183,6 +188,7 @@ const confirmUpload = (files) => {
                 @download="download"
                 @rename="openRename"
                 @assign-teams="openAssignTeams"
+                @toggle-visibility="onToggleVisibility"
                 @delete="openDelete"
             />
         </div>

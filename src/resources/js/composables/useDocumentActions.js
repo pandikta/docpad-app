@@ -15,6 +15,7 @@ export function useDocumentActions() {
     const saving = ref(false);
     const renaming = ref(false);
     const assigningTeams = ref(false);
+    const updatingVisibility = ref(false);
     const deleting = ref(false);
 
     const notifyError = (summary, errors) => {
@@ -97,6 +98,20 @@ export function useDocumentActions() {
         );
     };
 
+    const updateVisibility = (document, visibility, { onSuccess } = {}) => {
+        router.patch(
+            route('documents.visibility', document.id),
+            { visibility },
+            {
+                preserveScroll: true,
+                onStart: () => (updatingVisibility.value = true),
+                onSuccess,
+                onError: (errors) => notifyError('Visibility Update Failed', errors),
+                onFinish: () => (updatingVisibility.value = false),
+            },
+        );
+    };
+
     const destroy = (document, { onSuccess } = {}) => {
         router.delete(route('documents.destroy', document.id), {
             preserveScroll: true,
@@ -117,12 +132,14 @@ export function useDocumentActions() {
         saving,
         renaming,
         assigningTeams,
+        updatingVisibility,
         deleting,
         upload,
         create,
         save,
         rename,
         assignTeams,
+        updateVisibility,
         destroy,
         download,
     };

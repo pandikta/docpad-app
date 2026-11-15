@@ -14,15 +14,18 @@ const props = defineProps({
     rows: { type: Number, default: 10 },
 });
 
-// open         : nama dokumen diklik (buka editor)
-// logs         : tombol log aktivitas diklik
-// download     : tombol download diklik
-// rename       : aksi rename dipilih dari menu titik tiga
-// assign-teams : aksi assign ke tim dipilih dari menu titik tiga (khusus superadmin)
-// delete       : aksi delete dipilih dari menu titik tiga
-const emit = defineEmits(['open', 'logs', 'download', 'rename', 'assign-teams', 'delete']);
+// open              : nama dokumen diklik (buka editor)
+// logs              : tombol log aktivitas diklik
+// download          : tombol download diklik
+// rename            : aksi rename dipilih dari menu titik tiga
+// assign-teams      : aksi assign ke tim dipilih dari menu titik tiga (khusus superadmin)
+// toggle-visibility : aksi ubah publish/private dipilih dari menu titik tiga (khusus pemilik)
+// delete            : aksi delete dipilih dari menu titik tiga
+const emit = defineEmits(['open', 'logs', 'download', 'rename', 'assign-teams', 'toggle-visibility', 'delete']);
 
-const { isSuperAdmin, can } = useAuth();
+const { user, isSuperAdmin, can } = useAuth();
+
+const isOwner = (doc) => Boolean(doc && user.value?.id && Number(doc.user_id) === Number(user.value.id));
 
 const { searchQuery, clearSearch, matchesDocument } = useDocumentSearch();
 
@@ -45,6 +48,20 @@ const moreMenuItems = computed(() => {
         });
     }
 
+    if (isOwner(activeRowDocument.value)) {
+        const isPrivate = activeRowDocument.value?.visibility === 'private';
+        items.push({
+            label: isPrivate ? 'Make Publish' : 'Make Private',
+            icon: isPrivate ? 'pi pi-globe text-[#1f6f46]' : 'pi pi-lock text-amber-500',
+            command: () =>
+                activeRowDocument.value &&
+                emit('toggle-visibility', {
+                    document: activeRowDocument.value,
+                    visibility: isPrivate ? 'publish' : 'private',
+                }),
+        });
+    }
+
     if (can('documents.rename')) {
         items.push({
             label: 'Rename',
@@ -63,6 +80,12 @@ const moreMenuItems = computed(() => {
 
     return items;
 });
+
+const hasMoreActions = (doc) =>
+    (isSuperAdmin.value && doc?.visibility !== 'private') ||
+    isOwner(doc) ||
+    can('documents.rename') ||
+    can('documents.delete');
 
 const toggleMoreMenu = (event, doc) => {
     activeRowDocument.value = doc;
@@ -127,24 +150,34 @@ const actionBtnClass =
             <!-- Name -->
             <Column field="name" header="Name">
                 <template #body="{ data }">
-                    <div class="flex items-center gap-2.5">
-                        <button
-                            type="button"
-                            class="flex items-center gap-3 text-left font-medium text-slate-700 dark:text-surface-100 hover:text-[#1f6f46] dark:hover:text-emerald-400 hover:underline cursor-pointer"
-                            @click="$emit('open', data)"
-                        >
-                            <i class="pi pi-file-edit text-[#1f6f46] dark:text-emerald-400"></i>
-                            <span>{{ data.name }}</span>
-                        </button>
-                        <span
-                            v-if="data.visibility === 'private'"
-                            v-tooltip.top="'Private — Only visible to you'"
-                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 dark:bg-surface-800 dark:text-surface-300 border border-slate-200 dark:border-surface-700"
-                        >
-                            <i class="pi pi-lock text-[10px]"></i>
-                            <span>Private</span>
-                        </span>
-                    </div>
+                    <button
+                        type="button"
+                        class="flex items-center gap-3 text-left font-medium text-slate-700 dark:text-surface-100 hover:text-[#1f6f46] dark:hover:text-emerald-400 hover:underline cursor-pointer"
+                        @click="$emit('open', data)"
+                    >
+                        <i class="pi pi-file-edit text-[#1f6f46] dark:text-emerald-400"></i>
+                        <span>{{ data.name }}</span>
+                    </button>
+                </template>
+            </Column>
+
+            <!-- Visibility -->
+            <Column field="visibility" header="Visibility">
+                <template #body="{ data }">
+                    <span
+                        v-if="data.visibility === 'private'"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 dark:bg-surface-800 dark:text-surface-200 border border-slate-200 dark:border-surface-700"
+                    >
+                        <i class="pi pi-lock text-[10px]"></i>
+                        <span>Private</span>
+                    </span>
+                    <span
+                        v-else
+                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-[#1f6f46] dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/60"
+                    >
+                        <i class="pi pi-globe text-[10px]"></i>
+                        <span>Publish</span>
+                    </span>
                 </template>
             </Column>
 
@@ -233,7 +266,7 @@ const actionBtnClass =
                             @click="$emit('download', data)"
                         />
                         <Button
-                            v-if="moreMenuItems.length"
+                            v-if="hasMoreActions(data)"
                             v-tooltip.top="'More actions'"
                             icon="pi pi-ellipsis-v"
                             severity="secondary"

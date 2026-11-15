@@ -129,6 +129,23 @@ class DocumentController extends Controller
     }
 
     /**
+     * Ubah status visibility dokumen (publish / private) oleh pemilik dokumen.
+     */
+    public function updateVisibility(Request $request, Document $document): RedirectResponse
+    {
+        $this->documents->authorizeAccess($request->user(), $document);
+        abort_unless((int) $document->user_id === (int) $request->user()->id, 403, 'Only the document owner can change visibility.');
+
+        $validated = $request->validate([
+            'visibility' => ['required', 'string', 'in:publish,private'],
+        ]);
+
+        $this->documents->updateVisibility($document, $validated['visibility'], $request->user());
+
+        return back()->with('success', "{$document->name} is now {$validated['visibility']}.");
+    }
+
+    /**
      * Hapus dokumen.
      */
     public function destroy(Request $request, Document $document): RedirectResponse
