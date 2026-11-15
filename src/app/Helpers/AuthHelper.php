@@ -5,6 +5,7 @@ namespace App\Helpers;
 use App\Models\Document;
 use App\Models\User;
 use App\Services\FunctionAuthService;
+use App\Services\MenuAuthService;
 use Illuminate\Support\Facades\Auth;
 
 class AuthHelper
@@ -68,5 +69,19 @@ class AuthHelper
         }
 
         return app(FunctionAuthService::class)->can($user, $functionCode);
+    }
+
+    /**
+     * Cek apakah user berhak mengakses menu tertentu berdasarkan Menu Authorization.
+     */
+    public static function canAccessMenu(string $menuCode, ?User $user = null): bool
+    {
+        $user ??= Auth::user();
+
+        if (! $user) {
+            return false;
+        }
+
+        return app(MenuAuthService::class)->can($user, $menuCode);
     }
 }

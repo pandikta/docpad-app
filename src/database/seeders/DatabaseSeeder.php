@@ -19,6 +19,8 @@ class DatabaseSeeder extends Seeder
             TeamSeeder::class,
             SuperAdminSeeder::class,
             FunctionAuthSeeder::class,
+            MenuAuthSeeder::class,
+            ExtensionSeeder::class,
         ]);
 
         // User::factory(10)->create();

@@ -4,6 +4,7 @@ use App\Helpers\AuthHelper;
 use App\Models\Document;
 use App\Models\DocumentLog;
 use App\Models\User;
+use App\Services\ExtensionService;
 use Illuminate\Support\Facades\Auth;
 
 if (! function_exists('is_superadmin')) {
@@ -43,6 +44,16 @@ if (! function_exists('can_use_function')) {
     function can_use_function(string $functionCode, ?User $user = null): bool
     {
         return AuthHelper::canUseFunction($functionCode, $user);
+    }
+}
+
+if (! function_exists('can_access_menu')) {
+    /**
+     * Cek apakah user berhak mengakses menu tertentu (Menu Authorization).
+     */
+    function can_access_menu(string $menuCode, ?User $user = null): bool
+    {
+        return AuthHelper::canAccessMenu($menuCode, $user);
     }
 }
 
@@ -91,13 +102,13 @@ if (! function_exists('record_document_log')) {
 
 if (! function_exists('allowed_document_extensions')) {
     /**
-     * Daftar ekstensi file dokumen yang diperbolehkan di aplikasi.
+     * Daftar ekstensi file dokumen aktif yang diperbolehkan di aplikasi (diambil dari Master Extensions).
      *
      * @return list<string>
      */
     function allowed_document_extensions(): array
     {
-        return ['txt', 'md'];
+        return app(ExtensionService::class)->listActiveCodes();
     }
 }
 

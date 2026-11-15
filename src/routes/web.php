@@ -3,7 +3,11 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Settings\ExtensionController;
 use App\Http\Controllers\Settings\FunctionAuthController;
+use App\Http\Controllers\Settings\MenuAuthController;
+use App\Http\Controllers\Settings\TeamController;
+use App\Http\Controllers\Settings\UserController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -20,7 +24,7 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified', 'menu.auth:menu.dashboard'])
     ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -32,15 +36,49 @@ Route::middleware('auth')->group(function () {
     Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
     Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
 
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::middleware('menu.auth:menu.profile')->group(function () {
+        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    });
 
-    // Settings (Khusus Superadmin)
-    Route::middleware('superadmin')->prefix('settings')->name('settings.')->group(function () {
-        Route::get('/function-auth', [FunctionAuthController::class, 'index'])->name('function-auth.index');
-        Route::put('/function-auth', [FunctionAuthController::class, 'update'])->name('function-auth.update');
-        Route::delete('/function-auth/reset-user', [FunctionAuthController::class, 'resetUser'])->name('function-auth.reset-user');
+    // Settings (dikontrol oleh Menu Authorization, Superadmin selalu punya akses penuh)
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::middleware('menu.auth:menu.settings.extensions')->group(function () {
+            Route::get('/extensions', [ExtensionController::class, 'index'])->name('extensions.index');
+            Route::post('/extensions', [ExtensionController::class, 'store'])->name('extensions.store');
+            Route::put('/extensions/{extension}', [ExtensionController::class, 'update'])->name('extensions.update');
+            Route::delete('/extensions/{extension}', [ExtensionController::class, 'destroy'])->name('extensions.destroy');
+        });
+
+        Route::middleware('menu.auth:menu.settings.teams')->group(function () {
+            Route::get('/teams', [TeamController::class, 'index'])->name('teams.index');
+            Route::post('/teams', [TeamController::class, 'store'])->name('teams.store');
+            Route::put('/teams/{team}', [TeamController::class, 'update'])->name('teams.update');
+            Route::delete('/teams/{team}', [TeamController::class, 'destroy'])->name('teams.destroy');
+        });
+
+        Route::middleware('menu.auth:menu.settings.users')->group(function () {
+            Route::get('/users', [UserController::class, 'index'])->name('users.index');
+            Route::post('/users', [UserController::class, 'store'])->name('users.store');
+            Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+            Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+        });
+
+        Route::middleware('menu.auth:menu.settings.function-auth')->group(function () {
+            Route::get('/function-auth', [FunctionAuthController::class, 'index'])->name('function-auth.index');
+            Route::put('/function-auth', [FunctionAuthController::class, 'update'])->name('function-auth.update');
+            Route::delete('/function-auth/reset-user', [FunctionAuthController::class, 'resetUser'])->name('function-auth.reset-user');
+        });
+
+        Route::middleware('menu.auth:menu.settings.menu-auth')->group(function () {
+            Route::get('/menu-auth', [MenuAuthController::class, 'index'])->name('menu-auth.index');
+            Route::put('/menu-auth', [MenuAuthController::class, 'update'])->name('menu-auth.update');
+            Route::delete('/menu-auth/reset-user', [MenuAuthController::class, 'resetUser'])->name('menu-auth.reset-user');
+            Route::post('/menu-auth/menus', [MenuAuthController::class, 'storeMenu'])->name('menu-auth.menus.store');
+            Route::put('/menu-auth/menus/{menu}', [MenuAuthController::class, 'updateMenu'])->name('menu-auth.menus.update');
+            Route::delete('/menu-auth/menus/{menu}', [MenuAuthController::class, 'destroyMenu'])->name('menu-auth.menus.destroy');
+        });
     });
 });
 

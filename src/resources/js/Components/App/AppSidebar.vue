@@ -18,66 +18,65 @@ const props = defineProps({
 const emit = defineEmits(['close', 'toggle-minimize', 'set-minimized']);
 
 const toast = useToast();
-const { isSuperAdmin } = useAuth();
+const { isSuperAdmin, visibleMenus } = useAuth();
 
-// Tambah menu utama di sini.
-const navItems = [
-    { label: 'Documents', icon: 'pi pi-home', routeName: 'dashboard' },
-    { label: 'Profile', icon: 'pi pi-user', routeName: 'profile.edit' },
+// Fallback jika tabel mst_menus belum di-seed
+const fallbackMainMenus = [
+    { code: 'menu.dashboard', name: 'Documents', icon: 'pi pi-home', route_name: 'dashboard' },
+    { code: 'menu.profile', name: 'Profile', icon: 'pi pi-user', route_name: 'profile.edit' },
 ];
+
+// Menu utama di sidebar diambil dinamis dari database (mst_menus)
+const visibleNavItems = computed(() => {
+    const fromDb = visibleMenus.value?.main ?? [];
+    return fromDb.length ? fromDb : fallbackMainMenus;
+});
 
 // Panel sub-menu Settings (seperti contoh referensi gambar)
 const settingsOpen = ref(false);
 const settingsSearch = ref('');
 
-// Daftar grup & sub-menu di dalam panel Settings
-const settingsGroups = [
-    {
-        title: 'Master Setting',
-        items: [
-            { label: 'Master Extensions', routeName: 'settings.extensions.index', description: 'Manage allowed document extensions' },
-            { label: 'Master Teams', routeName: 'settings.teams.index', description: 'Manage workspace teams & codes' },
-            { label: 'Master Users', routeName: 'settings.users.index', description: 'Manage registered users' },
-        ],
-    },
-    {
-        title: 'Access & Authorization',
-        items: [
-            {
-                label: 'Function Authorization',
-                routeName: 'settings.function-auth.index',
-                description: 'Manage menu & action permissions per team or user',
-            },
-        ],
-    },
-    // {
-    //     title: 'Account & Workspace',
-    //     items: [
-    //         { label: 'Profile Information', routeName: 'profile.edit', description: 'Update name and email address' },
-    //         { label: 'Document Workspace', routeName: 'dashboard', description: 'Back to document listing' },
-    //     ],
-    // },
-    
-];
+// // Daftar grup & sub-menu statis sebelumnya (sekarang dibaca dinamis dari mst_menus)
+// const settingsGroups = [
+//     {
+//         title: 'Account & Workspace',
+//         items: [
+//             { label: 'Profile Information', routeName: 'profile.edit', description: 'Update name and email address' },
+//             { label: 'Document Workspace', routeName: 'dashboard', description: 'Back to document listing' },
+//         ],
+//     },
+// ];
 
 const filteredSettingsGroups = computed(() => {
     const q = settingsSearch.value.trim().toLowerCase();
-    if (!q) return settingsGroups;
+    const items = visibleMenus.value?.settings ?? [];
 
-    return settingsGroups
-        .map((group) => ({
-            ...group,
-            items: group.items.filter(
-                (item) =>
-                    item.label.toLowerCase().includes(q) ||
-                    item.description?.toLowerCase().includes(q) ||
-                    group.title.toLowerCase().includes(q),
-            ),
-        }))
-        .filter((group) => group.items.length > 0);
+    const groups = new Map();
+    for (const item of items) {
+        const matches =
+            !q ||
+            item.name.toLowerCase().includes(q) ||
+            (item.description ?? '').toLowerCase().includes(q) ||
+            (item.group ?? '').toLowerCase().includes(q);
+
+        if (!matches) continue;
+
+        const groupTitle = item.group || 'General';
+        if (!groups.has(groupTitle)) groups.set(groupTitle, []);
+        groups.get(groupTitle).push(item);
+    }
+
+    return Array.from(groups.entries()).map(([title, groupItems]) => ({
+        title,
+        items: groupItems,
+    }));
 });
 
-const isActive = (routeName) => route().current(routeName);
+const hasSettingsAccess = computed(
+    () => isSuperAdmin.value || (visibleMenus.value?.settings?.length ?? 0) > 0,
+);
+
+const isActive = (routeName) => Boolean(routeName && route().current(routeName));
 const isSettingsRouteActive = computed(() => route().current('settings.*'));
 
 const toggleSettingsPanel = () => {
@@ -93,18 +92,18 @@ const closeSettingsPanel = () => {
 };
 
 const openSettingItem = (item) => {
-    if (route().has(item.routeName)) {
+    if (item.route_name && route().has(item.route_name)) {
         settingsOpen.value = false;
         emit('close');
-        router.visit(route(item.routeName));
+        router.visit(route(item.route_name));
         return;
     }
 
     toast.add({
         severity: 'info',
-        summary: item.label,
-        detail: `Menu "${item.label}" akan segera kita aktifkan.`,
-        life: 2500,
+        summary: item.name,
+        detail: `Route "${item.route_name || '-'}" untuk menu "${item.name}" belum tersedia.`,
+        life: 3000,
     });
 };
 </script>
@@ -165,28 +164,28 @@ const openSettingItem = (item) => {
         <!-- Navigation -->
         <nav class="px-3 space-y-2">
             <Link
-                v-for="item in navItems"
-                :key="item.routeName"
-                v-tooltip.right="minimized ? item.label : null"
-                :href="route(item.routeName)"
+                v-for="item in visibleNavItems"
+                :key="item.code"
+                v-tooltip.right="minimized ? item.name : null"
+                :href="item.route_name && route().has(item.route_name) ? route(item.route_name) : '#'"
                 class="flex items-center rounded-xl text-sm font-medium transition-colors"
                 :class="[
                     minimized
                         ? 'gap-3 px-3 py-2.5 lg:justify-center lg:gap-0 lg:p-0 lg:w-11 lg:h-11 lg:mx-auto lg:rounded-full'
                         : 'gap-3 px-3 py-2.5',
-                    isActive(item.routeName) && !settingsOpen
+                    isActive(item.route_name) && !settingsOpen
                         ? 'bg-emerald-500/35 text-white shadow-sm ring-1 ring-white/20'
                         : 'text-emerald-100/80 hover:bg-white/10 hover:text-white',
                 ]"
                 @click="closeSettingsPanel"
             >
-                <i :class="[item.icon, 'text-base leading-none']"></i>
-                <span :class="minimized ? 'lg:hidden' : ''">{{ item.label }}</span>
+                <i :class="[item.icon || 'pi pi-circle', 'text-base leading-none']"></i>
+                <span :class="minimized ? 'lg:hidden' : ''">{{ item.name }}</span>
             </Link>
 
-            <!-- Menu Settings (Khusus Superadmin - Membuka Flyout Panel seperti contoh gambar) -->
+            <!-- Menu Settings (Dikontrol Menu Authorization, Superadmin selalu bisa akses) -->
             <button
-                v-if="isSuperAdmin"
+                v-if="hasSettingsAccess"
                 v-tooltip.right="minimized ? 'Settings' : null"
                 type="button"
                 class="w-full flex items-center rounded-xl text-sm font-medium transition-colors cursor-pointer"
@@ -253,7 +252,7 @@ const openSettingItem = (item) => {
         leave-to-class="opacity-0 -translate-x-3"
     >
         <div
-            v-if="isSuperAdmin && settingsOpen"
+            v-if="hasSettingsAccess && settingsOpen"
             class="fixed inset-y-0 left-0 z-40 w-full sm:w-[36rem] lg:w-[42rem] bg-white dark:bg-surface-900 border-r border-slate-200 dark:border-surface-800 shadow-2xl overflow-y-auto px-6 sm:px-10 py-8 transition-all"
             :class="minimized ? 'lg:left-20' : 'lg:left-60'"
         >
@@ -278,7 +277,7 @@ const openSettingItem = (item) => {
                     <InputIcon class="pi pi-search" />
                     <InputText
                         v-model="settingsSearch"
-                        placeholder="Find Menu Settings"
+                        placeholder="  Find Menu Settings"
                         fluid
                         class="!rounded-full !py-2.5 !px-5 !bg-slate-50 dark:!bg-surface-800 !border-slate-200 dark:!border-surface-700"
                     />
@@ -293,7 +292,7 @@ const openSettingItem = (item) => {
                     </h3>
 
                     <ul class="border-l-2 border-slate-200 dark:border-surface-700 pl-5 space-y-3.5">
-                        <li v-for="sub in group.items" :key="sub.label">
+                        <li v-for="sub in group.items" :key="sub.code">
                             <button
                                 type="button"
                                 class="group text-left w-full cursor-pointer"
@@ -302,7 +301,7 @@ const openSettingItem = (item) => {
                                 <span
                                     class="block text-sm font-medium text-slate-600 dark:text-surface-300 group-hover:text-[#1f6f46] dark:group-hover:text-emerald-400 transition-colors"
                                 >
-                                    {{ sub.label }}
+                                    {{ sub.name }}
                                 </span>
                                 <span
                                     v-if="sub.description"

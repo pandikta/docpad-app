@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\FunctionAuthService;
+use App\Services\MenuAuthService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -41,6 +42,12 @@ class HandleInertiaRequests extends Middleware
                 'permissions' => fn () => $request->user()
                     ? app(FunctionAuthService::class)->getPermissionsMap($request->user())
                     : [],
+                'menus' => fn () => $request->user()
+                    ? app(MenuAuthService::class)->getPermissionsMap($request->user())
+                    : [],
+                'visibleMenus' => fn () => $request->user()
+                    ? app(MenuAuthService::class)->getVisibleMenusForUser($request->user())
+                    : ['main' => [], 'settings' => []],
             ],
             // Flash message (mis. ->with('success', '...')) yang ditampilkan sebagai toast di FE.
             'flash' => [

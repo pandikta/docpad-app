@@ -45,4 +45,67 @@ class TeamService
                 'code' => $team->team_code,
             ]);
     }
+
+    /**
+     * Daftar seluruh team beserta jumlah anggota untuk halaman Master Teams.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function listAllForManagement(): Collection
+    {
+        return Team::withCount('users')
+            ->orderBy('team_name')
+            ->get()
+            ->map(fn (Team $team) => [
+                'id' => $team->id,
+                'team_code' => $team->team_code,
+                'team_name' => $team->team_name,
+                'max_member' => $team->max_member,
+                'users_count' => $team->users_count,
+                'description' => $team->description,
+                'is_active' => (bool) $team->is_active,
+            ]);
+    }
+
+    /**
+     * Buat team baru.
+     *
+     * @param  array{team_code: string, team_name: string, max_member: int, description?: ?string, is_active?: bool}  $data
+     */
+    public function create(array $data): Team
+    {
+        return Team::create([
+            'team_code' => trim($data['team_code']),
+            'team_name' => trim($data['team_name']),
+            'max_member' => (int) $data['max_member'],
+            'description' => isset($data['description']) ? trim($data['description']) : null,
+            'is_active' => ($data['is_active'] ?? true) ? 1 : 0,
+        ]);
+    }
+
+    /**
+     * Perbarui data team.
+     *
+     * @param  array{team_code: string, team_name: string, max_member: int, description?: ?string, is_active?: bool}  $data
+     */
+    public function update(Team $team, array $data): Team
+    {
+        $team->update([
+            'team_code' => trim($data['team_code']),
+            'team_name' => trim($data['team_name']),
+            'max_member' => (int) $data['max_member'],
+            'description' => isset($data['description']) ? trim($data['description']) : null,
+            'is_active' => ($data['is_active'] ?? true) ? 1 : 0,
+        ]);
+
+        return $team;
+    }
+
+    /**
+     * Hapus team.
+     */
+    public function delete(Team $team): void
+    {
+        $team->delete();
+    }
 }
