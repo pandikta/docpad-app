@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
@@ -7,6 +7,7 @@ import Menu from 'primevue/menu';
 import Popover from 'primevue/popover';
 import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
+import Checkbox from 'primevue/checkbox';
 import { useAuth } from '@/composables/useAuth';
 import { useDocumentSearch } from '@/composables/useDocumentSearch';
 import { formatFileSize, formatDateTime } from '@/utils/formatters';
@@ -285,10 +286,141 @@ const paginatorPt = {
 
 const actionBtnClass =
     'transition-all duration-150 hover:!border-[#1f6f46] hover:!bg-emerald-50 hover:!text-[#1f6f46] dark:hover:!border-emerald-500/70 dark:hover:!bg-emerald-950/60 dark:hover:!text-emerald-300 hover:-translate-y-0.5 hover:shadow-sm';
+
+// --- Horizontal scroll helpers for mouse users ---------------------------
+const tableSectionRef = ref(null);
+const hasHorizontalOverflow = ref(false);
+const canScrollLeft = ref(false);
+const canScrollRight = ref(false);
+let tableScrollEl = null;
+let resizeObserver = null;
+
+const updateScrollState = () => {
+    if (!tableScrollEl) return;
+    const maxScroll = tableScrollEl.scrollWidth - tableScrollEl.clientWidth;
+    hasHorizontalOverflow.value = maxScroll > 2;
+    canScrollLeft.value = tableScrollEl.scrollLeft > 2;
+    canScrollRight.value = tableScrollEl.scrollLeft < maxScroll - 2;
+};
+
+const scrollTableBy = (delta) => {
+    if (!tableScrollEl) return;
+    tableScrollEl.scrollBy({ left: delta, behavior: 'smooth' });
+};
+
+const handleTableWheel = (event) => {
+    if (!tableScrollEl || !hasHorizontalOverflow.value) return;
+    if (event.shiftKey && Math.abs(event.deltaY) > 0) {
+        event.preventDefault();
+        tableScrollEl.scrollLeft += event.deltaY;
+    }
+};
+
+onMounted(() => {
+    nextTick(() => {
+        tableScrollEl = tableSectionRef.value?.querySelector('.p-datatable-table-container') ?? null;
+        if (!tableScrollEl) return;
+
+        updateScrollState();
+        tableScrollEl.addEventListener('scroll', updateScrollState, { passive: true });
+        tableScrollEl.addEventListener('wheel', handleTableWheel, { passive: false });
+
+        if (typeof ResizeObserver !== 'undefined') {
+            resizeObserver = new ResizeObserver(updateScrollState);
+            resizeObserver.observe(tableScrollEl);
+            if (tableScrollEl.firstElementChild) {
+                resizeObserver.observe(tableScrollEl.firstElementChild);
+            }
+        }
+    });
+});
+
+onBeforeUnmount(() => {
+    if (tableScrollEl) {
+        tableScrollEl.removeEventListener('scroll', updateScrollState);
+        tableScrollEl.removeEventListener('wheel', handleTableWheel);
+    }
+    resizeObserver?.disconnect();
+});
+
+watch(
+    () => filteredDocuments.value.length,
+    () => nextTick(updateScrollState),
+);
+
+// --- Column visibility & freeze manager --------------------------------
+const COLUMN_PREFS_KEY = 'docpad_table_columns_v1';
+const defaultColumnPrefs = () => ({
+    visible: {
+        folder: true,
+        visibility: true,
+        size: true,
+        teams: true,
+        created: true,
+        updated: true,
+    },
+    freezeName: false,
+    freezeActions: false,
+});
+
+const loadColumnPrefs = () => {
+    try {
+        const raw = window.localStorage.getItem(COLUMN_PREFS_KEY);
+        if (!raw) return defaultColumnPrefs();
+        const parsed = JSON.parse(raw);
+        return {
+            visible: { ...defaultColumnPrefs().visible, ...(parsed?.visible ?? {}) },
+            freezeName: Boolean(parsed?.freezeName),
+            freezeActions: Boolean(parsed?.freezeActions),
+        };
+    } catch {
+        return defaultColumnPrefs();
+    }
+};
+
+const columnPrefs = ref(loadColumnPrefs());
+const columnsPopoverRef = ref(null);
+
+const toggleableColumns = computed(() => {
+    const cols = [
+        { key: 'folder', label: 'Folder' },
+        { key: 'visibility', label: 'Visibility' },
+        { key: 'size', label: 'Size' },
+    ];
+    if (isSuperAdmin.value) {
+        cols.push({ key: 'teams', label: 'Teams' });
+    }
+    cols.push({ key: 'created', label: 'Created' }, { key: 'updated', label: 'Updated' });
+    return cols;
+});
+
+const toggleColumnsPopover = (event) => {
+    columnsPopoverRef.value?.toggle(event);
+};
+
+const resetColumnPrefs = () => {
+    columnPrefs.value = defaultColumnPrefs();
+};
+
+watch(
+    columnPrefs,
+    (prefs) => {
+        try {
+            window.localStorage.setItem(COLUMN_PREFS_KEY, JSON.stringify(prefs));
+        } catch {
+            // ignore storage quota/privacy errors
+        }
+        nextTick(updateScrollState);
+    },
+    { deep: true },
+);
 </script>
 
 <template>
-    <section class="rounded-2xl bg-white dark:bg-surface-900 border border-slate-200 dark:border-surface-800 shadow-sm overflow-hidden">
+    <section
+        ref="tableSectionRef"
+        class="docpad-table-section rounded-2xl bg-white dark:bg-surface-900 border border-slate-200 dark:border-surface-800 shadow-sm overflow-hidden"
+    >
         <!-- Header -->
         <header class="flex flex-wrap items-center justify-between gap-3 px-6 py-5">
             <div class="flex flex-wrap items-center gap-3">
@@ -326,7 +458,42 @@ const actionBtnClass =
                     <span>Clear filters</span>
                 </button>
             </div>
-            <slot name="header-actions" />
+            <div class="flex items-center gap-2">
+                <div
+                    v-if="hasHorizontalOverflow"
+                    class="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 dark:border-surface-700 dark:bg-surface-800"
+                >
+                    <Button
+                        v-tooltip.top="'Scroll Left (or Shift + Wheel)'"
+                        icon="pi pi-chevron-left"
+                        text
+                        size="small"
+                        :disabled="!canScrollLeft"
+                        class="!h-7 !w-7 !p-0"
+                        @click="scrollTableBy(-280)"
+                    />
+                    <Button
+                        v-tooltip.top="'Scroll Right (or Shift + Wheel)'"
+                        icon="pi pi-chevron-right"
+                        text
+                        size="small"
+                        :disabled="!canScrollRight"
+                        class="!h-7 !w-7 !p-0"
+                        @click="scrollTableBy(280)"
+                    />
+                </div>
+                <Button
+                    v-tooltip.top="'Manage Columns (Show/Hide & Freeze)'"
+                    label="Columns"
+                    icon="pi pi-sliders-h"
+                    size="small"
+                    severity="secondary"
+                    variant="outlined"
+                    class="!rounded-xl"
+                    @click="toggleColumnsPopover"
+                />
+                <slot name="header-actions" />
+            </div>
         </header>
 
         <!-- Bulk Action Bar -->
@@ -396,6 +563,7 @@ const actionBtnClass =
             v-model:selection="selectedDocuments"
             :value="filteredDocuments"
             dataKey="id"
+            :scrollable="columnPrefs.freezeName || columnPrefs.freezeActions"
             paginator
             :rows="rows"
             paginatorTemplate="CurrentPageReport PrevPageLink PageLinks NextPageLink"
@@ -436,7 +604,7 @@ const actionBtnClass =
             <Column selectionMode="multiple" headerStyle="width: 3rem" />
 
             <!-- Name -->
-            <Column field="name" sortable>
+            <Column field="name" sortable :frozen="columnPrefs.freezeName">
                 <template #header>
                     <div class="flex items-center justify-between gap-2 w-full">
                         <span>Name</span>
@@ -468,12 +636,13 @@ const actionBtnClass =
                             ></i>
                         </button>
                         <button
+                            v-tooltip.top="data.name"
                             type="button"
-                            class="flex items-center gap-2.5 text-left font-medium text-slate-700 dark:text-surface-100 hover:text-[#1f6f46] dark:hover:text-emerald-400 hover:underline cursor-pointer"
+                            class="flex min-w-0 max-w-[16rem] sm:max-w-[20rem] items-center gap-2.5 text-left font-medium text-slate-700 dark:text-surface-100 hover:text-[#1f6f46] dark:hover:text-emerald-400 hover:underline cursor-pointer"
                             @click="$emit('open', data)"
                         >
-                            <i :class="getDocumentIconClass(data)"></i>
-                            <span>{{ data.name }}</span>
+                            <i :class="[getDocumentIconClass(data), 'shrink-0']"></i>
+                            <span class="truncate">{{ data.name }}</span>
                         </button>
                         <button
                             v-if="data.share_link"
@@ -489,7 +658,7 @@ const actionBtnClass =
             </Column>
 
             <!-- Folder -->
-            <Column field="folder_name" sortable>
+            <Column v-if="columnPrefs.visible.folder" field="folder_name" sortable>
                 <template #header>
                     <div class="flex items-center justify-between gap-2 w-full">
                         <span>Folder</span>
@@ -517,7 +686,7 @@ const actionBtnClass =
             </Column>
 
             <!-- Visibility -->
-            <Column field="visibility" sortable>
+            <Column v-if="columnPrefs.visible.visibility" field="visibility" sortable>
                 <template #header>
                     <div class="flex items-center justify-between gap-2 w-full">
                         <span>Visibility</span>
@@ -551,7 +720,7 @@ const actionBtnClass =
             </Column>
 
             <!-- Size -->
-            <Column field="size" sortable>
+            <Column v-if="columnPrefs.visible.size" field="size" sortable>
                 <template #header>
                     <div class="flex items-center justify-between gap-2 w-full">
                         <span>Size</span>
@@ -570,7 +739,7 @@ const actionBtnClass =
             </Column>
 
             <!-- Teams (khusus Superadmin) -->
-            <Column v-if="isSuperAdmin">
+            <Column v-if="isSuperAdmin && columnPrefs.visible.teams">
                 <template #header>
                     <div class="flex items-center justify-between gap-2 w-full">
                         <span>Teams</span>
@@ -618,7 +787,7 @@ const actionBtnClass =
             </Column>
 
             <!-- Created At (siapa yang membuat & jamnya) -->
-            <Column field="created_at" sortable>
+            <Column v-if="columnPrefs.visible.created" field="created_at" sortable>
                 <template #header>
                     <div class="flex items-center justify-between gap-2 w-full">
                         <span>Created At</span>
@@ -646,7 +815,7 @@ const actionBtnClass =
             </Column>
 
             <!-- Updated At -->
-            <Column field="updated_at" sortable>
+            <Column v-if="columnPrefs.visible.updated" field="updated_at" sortable>
                 <template #header>
                     <div class="flex items-center justify-between gap-2 w-full">
                         <span>Updated At</span>
@@ -665,7 +834,13 @@ const actionBtnClass =
             </Column>
 
             <!-- Actions -->
-            <Column header="Actions" headerClass="!text-right" bodyClass="!text-right">
+            <Column
+                header="Actions"
+                :frozen="columnPrefs.freezeActions"
+                alignFrozen="right"
+                headerClass="!text-right"
+                bodyClass="!text-right"
+            >
                 <template #body="{ data }">
                     <div class="flex justify-end gap-2">
                         <Button
@@ -750,5 +925,80 @@ const actionBtnClass =
                 </div>
             </div>
         </Popover>
+
+        <Popover ref="columnsPopoverRef" class="w-64">
+            <div class="space-y-3 p-1">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-surface-400">
+                        Visible Columns
+                    </span>
+                    <button
+                        type="button"
+                        class="text-xs font-semibold text-[#1f6f46] hover:underline dark:text-emerald-400 cursor-pointer"
+                        @click="resetColumnPrefs"
+                    >
+                        Reset
+                    </button>
+                </div>
+
+                <div class="space-y-2">
+                    <label
+                        v-for="col in toggleableColumns"
+                        :key="col.key"
+                        class="flex items-center gap-2.5 text-sm text-slate-700 dark:text-surface-200 cursor-pointer"
+                    >
+                        <Checkbox v-model="columnPrefs.visible[col.key]" binary />
+                        <span>{{ col.label }}</span>
+                    </label>
+                </div>
+
+                <div class="border-t border-slate-200 pt-2.5 dark:border-surface-700 space-y-2">
+                    <span class="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-surface-400">
+                        Freeze Columns
+                    </span>
+                    <label class="flex items-center gap-2.5 text-sm text-slate-700 dark:text-surface-200 cursor-pointer">
+                        <Checkbox v-model="columnPrefs.freezeName" binary />
+                        <span>Freeze Name (Left)</span>
+                    </label>
+                    <label class="flex items-center gap-2.5 text-sm text-slate-700 dark:text-surface-200 cursor-pointer">
+                        <Checkbox v-model="columnPrefs.freezeActions" binary />
+                        <span>Freeze Actions (Right)</span>
+                    </label>
+                </div>
+            </div>
+        </Popover>
     </section>
 </template>
+
+<style scoped>
+.docpad-table-section :deep(.p-datatable-table-container) {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, 0.45) transparent;
+}
+.docpad-table-section :deep(.p-datatable-table-container::-webkit-scrollbar) {
+    height: 10px;
+}
+.docpad-table-section :deep(.p-datatable-table-container::-webkit-scrollbar-track) {
+    background: rgba(148, 163, 184, 0.12);
+    border-radius: 9999px;
+}
+.docpad-table-section :deep(.p-datatable-table-container::-webkit-scrollbar-thumb) {
+    background: rgba(100, 116, 139, 0.45);
+    border-radius: 9999px;
+}
+.docpad-table-section :deep(.p-datatable-table-container::-webkit-scrollbar-thumb:hover) {
+    background: rgba(31, 111, 70, 0.75);
+}
+.docpad-table-section :deep(.p-datatable-tbody > tr > td.p-datatable-frozen-column) {
+    background: #ffffff;
+    z-index: 1;
+}
+.docpad-table-section :deep(.p-datatable-thead > tr > th.p-datatable-frozen-column) {
+    background: #f8fafc;
+    z-index: 2;
+}
+:global(.dark) .docpad-table-section :deep(.p-datatable-tbody > tr > td.p-datatable-frozen-column),
+:global(.dark) .docpad-table-section :deep(.p-datatable-thead > tr > th.p-datatable-frozen-column) {
+    background: var(--p-surface-900);
+}
+</style>
