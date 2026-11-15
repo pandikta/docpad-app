@@ -1,14 +1,47 @@
 <script setup>
+import { ref } from 'vue';
+
 defineProps({
     name: { type: String, default: '' },
     subtitle: { type: String, default: "Manage your team's documents easily." },
 });
+
+const STORAGE_KEY = 'docpad_welcome_banner_hidden';
+
+const isDismissed = ref(
+    (() => {
+        try {
+            return window.sessionStorage.getItem(STORAGE_KEY) === '1';
+        } catch {
+            return false;
+        }
+    })(),
+);
+
+const dismiss = () => {
+    isDismissed.value = true;
+    try {
+        window.sessionStorage.setItem(STORAGE_KEY, '1');
+    } catch {
+        // ignore storage errors
+    }
+};
 </script>
 
 <template>
     <section
+        v-if="!isDismissed"
         class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#e3f5ea] via-[#d3eedf] to-[#c2e8d4] dark:from-emerald-950/60 dark:via-emerald-900/30 dark:to-emerald-900/20 border border-emerald-100 dark:border-emerald-900/40"
     >
+        <button
+            type="button"
+            title="Dismiss"
+            aria-label="Close welcome banner"
+            class="absolute top-3 right-3 z-20 flex h-7 w-7 items-center justify-center rounded-full text-[#1f6f46]/70 hover:bg-white/60 hover:text-[#0f3d28] dark:text-emerald-300/70 dark:hover:bg-emerald-950/60 dark:hover:text-emerald-200 transition-colors cursor-pointer"
+            @click="dismiss"
+        >
+            <i class="pi pi-times text-xs"></i>
+        </button>
         <div class="relative z-10 flex items-center gap-4 px-6 sm:px-8 py-8">
             <span class="hidden sm:block w-1 self-stretch rounded-full bg-[#1f6f46]"></span>
             <div>

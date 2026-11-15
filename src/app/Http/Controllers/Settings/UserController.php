@@ -36,6 +36,7 @@ class UserController extends Controller
             'password' => ['required', Password::defaults()],
             'team_id' => ['nullable', 'integer', 'exists:mst_teams,id', 'required_if:is_superadmin,false'],
             'is_superadmin' => ['boolean'],
+            'is_team_leader' => ['boolean'],
             'storage_limit_mb' => ['nullable', 'integer', 'min:1', 'max:1048576'],
         ]);
 
@@ -59,6 +60,7 @@ class UserController extends Controller
             'password' => ['nullable', Password::defaults()],
             'team_id' => ['nullable', 'integer', 'exists:mst_teams,id', 'required_if:is_superadmin,false'],
             'is_superadmin' => ['boolean'],
+            'is_team_leader' => ['boolean'],
             'storage_limit_mb' => ['nullable', 'integer', 'min:1', 'max:1048576'],
         ]);
 

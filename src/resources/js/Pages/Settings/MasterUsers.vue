@@ -38,6 +38,7 @@ const form = useForm({
     password: '',
     team_id: null,
     is_superadmin: false,
+    is_team_leader: false,
     storage_limit_mb: 100,
 });
 
@@ -76,6 +77,7 @@ const openCreate = () => {
     form.password = '';
     form.team_id = props.teams[0]?.id ?? null;
     form.is_superadmin = false;
+    form.is_team_leader = false;
     form.storage_limit_mb = 100;
     dialogVisible.value = true;
 };
@@ -88,6 +90,7 @@ const openEdit = (user) => {
     form.password = '';
     form.team_id = user.team_id;
     form.is_superadmin = Boolean(user.is_superadmin);
+    form.is_team_leader = Boolean(user.is_team_leader);
     form.storage_limit_mb = user.storage_limit_mb ?? null;
     dialogVisible.value = true;
 };
@@ -204,8 +207,8 @@ const deleteUser = () => {
                     <Column header="Role">
                         <template #body="{ data }">
                             <Tag
-                                :value="data.is_superadmin ? 'Superadmin' : 'Member'"
-                                :severity="data.is_superadmin ? 'warn' : 'info'"
+                                :value="data.is_superadmin ? 'Superadmin' : data.is_team_leader ? 'PM / Team Lead' : 'Member'"
+                                :severity="data.is_superadmin ? 'warn' : data.is_team_leader ? 'success' : 'info'"
                             />
                         </template>
                     </Column>
@@ -327,6 +330,14 @@ const deleteUser = () => {
                 <div class="flex items-center justify-between pt-1">
                     <span class="text-sm font-semibold">Superadmin Role</span>
                     <ToggleSwitch v-model="form.is_superadmin" />
+                </div>
+
+                <div v-if="!form.is_superadmin" class="flex items-center justify-between pt-1">
+                    <div>
+                        <span class="text-sm font-semibold">Team Leader (PM)</span>
+                        <p class="text-xs text-slate-400">Can manage team share links & member permissions</p>
+                    </div>
+                    <ToggleSwitch v-model="form.is_team_leader" />
                 </div>
 
                 <div v-if="!form.is_superadmin" class="flex flex-col gap-1.5">

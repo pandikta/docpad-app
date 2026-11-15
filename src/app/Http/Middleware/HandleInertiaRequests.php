@@ -36,8 +36,9 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 // Hanya field yang aman & dibutuhkan FE (jangan kirim model User utuh).
                 'user' => $request->user() ? [
-                    ...$request->user()->only('id', 'name', 'email', 'email_verified_at'),
+                    ...$request->user()->only('id', 'name', 'email', 'team_id', 'email_verified_at'),
                     'is_superadmin' => $request->user()->isSuperAdmin(),
+                    'is_team_leader' => $request->user()->isTeamLeader(),
                 ] : null,
                 'permissions' => fn () => $request->user()
                     ? app(FunctionAuthService::class)->getPermissionsMap($request->user())

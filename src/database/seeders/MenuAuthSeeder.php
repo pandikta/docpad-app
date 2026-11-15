@@ -37,6 +37,17 @@ class MenuAuthSeeder extends Seeder
                 'sort_order' => 2,
             ],
             [
+                'code' => 'menu.team-control',
+                'name' => 'Team Control',
+                'group' => 'Main Navigation',
+                'section' => 'main',
+                'route_name' => 'team-control.index',
+                'icon' => 'pi pi-shield',
+                'description' => 'Manage team active share links and member document permissions',
+                'default_allowed' => false,
+                'sort_order' => 3,
+            ],
+            [
                 'code' => 'menu.settings.extensions',
                 'name' => 'Master Extensions',
                 'group' => 'Master Setting',

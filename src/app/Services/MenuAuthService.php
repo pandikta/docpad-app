@@ -48,13 +48,17 @@ class MenuAuthService
 
         $userRules = MenuAuth::where('user_id', $user->id)->pluck('is_allowed', 'menu_id');
 
-        return $menus->mapWithKeys(function (AppMenu $menu) use ($userRules, $teamRules) {
+        return $menus->mapWithKeys(function (AppMenu $menu) use ($user, $userRules, $teamRules) {
             if ($userRules->has($menu->id)) {
                 return [$menu->code => (bool) $userRules->get($menu->id)];
             }
 
             if ($teamRules->has($menu->id)) {
                 return [$menu->code => (bool) $teamRules->get($menu->id)];
+            }
+
+            if ($menu->code === 'menu.team-control' && $user->isTeamLeader()) {
+                return [$menu->code => true];
             }
 
             return [$menu->code => (bool) $menu->default_allowed];

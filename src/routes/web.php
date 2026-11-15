@@ -9,6 +9,7 @@ use App\Http\Controllers\Settings\MenuAuthController;
 use App\Http\Controllers\Settings\TeamController;
 use App\Http\Controllers\Settings\UserController;
 use App\Http\Controllers\ShareController;
+use App\Http\Controllers\TeamControlController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -49,6 +50,14 @@ Route::middleware('auth')->group(function () {
     Route::delete('/document-folders/{folder}', [DocumentController::class, 'destroyFolder'])->name('document-folders.destroy');
     Route::post('/documents/{document}/share', [DocumentController::class, 'createShareLink'])->name('documents.share.store');
     Route::delete('/documents/{document}/share', [DocumentController::class, 'revokeShareLink'])->name('documents.share.destroy');
+
+    // Team Control (dikontrol oleh Menu Authorization, Superadmin selalu punya akses penuh)
+    Route::middleware('menu.auth:menu.team-control')->group(function () {
+        Route::get('/team-control', [TeamControlController::class, 'index'])->name('team-control.index');
+        Route::delete('/team-control/share-links/{shareLink}', [TeamControlController::class, 'revokeShareLink'])->name('team-control.share-links.revoke');
+        Route::put('/team-control/permissions', [TeamControlController::class, 'updatePermission'])->name('team-control.permissions.update');
+        Route::delete('/team-control/permissions/reset', [TeamControlController::class, 'resetPermission'])->name('team-control.permissions.reset');
+    });
 
     Route::middleware('menu.auth:menu.profile')->group(function () {
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

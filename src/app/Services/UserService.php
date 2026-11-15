@@ -71,7 +71,7 @@ class UserService
             ->withSum('documents as storage_used_bytes', 'size')
             ->orderByDesc('is_superadmin')
             ->orderBy('name')
-            ->get(['id', 'team_id', 'name', 'email', 'is_superadmin', 'storage_limit_mb', 'last_login', 'created_at'])
+            ->get(['id', 'team_id', 'name', 'email', 'is_superadmin', 'is_team_leader', 'storage_limit_mb', 'last_login', 'created_at'])
             ->map(fn (User $user) => [
                 'id' => $user->id,
                 'team_id' => $user->team_id,
@@ -79,6 +79,7 @@ class UserService
                 'name' => $user->name,
                 'email' => $user->email,
                 'is_superadmin' => (bool) $user->is_superadmin,
+                'is_team_leader' => (bool) $user->is_team_leader,
                 'storage_limit_mb' => $user->storage_limit_mb !== null ? (int) $user->storage_limit_mb : null,
                 'storage_used_bytes' => (int) ($user->storage_used_bytes ?? 0),
                 'last_login' => $user->last_login?->toIso8601String(),
@@ -105,6 +106,7 @@ class UserService
                 : 100,
         ])->forceFill([
             'is_superadmin' => $isSuperAdmin,
+            'is_team_leader' => $isSuperAdmin ? false : (bool) ($data['is_team_leader'] ?? false),
             'email_verified_at' => now(),
         ]);
 
@@ -131,6 +133,7 @@ class UserService
                 : $user->storage_limit_mb,
         ])->forceFill([
             'is_superadmin' => $isSuperAdmin,
+            'is_team_leader' => $isSuperAdmin ? false : (bool) ($data['is_team_leader'] ?? false),
         ]);
 
         if (! empty($data['password'])) {

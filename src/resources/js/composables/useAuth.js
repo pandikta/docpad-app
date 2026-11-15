@@ -10,6 +10,7 @@ export function useAuth() {
 
     const user = computed(() => page.props.auth?.user ?? null);
     const isSuperAdmin = computed(() => Boolean(user.value?.is_superadmin));
+    const isTeamLeader = computed(() => Boolean(user.value?.is_team_leader));
     const permissions = computed(() => page.props.auth?.permissions ?? {});
     const menus = computed(() => page.props.auth?.menus ?? {});
     const visibleMenus = computed(() => page.props.auth?.visibleMenus ?? { main: [], settings: [] });
@@ -34,6 +35,7 @@ export function useAuth() {
     return {
         user,
         isSuperAdmin,
+        isTeamLeader,
         permissions,
         menus,
         visibleMenus,

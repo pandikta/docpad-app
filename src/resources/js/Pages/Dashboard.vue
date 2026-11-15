@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { Head, usePage } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
@@ -30,7 +30,7 @@ const props = defineProps({
 });
 
 const page = usePage();
-const { can } = useAuth();
+const { can, isSuperAdmin, isTeamLeader } = useAuth();
 const {
     uploading,
     creating,

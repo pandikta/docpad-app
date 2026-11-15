@@ -56,6 +56,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Cek apakah user ini adalah Team Leader / PM untuk timnya.
+     */
+    public function isTeamLeader(): bool
+    {
+        return ! $this->isSuperAdmin() && (bool) $this->is_team_leader && $this->team_id !== null;
+    }
+
+    /**
      * Cek apakah user berhak mengakses resource milik team tertentu.
      * Superadmin otomatis dikecualikan (bisa akses semua team).
      */
@@ -94,6 +102,7 @@ class User extends Authenticatable
             'last_login' => 'datetime',
             'password' => 'hashed',
             'is_superadmin' => 'boolean',
+            'is_team_leader' => 'boolean',
             'storage_limit_mb' => 'integer',
         ];
     }
