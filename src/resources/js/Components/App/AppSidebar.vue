@@ -79,6 +79,49 @@ const hasSettingsAccess = computed(
 const isActive = (routeName) => Boolean(routeName && route().current(routeName));
 const isSettingsRouteActive = computed(() => route().current('settings.*'));
 
+// State expand/collapse untuk menu yang memiliki sub-menu (parent_id)
+const expandedParents = ref({});
+
+const isParentActive = (item) =>
+    (item.children ?? []).some((child) => isActive(child.route_name));
+
+const isParentExpanded = (item) => {
+    if (expandedParents.value[item.code] !== undefined) {
+        return expandedParents.value[item.code];
+    }
+    return isParentActive(item);
+};
+
+const toggleParentExpand = (item) => {
+    expandedParents.value[item.code] = !isParentExpanded(item);
+};
+
+const onParentClick = (item) => {
+    closeSettingsPanel();
+    if (props.minimized) {
+        emit('set-minimized', false);
+        expandedParents.value[item.code] = true;
+        return;
+    }
+    toggleParentExpand(item);
+};
+
+const navigateMenu = (item) => {
+    closeSettingsPanel();
+    if (item.route_name && route().has(item.route_name)) {
+        emit('close');
+        router.visit(route(item.route_name));
+        return;
+    }
+
+    toast.add({
+        severity: 'info',
+        summary: item.name,
+        detail: `Route "${item.route_name || '-'}" untuk menu "${item.name}" belum tersedia.`,
+        life: 3000,
+    });
+};
+
 const toggleSettingsPanel = () => {
     settingsOpen.value = !settingsOpen.value;
     if (settingsOpen.value) {
@@ -163,25 +206,77 @@ const openSettingItem = (item) => {
 
         <!-- Navigation -->
         <nav class="px-3 space-y-2">
-            <Link
-                v-for="item in visibleNavItems"
-                :key="item.code"
-                v-tooltip.right="minimized ? item.name : null"
-                :href="item.route_name && route().has(item.route_name) ? route(item.route_name) : '#'"
-                class="flex items-center rounded-xl text-sm font-medium transition-colors"
-                :class="[
-                    minimized
-                        ? 'gap-3 px-3 py-2.5 lg:justify-center lg:gap-0 lg:p-0 lg:w-11 lg:h-11 lg:mx-auto lg:rounded-full'
-                        : 'gap-3 px-3 py-2.5',
-                    isActive(item.route_name) && !settingsOpen
-                        ? 'bg-emerald-500/35 text-white shadow-sm ring-1 ring-white/20'
-                        : 'text-emerald-100/80 hover:bg-white/10 hover:text-white',
-                ]"
-                @click="closeSettingsPanel"
-            >
-                <i :class="[item.icon || 'pi pi-circle', 'text-base leading-none']"></i>
-                <span :class="minimized ? 'lg:hidden' : ''">{{ item.name }}</span>
-            </Link>
+            <div v-for="item in visibleNavItems" :key="item.code" class="space-y-1">
+                <!-- Menu dengan Sub-menu (Parent Menu — klik hanya expand/collapse, tidak direct ke halaman) -->
+                <template v-if="item.children?.length">
+                    <button
+                        v-tooltip.right="minimized ? item.name : null"
+                        type="button"
+                        class="w-full flex items-center rounded-xl text-sm font-medium transition-colors text-left cursor-pointer"
+                        :class="[
+                            minimized
+                                ? 'gap-3 px-3 py-2.5 lg:justify-center lg:gap-0 lg:p-0 lg:w-11 lg:h-11 lg:mx-auto lg:rounded-full'
+                                : 'gap-3 px-3 py-2.5',
+                            isParentActive(item) && !settingsOpen
+                                ? 'bg-emerald-500/35 text-white shadow-sm ring-1 ring-white/20'
+                                : 'text-emerald-100/80 hover:bg-white/10 hover:text-white',
+                        ]"
+                        @click="onParentClick(item)"
+                    >
+                        <i :class="[item.icon || 'pi pi-circle', 'text-base leading-none']"></i>
+                        <span class="truncate" :class="minimized ? 'lg:hidden' : ''">{{ item.name }}</span>
+                        <span :class="minimized ? 'lg:hidden' : ''" class="ml-auto flex items-center">
+                            <i
+                                class="pi pi-chevron-down text-[11px] transition-transform"
+                                :class="isParentExpanded(item) ? 'rotate-180' : ''"
+                            ></i>
+                        </span>
+                    </button>
+
+                    <!-- Daftar Sub-menu -->
+                    <div
+                        v-if="isParentExpanded(item)"
+                        class="ml-5 pl-3 border-l border-emerald-400/30 space-y-1"
+                        :class="minimized ? 'lg:hidden' : ''"
+                    >
+                        <button
+                            v-for="child in item.children"
+                            :key="child.code"
+                            type="button"
+                            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer"
+                            :class="
+                                isActive(child.route_name) && !settingsOpen
+                                    ? 'bg-emerald-500/30 text-white'
+                                    : 'text-emerald-100/80 hover:bg-white/10 hover:text-white'
+                            "
+                            @click="navigateMenu(child)"
+                        >
+                            <i :class="[child.icon || 'pi pi-circle', 'text-xs leading-none']"></i>
+                            <span class="truncate">{{ child.name }}</span>
+                        </button>
+                    </div>
+                </template>
+
+                <!-- Menu Langsung (Button Menu tanpa sub-menu) -->
+                <button
+                    v-else
+                    v-tooltip.right="minimized ? item.name : null"
+                    type="button"
+                    class="w-full flex items-center rounded-xl text-sm font-medium transition-colors text-left cursor-pointer"
+                    :class="[
+                        minimized
+                            ? 'gap-3 px-3 py-2.5 lg:justify-center lg:gap-0 lg:p-0 lg:w-11 lg:h-11 lg:mx-auto lg:rounded-full'
+                            : 'gap-3 px-3 py-2.5',
+                        isActive(item.route_name) && !settingsOpen
+                            ? 'bg-emerald-500/35 text-white shadow-sm ring-1 ring-white/20'
+                            : 'text-emerald-100/80 hover:bg-white/10 hover:text-white',
+                    ]"
+                    @click="navigateMenu(item)"
+                >
+                    <i :class="[item.icon || 'pi pi-circle', 'text-base leading-none']"></i>
+                    <span :class="minimized ? 'lg:hidden' : ''">{{ item.name }}</span>
+                </button>
+            </div>
 
             <!-- Menu Settings (Dikontrol Menu Authorization, Superadmin selalu bisa akses) -->
             <button

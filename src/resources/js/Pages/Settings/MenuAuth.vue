@@ -18,6 +18,7 @@ const props = defineProps({
     teams: { type: Array, default: () => [] },
     users: { type: Array, default: () => [] },
     authRules: { type: Array, default: () => [] },
+    availableRoutes: { type: Array, default: () => [] },
 });
 
 const toast = useToast();
@@ -39,6 +40,7 @@ const sectionOptions = [
 ];
 
 const menuForm = useForm({
+    parent_id: null,
     code: '',
     name: '',
     group: 'Master Setting',
@@ -50,10 +52,20 @@ const menuForm = useForm({
     sort_order: 50,
 });
 
+// Pilihan Parent Menu (hanya menu top-level di sidebar utama, selain dirinya sendiri)
+const parentMenuOptions = computed(() =>
+    props.menus
+        .filter((m) => m.section === 'main' && !m.parent_id && m.id !== editingMenu.value?.id)
+        .map((m) => ({ label: m.name, value: m.id })),
+);
+
+const getParentName = (parentId) => props.menus.find((m) => m.id === parentId)?.name ?? null;
+
 const openCreateMenu = () => {
     editingMenu.value = null;
     menuForm.reset();
     menuForm.clearErrors();
+    menuForm.parent_id = null;
     menuForm.group = 'Master Setting';
     menuForm.section = 'settings';
     menuForm.icon = 'pi pi-circle';
@@ -65,6 +77,7 @@ const openCreateMenu = () => {
 const openEditMenu = (menu) => {
     editingMenu.value = menu;
     menuForm.clearErrors();
+    menuForm.parent_id = menu.parent_id ?? null;
     menuForm.code = menu.code;
     menuForm.name = menu.name;
     menuForm.group = menu.group;
@@ -75,6 +88,13 @@ const openEditMenu = (menu) => {
     menuForm.default_allowed = Boolean(menu.default_allowed);
     menuForm.sort_order = menu.sort_order ?? 50;
     menuDialogVisible.value = true;
+};
+
+const onParentChange = (parentId) => {
+    if (parentId) {
+        menuForm.section = 'main';
+        menuForm.group = 'Main Navigation';
+    }
 };
 
 const submitMenuForm = () => {
@@ -368,7 +388,7 @@ const resetUserOverride = (menu) => {
                                         {{ menu.code }}
                                     </code>
                                     <Tag
-                                        :value="menu.section === 'main' ? 'Sidebar' : 'Settings'"
+                                        :value="menu.parent_id ? `Sub-menu of: ${getParentName(menu.parent_id)}` : (menu.section === 'main' ? 'Sidebar' : 'Settings')"
                                         severity="secondary"
                                         class="!text-[11px]"
                                     />
@@ -455,6 +475,22 @@ const resetUserOverride = (menu) => {
                     </div>
                 </div>
 
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-semibold">
+                        Parent Menu <span class="text-xs font-normal text-slate-400">(optional — attach under another menu)</span>
+                    </label>
+                    <Select
+                        v-model="menuForm.parent_id"
+                        :options="parentMenuOptions"
+                        option-label="label"
+                        option-value="value"
+                        show-clear
+                        placeholder="None (Top-level / Settings item)"
+                        fluid
+                        @update:model-value="onParentChange"
+                    />
+                </div>
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div class="flex flex-col gap-1.5">
                         <label class="text-sm font-semibold">Section</label>
@@ -463,6 +499,7 @@ const resetUserOverride = (menu) => {
                             :options="sectionOptions"
                             option-label="label"
                             option-value="value"
+                            :disabled="Boolean(menuForm.parent_id)"
                             fluid
                         />
                     </div>
@@ -476,7 +513,17 @@ const resetUserOverride = (menu) => {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div class="flex flex-col gap-1.5">
                         <label class="text-sm font-semibold">Laravel Route Name</label>
-                        <InputText v-model="menuForm.route_name" placeholder="e.g. dashboard" fluid />
+                        <Select
+                            v-model="menuForm.route_name"
+                            :options="availableRoutes"
+                            option-label="label"
+                            option-value="value"
+                            editable
+                            filter
+                            show-clear
+                            placeholder="Select route (e.g. dashboard)"
+                            fluid
+                        />
                     </div>
 
                     <div class="flex flex-col gap-1.5">

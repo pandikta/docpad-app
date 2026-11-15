@@ -53,6 +53,7 @@ class DocumentService
         $document = Document::create([
             'user_id' => $user->id,
             'name' => $file->getClientOriginalName(),
+            'visibility' => 'publish',
             'content' => text_to_html($raw),
             'size' => $file->getSize(),
         ]);
@@ -67,9 +68,9 @@ class DocumentService
     }
 
     /**
-     * Buat dokumen baru langsung dari form Create File (nama + pilihan ekstensi + konten opsional).
+     * Buat dokumen baru langsung dari form Create File (nama + pilihan ekstensi + visibility + konten opsional).
      */
-    public function createBlank(User $user, string $name, string $extension, string $content = ''): Document
+    public function createBlank(User $user, string $name, string $extension, string $content = '', string $visibility = 'publish'): Document
     {
         $extension = ltrim(strtolower(trim($extension)), '.');
         $baseName = trim($name);
@@ -81,19 +82,21 @@ class DocumentService
 
         $finalName = trim($baseName).'.'.$extension;
         $htmlContent = $content !== '' ? $content : '<p><br></p>';
+        $visibility = $visibility === 'private' ? 'private' : 'publish';
 
         $document = Document::create([
             'user_id' => $user->id,
             'name' => $finalName,
+            'visibility' => $visibility,
             'content' => $htmlContent,
             'size' => strlen(trim(html_to_text($htmlContent))),
         ]);
 
-        if ($user->team_id) {
+        if ($visibility === 'publish' && $user->team_id) {
             $document->teams()->syncWithoutDetaching([$user->team_id]);
         }
 
-        record_document_log($document, 'created a new document', $user);
+        record_document_log($document, "created a new {$visibility} document", $user);
 
         return $document;
     }

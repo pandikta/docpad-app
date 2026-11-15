@@ -69,6 +69,9 @@ Route::middleware('auth')->group(function () {
             Route::get('/function-auth', [FunctionAuthController::class, 'index'])->name('function-auth.index');
             Route::put('/function-auth', [FunctionAuthController::class, 'update'])->name('function-auth.update');
             Route::delete('/function-auth/reset-user', [FunctionAuthController::class, 'resetUser'])->name('function-auth.reset-user');
+            Route::post('/function-auth/functions', [FunctionAuthController::class, 'storeFunction'])->name('function-auth.functions.store');
+            Route::put('/function-auth/functions/{appFunction}', [FunctionAuthController::class, 'updateFunction'])->name('function-auth.functions.update');
+            Route::delete('/function-auth/functions/{appFunction}', [FunctionAuthController::class, 'destroyFunction'])->name('function-auth.functions.destroy');
         });
 
         Route::middleware('menu.auth:menu.settings.menu-auth')->group(function () {

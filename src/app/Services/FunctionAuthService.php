@@ -128,4 +128,46 @@ class FunctionAuthService
             ->where('user_id', $userId)
             ->delete();
     }
+
+    /**
+     * Tambah function permission baru ke database dari UI.
+     *
+     * @param  array{code: string, name: string, group: string, description?: ?string, default_allowed?: bool}  $data
+     */
+    public function createFunction(array $data): AppFunction
+    {
+        return AppFunction::create([
+            'code' => trim($data['code']),
+            'name' => trim($data['name']),
+            'group' => trim($data['group']),
+            'description' => isset($data['description']) ? trim($data['description']) : null,
+            'default_allowed' => (bool) ($data['default_allowed'] ?? true),
+        ]);
+    }
+
+    /**
+     * Perbarui data function permission.
+     *
+     * @param  array{code: string, name: string, group: string, description?: ?string, default_allowed?: bool}  $data
+     */
+    public function updateFunction(AppFunction $appFunction, array $data): AppFunction
+    {
+        $appFunction->update([
+            'code' => trim($data['code']),
+            'name' => trim($data['name']),
+            'group' => trim($data['group']),
+            'description' => isset($data['description']) ? trim($data['description']) : null,
+            'default_allowed' => (bool) ($data['default_allowed'] ?? true),
+        ]);
+
+        return $appFunction;
+    }
+
+    /**
+     * Hapus function permission dari database.
+     */
+    public function deleteFunction(AppFunction $appFunction): void
+    {
+        $appFunction->delete();
+    }
 }

@@ -46,6 +46,11 @@ class AuthHelper
             return false;
         }
 
+        // Dokumen private hanya bisa diakses oleh pemiliknya (termasuk Superadmin tetap tidak bisa akses milik orang lain).
+        if ($document->visibility === 'private') {
+            return (int) $document->user_id === (int) $user->id;
+        }
+
         if ($user->isSuperAdmin()) {
             return true;
         }

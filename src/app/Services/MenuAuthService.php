@@ -6,6 +6,7 @@ use App\Models\AppMenu;
 use App\Models\MenuAuth;
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Support\Facades\Route;
 
 class MenuAuthService
 {
@@ -74,20 +75,40 @@ class MenuAuthService
             fn (AppMenu $menu) => $user->isSuperAdmin() || ($permissions[$menu->code] ?? false),
         );
 
-        $mapItem = fn (AppMenu $menu) => [
+        $mapItem = fn (AppMenu $menu, array $children = []) => [
             'id' => $menu->id,
+            'parent_id' => $menu->parent_id,
             'code' => $menu->code,
             'name' => $menu->name,
             'group' => $menu->group,
             'section' => $menu->section,
             'route_name' => $menu->route_name,
-            'icon' => $menu->icon ?: 'pi pi-circle',
+            'icon' => $this->normalizeIcon($menu->icon),
             'description' => $menu->description,
+            'children' => $children,
         ];
 
+        $childrenByParent = $visible
+            ->whereNotNull('parent_id')
+            ->groupBy('parent_id');
+
+        $mainMenus = $visible
+            ->where('section', 'main')
+            ->whereNull('parent_id')
+            ->values()
+            ->map(function (AppMenu $menu) use ($mapItem, $childrenByParent) {
+                $children = ($childrenByParent->get($menu->id) ?? collect())
+                    ->values()
+                    ->map(fn (AppMenu $child) => $mapItem($child))
+                    ->all();
+
+                return $mapItem($menu, $children);
+            })
+            ->all();
+
         return [
-            'main' => $visible->where('section', 'main')->values()->map($mapItem)->all(),
-            'settings' => $visible->where('section', 'settings')->values()->map($mapItem)->all(),
+            'main' => $mainMenus,
+            'settings' => $visible->where('section', 'settings')->whereNull('parent_id')->values()->map(fn (AppMenu $m) => $mapItem($m))->all(),
         ];
     }
 
@@ -99,7 +120,7 @@ class MenuAuthService
     public function getManagementData(): array
     {
         $menus = AppMenu::orderBy('sort_order')->orderBy('id')->get([
-            'id', 'code', 'name', 'group', 'section', 'route_name', 'icon', 'description', 'default_allowed', 'sort_order',
+            'id', 'parent_id', 'code', 'name', 'group', 'section', 'route_name', 'icon', 'description', 'default_allowed', 'sort_order',
         ]);
 
         $teams = Team::where('is_active', 1)
@@ -125,11 +146,22 @@ class MenuAuthService
 
         $authRules = MenuAuth::all(['id', 'menu_id', 'team_id', 'user_id', 'is_allowed']);
 
+        $availableRoutes = collect(Route::getRoutes())
+            ->filter(fn ($route) => in_array('GET', $route->methods(), true) && $route->getName() && ! str_starts_with($route->getName(), 'ignition.') && ! str_starts_with($route->getName(), 'sanctum.'))
+            ->map(fn ($route) => [
+                'label' => "{$route->getName()} (/{$route->uri()})",
+                'value' => $route->getName(),
+            ])
+            ->unique('value')
+            ->sortBy('value')
+            ->values();
+
         return [
             'menus' => $menus,
             'teams' => $teams,
             'users' => $users,
             'authRules' => $authRules,
+            'availableRoutes' => $availableRoutes,
         ];
     }
 
@@ -167,12 +199,13 @@ class MenuAuthService
     public function createMenu(array $data): AppMenu
     {
         return AppMenu::create([
+            'parent_id' => $data['parent_id'] ?? null,
             'code' => trim($data['code']),
             'name' => trim($data['name']),
             'group' => trim($data['group']),
             'section' => $data['section'],
             'route_name' => isset($data['route_name']) ? trim($data['route_name']) : null,
-            'icon' => isset($data['icon']) && trim($data['icon']) !== '' ? trim($data['icon']) : 'pi pi-circle',
+            'icon' => $this->normalizeIcon($data['icon'] ?? null),
             'description' => isset($data['description']) ? trim($data['description']) : null,
             'default_allowed' => (bool) ($data['default_allowed'] ?? false),
             'sort_order' => (int) ($data['sort_order'] ?? 50),
@@ -186,19 +219,39 @@ class MenuAuthService
      */
     public function updateMenu(AppMenu $menu, array $data): AppMenu
     {
+        $parentId = $data['parent_id'] ?? null;
+
         $menu->update([
+            'parent_id' => $parentId !== $menu->id ? $parentId : null,
             'code' => trim($data['code']),
             'name' => trim($data['name']),
             'group' => trim($data['group']),
             'section' => $data['section'],
             'route_name' => isset($data['route_name']) ? trim($data['route_name']) : null,
-            'icon' => isset($data['icon']) && trim($data['icon']) !== '' ? trim($data['icon']) : 'pi pi-circle',
+            'icon' => $this->normalizeIcon($data['icon'] ?? null),
             'description' => isset($data['description']) ? trim($data['description']) : null,
             'default_allowed' => (bool) ($data['default_allowed'] ?? false),
             'sort_order' => (int) ($data['sort_order'] ?? 50),
         ]);
 
         return $menu;
+    }
+
+    /**
+     * Pastikan class PrimeIcon selalu memiliki prefix `pi ` (mis. `pi-folder` -> `pi pi-folder`).
+     */
+    private function normalizeIcon(?string $icon): string
+    {
+        $icon = trim((string) $icon);
+        if ($icon === '') {
+            return 'pi pi-circle';
+        }
+
+        if (str_starts_with($icon, 'pi-')) {
+            return 'pi '.$icon;
+        }
+
+        return $icon;
     }
 
     /**

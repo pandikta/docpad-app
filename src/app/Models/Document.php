@@ -15,26 +15,38 @@ class Document extends Model
     protected $fillable = [
         'user_id',
         'name',
+        'visibility',
         'content',
         'size',
     ];
 
     /**
      * Scope query dokumen berdasarkan user:
-     * - Superadmin dikecualikan dari filter tim (melihat seluruh dokumen).
-     * - User biasa hanya melihat dokumen yang di-assign ke timnya di tabel doc_file_teams.
+     * - File `private` HANYA bisa dilihat oleh pembuatnya (bahkan Superadmin tidak bisa melihat milik user lain).
+     * - File `publish` bisa dilihat semua tim (Superadmin) atau tim yang di-assign di `doc_file_teams`.
      */
     public function scopeForUser(Builder $query, User $user): Builder
     {
         if ($user->isSuperAdmin()) {
-            return $query;
+            return $query->where(function (Builder $q) use ($user) {
+                $q->where('visibility', '!=', 'private')
+                  ->orWhere('user_id', $user->id);
+            });
         }
 
-        if (! $user->team_id) {
-            return $query->whereRaw('1 = 0');
-        }
+        return $query->where(function (Builder $q) use ($user) {
+            $q->where(function (Builder $priv) use ($user) {
+                $priv->where('visibility', 'private')
+                     ->where('user_id', $user->id);
+            });
 
-        return $query->whereHas('teams', fn (Builder $q) => $q->where('mst_teams.id', $user->team_id));
+            if ($user->team_id) {
+                $q->orWhere(function (Builder $pub) use ($user) {
+                    $pub->where('visibility', '!=', 'private')
+                        ->whereHas('teams', fn (Builder $t) => $t->where('mst_teams.id', $user->team_id));
+                });
+            }
+        });
     }
 
     /**
@@ -80,6 +92,7 @@ class Document extends Model
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'visibility' => $this->visibility ?? 'publish',
             'size' => $this->size,
             'created_by' => $this->user?->name ?? 'Unknown',
             'created_at' => $this->created_at?->toIso8601String(),

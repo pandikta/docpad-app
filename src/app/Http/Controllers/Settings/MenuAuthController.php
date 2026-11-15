@@ -71,6 +71,7 @@ class MenuAuthController extends Controller
     public function storeMenu(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'parent_id' => ['nullable', 'integer', 'exists:mst_menus,id'],
             'code' => ['required', 'string', 'max:100', 'unique:mst_menus,code'],
             'name' => ['required', 'string', 'max:100'],
             'group' => ['required', 'string', 'max:100'],
@@ -93,6 +94,7 @@ class MenuAuthController extends Controller
     public function updateMenu(Request $request, AppMenu $menu): RedirectResponse
     {
         $validated = $request->validate([
+            'parent_id' => ['nullable', 'integer', 'exists:mst_menus,id', Rule::notIn([$menu->id])],
             'code' => ['required', 'string', 'max:100', Rule::unique('mst_menus', 'code')->ignore($menu->id)],
             'name' => ['required', 'string', 'max:100'],
             'group' => ['required', 'string', 'max:100'],

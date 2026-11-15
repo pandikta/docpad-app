@@ -37,7 +37,7 @@ const activeRowDocument = ref(null);
 const moreMenuItems = computed(() => {
     const items = [];
 
-    if (isSuperAdmin.value) {
+    if (isSuperAdmin.value && activeRowDocument.value?.visibility !== 'private') {
         items.push({
             label: 'Assign Teams',
             icon: 'pi pi-users text-[#1f6f46]',
@@ -127,14 +127,24 @@ const actionBtnClass =
             <!-- Name -->
             <Column field="name" header="Name">
                 <template #body="{ data }">
-                    <button
-                        type="button"
-                        class="flex items-center gap-3 text-left font-medium text-slate-700 dark:text-surface-100 hover:text-[#1f6f46] dark:hover:text-emerald-400 hover:underline cursor-pointer"
-                        @click="$emit('open', data)"
-                    >
-                        <i class="pi pi-file-edit text-[#1f6f46] dark:text-emerald-400"></i>
-                        <span>{{ data.name }}</span>
-                    </button>
+                    <div class="flex items-center gap-2.5">
+                        <button
+                            type="button"
+                            class="flex items-center gap-3 text-left font-medium text-slate-700 dark:text-surface-100 hover:text-[#1f6f46] dark:hover:text-emerald-400 hover:underline cursor-pointer"
+                            @click="$emit('open', data)"
+                        >
+                            <i class="pi pi-file-edit text-[#1f6f46] dark:text-emerald-400"></i>
+                            <span>{{ data.name }}</span>
+                        </button>
+                        <span
+                            v-if="data.visibility === 'private'"
+                            v-tooltip.top="'Private — Only visible to you'"
+                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 dark:bg-surface-800 dark:text-surface-300 border border-slate-200 dark:border-surface-700"
+                        >
+                            <i class="pi pi-lock text-[10px]"></i>
+                            <span>Private</span>
+                        </span>
+                    </div>
                 </template>
             </Column>
 
@@ -146,7 +156,14 @@ const actionBtnClass =
             <!-- Teams (khusus Superadmin) -->
             <Column v-if="isSuperAdmin" header="Teams">
                 <template #body="{ data }">
-                    <div class="flex flex-wrap items-center gap-1.5">
+                    <span
+                        v-if="data.visibility === 'private'"
+                        class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500 dark:bg-surface-800 dark:text-surface-400"
+                    >
+                        <i class="pi pi-lock text-[10px]"></i>
+                        <span>Private Only</span>
+                    </span>
+                    <div v-else class="flex flex-wrap items-center gap-1.5">
                         <template v-if="data.teams?.length">
                             <span
                                 v-for="team in data.teams"

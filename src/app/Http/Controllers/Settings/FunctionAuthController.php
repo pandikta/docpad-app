@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Models\AppFunction;
 use App\Services\FunctionAuthService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -61,5 +63,52 @@ class FunctionAuthController extends Controller
         );
 
         return back()->with('success', 'User permission reset to team default.');
+    }
+
+    /**
+     * Tambah function permission baru langsung dari UI.
+     */
+    public function storeFunction(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'code' => ['required', 'string', 'max:100', 'unique:mst_functions,code'],
+            'name' => ['required', 'string', 'max:100'],
+            'group' => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string', 'max:255'],
+            'default_allowed' => ['boolean'],
+        ]);
+
+        $fn = $this->functionAuth->createFunction($validated);
+
+        return back()->with('success', "Function \"{$fn->name}\" added.");
+    }
+
+    /**
+     * Perbarui data function permission.
+     */
+    public function updateFunction(Request $request, AppFunction $appFunction): RedirectResponse
+    {
+        $validated = $request->validate([
+            'code' => ['required', 'string', 'max:100', Rule::unique('mst_functions', 'code')->ignore($appFunction->id)],
+            'name' => ['required', 'string', 'max:100'],
+            'group' => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string', 'max:255'],
+            'default_allowed' => ['boolean'],
+        ]);
+
+        $this->functionAuth->updateFunction($appFunction, $validated);
+
+        return back()->with('success', "Function \"{$appFunction->name}\" updated.");
+    }
+
+    /**
+     * Hapus function permission dari database.
+     */
+    public function destroyFunction(AppFunction $appFunction): RedirectResponse
+    {
+        $name = $appFunction->name;
+        $this->functionAuth->deleteFunction($appFunction);
+
+        return back()->with('success', "Function \"{$name}\" deleted.");
     }
 }

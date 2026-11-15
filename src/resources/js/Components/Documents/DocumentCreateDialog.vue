@@ -16,7 +16,13 @@ const emit = defineEmits(['update:visible', 'submit']);
 
 const name = ref('');
 const selectedExtension = ref('txt');
+const visibility = ref('publish');
 const content = ref('');
+
+const visibilityOptions = [
+    { label: 'Publish (Shared with Team)', value: 'publish' },
+    { label: 'Private (Only Me)', value: 'private' },
+];
 
 const extensionOptions = computed(() =>
     props.extensions.map((ext) => ({
@@ -32,6 +38,7 @@ watch(
         if (isOpen) {
             name.value = '';
             selectedExtension.value = props.extensions[0] ?? 'txt';
+            visibility.value = 'publish';
             content.value = '';
         }
     },
@@ -62,6 +69,7 @@ const onSubmit = () => {
     emit('submit', {
         name: normalizedBaseName.value,
         extension: selectedExtension.value,
+        visibility: visibility.value,
         content: content.value,
     });
 };
@@ -85,9 +93,9 @@ const onSubmit = () => {
         </template>
 
         <form class="space-y-4 pt-1" @submit.prevent="onSubmit">
-            <!-- File Name + Extension Selector -->
+            <!-- File Name + Extension + Visibility -->
             <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                <div class="sm:col-span-9 flex flex-col gap-1.5">
+                <div class="sm:col-span-6 flex flex-col gap-1.5">
                     <label for="create-doc-name" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
                         File Name
                     </label>
@@ -102,7 +110,7 @@ const onSubmit = () => {
                     />
                 </div>
 
-                <div class="sm:col-span-3 flex flex-col gap-1.5">
+                <div class="sm:col-span-2 flex flex-col gap-1.5">
                     <label for="create-doc-ext" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
                         Extension
                     </label>
@@ -110,6 +118,21 @@ const onSubmit = () => {
                         input-id="create-doc-ext"
                         v-model="selectedExtension"
                         :options="extensionOptions"
+                        option-label="label"
+                        option-value="value"
+                        fluid
+                        class="!rounded-xl"
+                    />
+                </div>
+
+                <div class="sm:col-span-4 flex flex-col gap-1.5">
+                    <label for="create-doc-visibility" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
+                        Visibility
+                    </label>
+                    <Select
+                        input-id="create-doc-visibility"
+                        v-model="visibility"
+                        :options="visibilityOptions"
                         option-label="label"
                         option-value="value"
                         fluid

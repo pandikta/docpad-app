@@ -50,6 +50,7 @@ class DocumentController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:200'],
             'extension' => ['required', 'string', "in:{$allowed}"],
+            'visibility' => ['nullable', 'string', 'in:publish,private'],
             'content' => ['nullable', 'string', 'max:2000000'],
         ]);
 
@@ -58,6 +59,7 @@ class DocumentController extends Controller
             $validated['name'],
             $validated['extension'],
             $validated['content'] ?? '',
+            $validated['visibility'] ?? 'publish',
         );
 
         return back()->with('success', "{$document->name} created successfully.");
@@ -113,6 +115,8 @@ class DocumentController extends Controller
     public function assignTeams(Request $request, Document $document): RedirectResponse
     {
         abort_unless(is_superadmin($request->user()), 403);
+        $this->documents->authorizeAccess($request->user(), $document);
+        abort_if($document->visibility === 'private', 403, 'Private documents cannot be assigned to teams.');
 
         $validated = $request->validate([
             'team_ids' => ['present', 'array'],
