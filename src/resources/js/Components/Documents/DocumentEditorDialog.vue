@@ -61,11 +61,36 @@ const save = () => emit('save', { ...props.document, content: content.value });
         </template>
 
         <template v-if="isStoredFile">
-            <iframe
-                v-if="isPdf && document?.preview_url"
-                :src="document.preview_url"
-                class="w-full h-[70vh] rounded-xl border border-slate-200 dark:border-surface-700 bg-white"
-            />
+            <div v-if="isPdf && document?.preview_url" class="space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-surface-800/70 border border-slate-200/80 dark:border-surface-700 text-xs">
+                    <span class="text-slate-600 dark:text-surface-300">
+                        Preview not displaying properly on mobile?
+                    </span>
+                    <div class="flex items-center gap-2">
+                        <a
+                            :href="document.preview_url"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-surface-600 bg-white dark:bg-surface-900 text-slate-700 dark:text-surface-200 hover:border-[#1f6f46] hover:text-[#1f6f46] font-medium transition-colors"
+                        >
+                            <i class="pi pi-external-link text-[11px]"></i>
+                            <span>Open in New Tab</span>
+                        </a>
+                        <a
+                            :href="route('documents.download', document.id)"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1f6f46] hover:bg-[#185a38] text-white font-medium transition-colors"
+                        >
+                            <i class="pi pi-download text-[11px]"></i>
+                            <span>Download</span>
+                        </a>
+                    </div>
+                </div>
+
+                <iframe
+                    :src="document.preview_url"
+                    class="w-full h-[65vh] rounded-xl border border-slate-200 dark:border-surface-700 bg-white"
+                />
+            </div>
             <div
                 v-else
                 class="py-12 px-6 text-center rounded-xl border border-dashed border-slate-200 dark:border-surface-700 bg-slate-50 dark:bg-surface-900/50 space-y-3"
