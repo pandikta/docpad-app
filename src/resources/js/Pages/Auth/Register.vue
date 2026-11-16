@@ -8,6 +8,7 @@ import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
+import GuestLanguageSwitcher from '@/Components/App/GuestLanguageSwitcher.vue';
 import { useLocale } from '@/composables/useLocale';
 
 const { t } = useLocale();
@@ -195,16 +196,20 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
 
         <!-- Right Column: Register Form -->
         <div class="relative flex flex-col justify-center items-center px-6 py-12 sm:px-12 lg:px-20 bg-[#fcfdfc] dark:bg-surface-950 transition-colors duration-200">
-            <!-- Theme Toggle Button -->
-            <button
-                type="button"
-                @click="toggleDarkMode"
-                :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
-                class="absolute top-6 right-6 flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-surface-800 bg-white dark:bg-surface-900 text-slate-600 dark:text-surface-300 hover:bg-slate-50 dark:hover:bg-surface-800 text-xs font-medium shadow-sm transition-all cursor-pointer"
-            >
-                <i :class="[isDark ? 'pi pi-sun text-amber-400' : 'pi pi-moon text-slate-600']"></i>
-                <span>{{ isDark ? 'Light' : 'Dark' }}</span>
-            </button>
+            <!-- Top Right Action Cluster -->
+            <div class="absolute top-6 right-6 flex items-center gap-2">
+                <GuestLanguageSwitcher />
+
+                <button
+                    type="button"
+                    @click="toggleDarkMode"
+                    :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+                    class="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-surface-800 bg-white dark:bg-surface-900 text-slate-600 dark:text-surface-300 hover:bg-slate-50 dark:hover:bg-surface-800 text-xs font-medium shadow-sm transition-all cursor-pointer"
+                >
+                    <i :class="[isDark ? 'pi pi-sun text-amber-400' : 'pi pi-moon text-slate-600']"></i>
+                    <span>{{ isDark ? 'Light' : 'Dark' }}</span>
+                </button>
+            </div>
 
             <div class="w-full max-w-[400px]">
                 <!-- Mobile Brand Logo -->
@@ -226,10 +231,10 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                 <!-- Title Section -->
                 <div class="mb-7">
                     <h2 class="text-3xl font-bold tracking-tight text-[#18221d] dark:text-surface-0">
-                        Create Account
+                        {{ t('auth.create_account_heading') }}
                     </h2>
                     <p class="text-base text-slate-500 dark:text-surface-400 mt-2">
-                        Fill in your details to get started.
+                        {{ t('auth.create_account_subtitle') }}
                     </p>
                 </div>
 
@@ -238,7 +243,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                     <!-- Team Code -->
                     <div class="flex flex-col gap-2">
                         <label for="team_code" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                            Team Code
+                            {{ t('auth.team_code') }}
                         </label>
                         <IconField>
                             <InputIcon class="pi pi-users text-slate-400" />
@@ -246,7 +251,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                                 id="team_code"
                                 v-model="form.team_code"
                                 type="text"
-                                placeholder="Enter your team code"
+                                :placeholder="t('auth.team_code_placeholder')"
                                 autocomplete="organization"
                                 autofocus
                                 required
@@ -258,7 +263,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                         <small v-if="form.errors.team_code" class="text-red-500 text-xs">{{ form.errors.team_code }}</small>
                         <div v-else class="flex flex-wrap items-center justify-between gap-1 text-xs">
                             <span class="text-slate-400 dark:text-surface-500">
-                                You'll join this team after registration.
+                                {{ t('auth.team_code_hint') }}
                             </span>
                             <Link
                                 :href="route('team-request.create')"
@@ -280,7 +285,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                                 id="name"
                                 v-model="form.name"
                                 type="text"
-                                placeholder="Enter your name"
+                                :placeholder="t('auth.name_placeholder')"
                                 autocomplete="name"
                                 required
                                 fluid
@@ -325,7 +330,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                                 v-model="form.password"
                                 :feedback="false"
                                 toggleMask
-                                placeholder="Create a password"
+                                :placeholder="t('auth.create_password_placeholder')"
                                 autocomplete="new-password"
                                 required
                                 fluid
@@ -349,7 +354,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                                 v-model="form.password_confirmation"
                                 :feedback="false"
                                 toggleMask
-                                placeholder="Repeat your password"
+                                :placeholder="t('auth.repeat_password_placeholder')"
                                 autocomplete="new-password"
                                 required
                                 fluid
@@ -362,13 +367,13 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                             v-if="passwordMatch === true"
                             class="text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-1.5"
                         >
-                            <i class="pi pi-check-circle"></i> Passwords match
+                            <i class="pi pi-check-circle"></i> {{ t('auth.passwords_match') }}
                         </small>
                         <small
                             v-else-if="passwordMatch === false"
                             class="text-red-500 text-xs flex items-center gap-1.5"
                         >
-                            <i class="pi pi-times-circle"></i> Passwords do not match
+                            <i class="pi pi-times-circle"></i> {{ t('auth.passwords_mismatch') }}
                         </small>
                         <small v-if="form.errors.password_confirmation" class="text-red-500 text-xs">
                             {{ form.errors.password_confirmation }}

@@ -8,6 +8,7 @@ import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
+import GuestLanguageSwitcher from '@/Components/App/GuestLanguageSwitcher.vue';
 import { useLocale } from '@/composables/useLocale';
 
 const { t } = useLocale();
@@ -162,15 +163,19 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
 
         <!-- Right Column: Request Form -->
         <div class="relative flex flex-col justify-center items-center px-6 py-12 sm:px-12 lg:px-16 bg-[#fcfdfc] dark:bg-surface-950 transition-colors duration-200">
-            <button
-                type="button"
-                @click="toggleDarkMode"
-                :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
-                class="absolute top-6 right-6 flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-surface-800 bg-white dark:bg-surface-900 text-slate-600 dark:text-surface-300 hover:bg-slate-50 dark:hover:bg-surface-800 text-xs font-medium shadow-sm transition-all cursor-pointer"
-            >
-                <i :class="[isDark ? 'pi pi-sun text-amber-400' : 'pi pi-moon text-slate-600']"></i>
-                <span>{{ isDark ? 'Light' : 'Dark' }}</span>
-            </button>
+            <div class="absolute top-6 right-6 flex items-center gap-2">
+                <GuestLanguageSwitcher />
+
+                <button
+                    type="button"
+                    @click="toggleDarkMode"
+                    :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+                    class="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-surface-800 bg-white dark:bg-surface-900 text-slate-600 dark:text-surface-300 hover:bg-slate-50 dark:hover:bg-surface-800 text-xs font-medium shadow-sm transition-all cursor-pointer"
+                >
+                    <i :class="[isDark ? 'pi pi-sun text-amber-400' : 'pi pi-moon text-slate-600']"></i>
+                    <span>{{ isDark ? 'Light' : 'Dark' }}</span>
+                </button>
+            </div>
 
             <div class="w-full max-w-[440px]">
                 <!-- Mobile Brand -->
@@ -231,7 +236,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                             <div class="flex flex-col gap-1.5">
                                 <label for="team_name" class="text-xs font-semibold text-slate-700 dark:text-surface-200">
-                                    Team Name <span class="text-red-500">*</span>
+                                    {{ t('auth.team_name') }} <span class="text-red-500">*</span>
                                 </label>
                                 <InputText
                                     id="team_name"
@@ -247,7 +252,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
 
                             <div class="flex flex-col gap-1.5">
                                 <label for="team_code" class="text-xs font-semibold text-slate-700 dark:text-surface-200">
-                                    Desired Team Code <span class="text-red-500">*</span>
+                                    {{ t('auth.desired_team_code') }} <span class="text-red-500">*</span>
                                 </label>
                                 <InputText
                                     id="team_code"
@@ -265,14 +270,14 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
 
                         <div class="flex flex-col gap-1.5">
                             <label for="description" class="text-xs font-semibold text-slate-700 dark:text-surface-200">
-                                Notes / Description <span class="font-normal text-slate-400">(Optional)</span>
+                                {{ t('auth.notes_description') }} <span class="font-normal text-slate-400">{{ t('auth.optional') }}</span>
                             </label>
                             <Textarea
                                 id="description"
                                 v-model="form.description"
                                 rows="2"
                                 autoResize
-                                placeholder="Team purpose (optional)"
+                                :placeholder="t('auth.team_purpose_placeholder')"
                                 fluid
                                 class="!rounded-xl !py-2.5"
                             />
@@ -281,7 +286,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
 
                         <div class="flex flex-col gap-1.5">
                             <label for="company_email" class="text-xs font-semibold text-slate-700 dark:text-surface-200">
-                                Company Email <span class="font-normal text-slate-400">(Optional)</span>
+                                {{ t('auth.company_email') }} <span class="font-normal text-slate-400">{{ t('auth.optional') }}</span>
                             </label>
                             <IconField>
                                 <InputIcon class="pi pi-building text-slate-400" />
@@ -300,7 +305,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
 
                         <div class="border-t border-slate-200/80 dark:border-surface-800 pt-3">
                             <p class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-surface-500 mb-3">
-                                Team Leader / PM Account
+                                {{ t('auth.leader_account_section') }}
                             </p>
 
                             <div class="space-y-3.5">
@@ -313,7 +318,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                                         <InputText
                                             id="requester_name"
                                             v-model="form.requester_name"
-                                            placeholder="Your full name"
+                                            :placeholder="t('auth.full_name_placeholder')"
                                             required
                                             fluid
                                             :invalid="!!form.errors.requester_name"
@@ -355,7 +360,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                                                 v-model="form.password"
                                                 :feedback="false"
                                                 toggleMask
-                                                placeholder="Password"
+                                                :placeholder="t('auth.password')"
                                                 autocomplete="new-password"
                                                 required
                                                 fluid
@@ -378,7 +383,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                                                 v-model="form.password_confirmation"
                                                 :feedback="false"
                                                 toggleMask
-                                                placeholder="Repeat password"
+                                                :placeholder="t('auth.repeat_password_placeholder')"
                                                 autocomplete="new-password"
                                                 required
                                                 fluid
@@ -394,7 +399,7 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                                     v-if="passwordMatch === false"
                                     class="text-red-500 text-xs flex items-center gap-1.5"
                                 >
-                                    <i class="pi pi-times-circle"></i> Passwords do not match
+                                    <i class="pi pi-times-circle"></i> {{ t('auth.passwords_mismatch') }}
                                 </small>
                             </div>
                         </div>
@@ -403,11 +408,11 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                         <div class="rounded-xl border border-emerald-200 dark:border-emerald-800/70 bg-emerald-50/70 dark:bg-emerald-950/40 p-3.5 space-y-1.5 text-xs text-[#1f5137] dark:text-emerald-200">
                             <div class="flex items-start gap-2">
                                 <i class="pi pi-crown text-[#1f6f46] dark:text-emerald-400 mt-0.5 shrink-0"></i>
-                                <span>You will automatically be assigned as the <strong>Team Leader / PM</strong> for this team once approved.</span>
+                                <span>{{ t('auth.highlight_leader') }}</span>
                             </div>
                             <div class="flex items-start gap-2">
                                 <i class="pi pi-users text-[#1f6f46] dark:text-emerald-400 mt-0.5 shrink-0"></i>
-                                <span>Default team capacity is <strong>5 members</strong> (can be adjusted later by requested to Admin).</span>
+                                <span>{{ t('auth.highlight_capacity') }}</span>
                             </div>
                         </div>
 
@@ -462,17 +467,17 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
 
             <div class="rounded-xl border border-slate-200 dark:border-surface-800 bg-slate-50/70 dark:bg-surface-900/60 p-3.5 space-y-2 text-xs">
                 <div class="flex justify-between gap-3">
-                    <span class="text-slate-500 dark:text-surface-400">Team Name</span>
+                    <span class="text-slate-500 dark:text-surface-400">{{ t('auth.team_name') }}</span>
                     <span class="font-semibold text-slate-800 dark:text-surface-0 text-right">{{ form.team_name }}</span>
                 </div>
                 <div class="flex justify-between gap-3">
-                    <span class="text-slate-500 dark:text-surface-400">Team Code</span>
+                    <span class="text-slate-500 dark:text-surface-400">{{ t('auth.team_code') }}</span>
                     <code class="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-[#1f6f46] dark:text-emerald-300 font-semibold">
                         {{ form.team_code }}
                     </code>
                 </div>
                 <div v-if="form.company_email" class="flex justify-between gap-3">
-                    <span class="text-slate-500 dark:text-surface-400">Company Email</span>
+                    <span class="text-slate-500 dark:text-surface-400">{{ t('auth.company_email') }}</span>
                     <span class="font-medium text-slate-700 dark:text-surface-200 text-right">{{ form.company_email }}</span>
                 </div>
                 <div class="flex justify-between gap-3">
@@ -482,9 +487,14 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                     </span>
                 </div>
                 <div class="flex justify-between gap-3">
-                    <span class="text-slate-500 dark:text-surface-400">Max Members</span>
-                    <span class="font-medium text-slate-700 dark:text-surface-200">5 (Default)</span>
+                    <span class="text-slate-500 dark:text-surface-400">{{ t('auth.max_members_label') }}</span>
+                    <span class="font-medium text-slate-700 dark:text-surface-200">{{ t('auth.max_members_default') }}</span>
                 </div>
+            </div>
+
+            <div class="flex items-start gap-2 rounded-xl border border-emerald-200/80 dark:border-emerald-800/70 bg-emerald-50/60 dark:bg-emerald-950/40 px-3 py-2.5 text-xs text-[#1f5137] dark:text-emerald-200">
+                <i class="pi pi-envelope text-[#1f6f46] dark:text-emerald-400 mt-0.5 shrink-0"></i>
+                <span>{{ t('auth.request_team_confirm_email_note', { email: form.requester_email }) }}</span>
             </div>
         </div>
 

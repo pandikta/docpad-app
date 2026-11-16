@@ -26,6 +26,21 @@ class SystemConfig extends Model
         return $value !== null && is_numeric($value) ? (int) $value : $default;
     }
 
+    public static function getBool(string $key, bool $default = false): bool
+    {
+        if (! Schema::hasTable('mst_system_configs')) {
+            return $default;
+        }
+
+        $value = static::where('key', $key)->value('value');
+
+        if ($value === null) {
+            return $default;
+        }
+
+        return in_array(strtolower(trim((string) $value)), ['1', 'true', 'yes', 'on'], true);
+    }
+
     public static function setValue(string $key, ?string $value): void
     {
         static::updateOrCreate(

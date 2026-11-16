@@ -9,6 +9,7 @@ import Message from 'primevue/message';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import Dialog from 'primevue/dialog';
+import GuestLanguageSwitcher from '@/Components/App/GuestLanguageSwitcher.vue';
 import { useLocale } from '@/composables/useLocale';
 
 const { t } = useLocale();
@@ -249,6 +250,8 @@ const submit = () => {
         <div class="relative flex flex-col justify-center items-center px-6 py-12 sm:px-12 lg:px-20 bg-[#fcfdfc] dark:bg-surface-950 transition-colors duration-200">
             <!-- Top Right Action Cluster -->
             <div class="absolute top-6 right-6 flex items-center gap-2">
+                <GuestLanguageSwitcher />
+
                 <button
                     type="button"
                     @click="showAboutModal = true"
@@ -292,7 +295,7 @@ const submit = () => {
                         {{ appName }}
                     </h2>
                     <p class="text-base text-slate-500 dark:text-surface-400 mt-2">
-                        Sign in to continue to your workspace
+                        {{ t('auth.login_subtitle') }}
                     </p>
                 </div>
 
@@ -306,7 +309,7 @@ const submit = () => {
                     <!-- Email Field -->
                     <div class="flex flex-col gap-2">
                         <label for="email" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                            Email Address
+                            {{ t('auth.email_address') }}
                         </label>
                         <IconField>
                             <InputIcon class="pi pi-envelope text-slate-400" />
@@ -340,7 +343,7 @@ const submit = () => {
                                 v-model="form.password"
                                 :feedback="false"
                                 toggleMask
-                                placeholder="Enter your password"
+                                :placeholder="t('auth.password_placeholder')"
                                 autocomplete="current-password"
                                 required
                                 fluid
@@ -392,7 +395,7 @@ const submit = () => {
                 <div class="relative flex items-center justify-center my-6">
                     <div class="border-t border-slate-200 dark:border-surface-800 w-full"></div>
                     <span class="bg-[#fcfdfc] dark:bg-surface-950 px-3 text-xs text-slate-400 dark:text-surface-500">
-                        or
+                        {{ t('auth.or') }}
                     </span>
                     <div class="border-t border-slate-200 dark:border-surface-800 w-full"></div>
                 </div>
@@ -401,7 +404,7 @@ const submit = () => {
                 <Link :href="route('register')" class="block mb-6">
                     <Button
                         type="button"
-                        label="Don't have an account yet?"
+                        :label="t('auth.no_account_yet')"
                         icon="pi pi-user-plus"
                         iconPos="left"
                         outlined
@@ -414,7 +417,7 @@ const submit = () => {
                 <div class="text-center">
                     <p class="text-xs text-slate-500 dark:text-surface-400 flex items-center justify-center gap-2">
                         <i class="pi pi-shield text-[#1f6f46] dark:text-emerald-400 text-sm"></i>
-                        Your data is secure with us
+                        {{ t('auth.security_note') }}
                     </p>
                 </div>
             </div>

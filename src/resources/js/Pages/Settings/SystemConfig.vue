@@ -2,6 +2,7 @@
 import { Head, useForm } from '@inertiajs/vue3';
 import Button from 'primevue/button';
 import InputNumber from 'primevue/inputnumber';
+import ToggleSwitch from 'primevue/toggleswitch';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useLocale } from '@/composables/useLocale';
 
@@ -10,12 +11,13 @@ const { t } = useLocale();
 const props = defineProps({
     configs: {
         type: Object,
-        default: () => ({ password_history_limit: 2 }),
+        default: () => ({ password_history_limit: 2, guest_language_switcher: true }),
     },
 });
 
 const form = useForm({
     password_history_limit: Number(props.configs?.password_history_limit ?? 2),
+    guest_language_switcher: Boolean(props.configs?.guest_language_switcher ?? true),
 });
 
 const submit = () => {
@@ -92,6 +94,19 @@ const submit = () => {
                     <small v-if="form.errors.password_history_limit" class="text-red-500 text-xs block">
                         {{ form.errors.password_history_limit }}
                     </small>
+
+                    <div class="pt-5 border-t border-slate-100 dark:border-surface-800 flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <label for="guest-language-switcher" class="text-sm font-semibold text-slate-800 dark:text-surface-100">
+                                Public / Guest Language Switcher
+                            </label>
+                            <p class="text-xs text-slate-500 dark:text-surface-400 mt-0.5">
+                                Show the EN / ID language toggle on public pages (Login, Register, Request Team).
+                            </p>
+                        </div>
+
+                        <ToggleSwitch inputId="guest-language-switcher" v-model="form.guest_language_switcher" />
+                    </div>
 
                     <div class="pt-2 border-t border-slate-100 dark:border-surface-800 flex justify-end">
                         <Button

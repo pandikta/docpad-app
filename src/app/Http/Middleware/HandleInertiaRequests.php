@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\SystemConfig;
 use App\Services\DocumentService;
 use App\Services\FunctionAuthService;
 use App\Services\MenuAuthService;
@@ -71,6 +72,7 @@ class HandleInertiaRequests extends Middleware
                 ? app(DocumentService::class)->getStorageQuotaSummary($request->user())
                 : null,
             'sessionLifetime' => (int) config('session.lifetime', 120),
+            'guestLanguageSwitcher' => fn () => SystemConfig::getBool('guest_language_switcher', true),
         ];
     }
 }

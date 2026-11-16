@@ -152,17 +152,33 @@ const formatNotifText = (item) => {
 
 const handleNotifClick = (item) => {
     if (!item?.id) return;
-    if (!item.read_at) {
-        router.post(route('notifications.read', item.id), {}, { preserveScroll: true });
-    }
     notifMenu.value?.hide();
-    if (item?.data?.action === 'team_request_submitted') {
-        router.visit(route('settings.teams.index'));
+
+    const navigate = () => {
+        if (item?.data?.action === 'team_request_submitted') {
+            router.visit(route('settings.teams.index'));
+            return;
+        }
+        if (!route().current('dashboard')) {
+            router.visit(route('dashboard'));
+        }
+    };
+
+    if (!item.read_at) {
+        item.read_at = new Date().toISOString();
+        unreadCount.value = Math.max(0, unreadCount.value - 1);
+        router.post(
+            route('notifications.read', item.id),
+            {},
+            {
+                preserveScroll: true,
+                onFinish: navigate,
+            },
+        );
         return;
     }
-    if (!route().current('dashboard')) {
-        router.visit(route('dashboard'));
-    }
+
+    navigate();
 };
 
 const markAllAsRead = () => {

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Team;
 use App\Models\TeamRequest;
 use App\Models\User;
+use App\Notifications\TeamRequestReviewedNotification;
 use App\Notifications\TeamRequestSubmittedNotification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -80,17 +81,56 @@ class TeamRequestService
         Notification::send($superadmins, new TeamRequestSubmittedNotification($teamRequest, ['database']));
 
         // Attempt email notification safely so missing/unconfigured SMTP never blocks submission
+        $this->sendMailSafely(
+            fn () => Notification::send($superadmins, new TeamRequestSubmittedNotification($teamRequest, ['mail'])),
+            ['team_request_id' => $teamRequest->id, 'recipient' => 'superadmins'],
+        );
+    }
+
+    /**
+     * Send decision email safely to the team requester.
+     */
+    private function notifyRequesterByEmail(TeamRequest $teamRequest, string $decision): void
+    {
+        $this->sendMailSafely(
+            fn () => Notification::route('mail', $teamRequest->requester_email)
+                ->notify(new TeamRequestReviewedNotification($teamRequest, $decision)),
+            ['team_request_id' => $teamRequest->id, 'recipient' => $teamRequest->requester_email, 'decision' => $decision],
+        );
+    }
+
+    /**
+     * Run a mail notification callback only when a real mailer is configured, catching transport errors.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    private function sendMailSafely(callable $callback, array $context = []): void
+    {
         $mailer = config('mail.default');
-        if ($mailer && ! in_array($mailer, ['log', 'array'], true)) {
-            try {
-                Notification::send($superadmins, new TeamRequestSubmittedNotification($teamRequest, ['mail']));
-            } catch (\Throwable $e) {
-                Log::warning('Failed to send team request email notification to superadmins.', [
-                    'team_request_id' => $teamRequest->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+        if (! $mailer || in_array($mailer, ['log', 'array'], true)) {
+            return;
         }
+
+        try {
+            $callback();
+        } catch (\Throwable $e) {
+            Log::warning('Failed to send team request email notification.', [
+                ...$context,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Mark matching in-app team request notifications as read once reviewed.
+     */
+    private function markRequestNotificationsAsRead(TeamRequest $teamRequest): void
+    {
+        DB::table('notifications')
+            ->whereNull('read_at')
+            ->where('type', TeamRequestSubmittedNotification::class)
+            ->where('data->team_request_id', $teamRequest->id)
+            ->update(['read_at' => now()]);
     }
 
     /**
@@ -144,7 +184,7 @@ class TeamRequestService
             ]);
         }
 
-        return DB::transaction(function () use ($teamRequest, $reviewer) {
+        $team = DB::transaction(function () use ($teamRequest, $reviewer) {
             $team = $this->teams->create([
                 'team_code' => $teamRequest->team_code,
                 'team_name' => $teamRequest->team_name,
@@ -175,6 +215,11 @@ class TeamRequestService
 
             return $team;
         });
+
+        $this->markRequestNotificationsAsRead($teamRequest);
+        $this->notifyRequesterByEmail($teamRequest, 'approved');
+
+        return $team;
     }
 
     /**
@@ -194,6 +239,9 @@ class TeamRequestService
             'reviewed_by' => $reviewer->id,
             'reviewed_at' => now(),
         ]);
+
+        $this->markRequestNotificationsAsRead($teamRequest);
+        $this->notifyRequesterByEmail($teamRequest, 'rejected');
 
         return $teamRequest;
     }
