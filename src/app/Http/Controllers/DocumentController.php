@@ -31,14 +31,19 @@ class DocumentController extends Controller
             'files.*' => ['required', 'file'],
             'folder_id' => ['nullable', 'integer', 'exists:doc_folders,id'],
             'notify_members' => ['nullable', 'boolean'],
+            'is_encrypted' => ['nullable', 'boolean'],
+            'encrypted_files' => ['nullable', 'array'],
+            'encrypted_files.*' => ['boolean'],
         ]);
 
         $folderId = isset($validated['folder_id']) ? (int) $validated['folder_id'] : null;
+        $isEncrypted = $request->boolean('is_encrypted');
+        $encryptedFiles = $request->input('encrypted_files', []);
         $allowedExtensions = allowed_document_extensions();
         $uploaded = [];
         $failed = [];
 
-        foreach ($request->file('files', []) as $file) {
+        foreach ($request->file('files', []) as $index => $file) {
             $ext = strtolower($file->getClientOriginalExtension());
             $originalName = $file->getClientOriginalName();
 
@@ -64,7 +69,11 @@ class DocumentController extends Controller
                 continue;
             }
 
-            $uploaded[] = $this->documents->createFromUpload($request->user(), $file, $folderId);
+            $fileEncrypted = is_array($encryptedFiles) && array_key_exists($index, $encryptedFiles)
+                ? filter_var($encryptedFiles[$index], FILTER_VALIDATE_BOOLEAN)
+                : $isEncrypted;
+
+            $uploaded[] = $this->documents->createFromUpload($request->user(), $file, $folderId, $fileEncrypted);
         }
 
         $uploadedCount = count($uploaded);
@@ -105,6 +114,7 @@ class DocumentController extends Controller
             'folder_id' => ['nullable', 'integer', 'exists:doc_folders,id'],
             'content' => ['nullable', 'string', 'max:2000000'],
             'notify_members' => ['nullable', 'boolean'],
+            'is_encrypted' => ['nullable', 'boolean'],
         ]);
 
         $finalName = $this->documents->buildDocumentName($validated['name'], $validated['extension']);
@@ -128,6 +138,7 @@ class DocumentController extends Controller
             $validated['content'] ?? '',
             $validated['visibility'] ?? 'publish',
             isset($validated['folder_id']) ? (int) $validated['folder_id'] : null,
+            $request->boolean('is_encrypted'),
         );
 
         if ($request->boolean('notify_members') && $document->visibility === 'publish') {
@@ -235,6 +246,21 @@ class DocumentController extends Controller
     }
 
     /**
+     * Aktifkan atau nonaktifkan enkripsi konten dokumen di database.
+     */
+    public function toggleEncryption(Request $request, Document $document): RedirectResponse
+    {
+        $this->documents->authorizeAccess($request->user(), $document);
+        $updated = $this->documents->toggleEncryption($document, $request->user());
+
+        $message = $updated->is_encrypted
+            ? "{$document->name} content is now encrypted."
+            : "Encryption removed from {$document->name}.";
+
+        return back()->with('success', $message);
+    }
+
+    /**
      * Hapus dokumen.
      */
     public function destroy(Request $request, Document $document): RedirectResponse
@@ -256,10 +282,18 @@ class DocumentController extends Controller
         $this->documents->authorizeAccess($request->user(), $document);
         abort_unless($document->isStoredFile() && Storage::disk('local')->exists($document->file_path), 404);
 
-        return Storage::disk('local')->response($document->file_path, $document->name, [
+        $headers = [
             'Content-Type' => $document->mime_type ?: 'application/octet-stream',
             'Content-Disposition' => 'inline; filename="'.$document->name.'"',
-        ]);
+        ];
+
+        if ($document->is_encrypted) {
+            $bytes = $this->documents->readStoredFileBytes($document);
+
+            return response()->stream(fn () => print($bytes), 200, $headers);
+        }
+
+        return Storage::disk('local')->response($document->file_path, $document->name, $headers);
     }
 
     /**
@@ -272,6 +306,16 @@ class DocumentController extends Controller
 
         if ($document->isStoredFile()) {
             abort_unless(Storage::disk('local')->exists($document->file_path), 404);
+
+            if ($document->is_encrypted) {
+                $bytes = $this->documents->readStoredFileBytes($document);
+
+                return response()->streamDownload(
+                    fn () => print($bytes),
+                    $document->name,
+                    ['Content-Type' => $document->mime_type ?: 'application/octet-stream'],
+                );
+            }
 
             return Storage::disk('local')->download($document->file_path, $document->name);
         }

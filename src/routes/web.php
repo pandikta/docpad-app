@@ -40,6 +40,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/documents/{document}', [DocumentController::class, 'update'])->name('documents.update');
     Route::patch('/documents/{document}/rename', [DocumentController::class, 'rename'])->name('documents.rename');
     Route::patch('/documents/{document}/visibility', [DocumentController::class, 'updateVisibility'])->name('documents.visibility');
+    Route::patch('/documents/{document}/encryption', [DocumentController::class, 'toggleEncryption'])->name('documents.encryption');
     Route::patch('/documents/{document}/favorite', [DocumentController::class, 'toggleFavorite'])->name('documents.favorite');
     Route::patch('/documents/{document}/folder', [DocumentController::class, 'moveFolder'])->name('documents.folder');
     Route::put('/documents/{document}/teams', [DocumentController::class, 'assignTeams'])->name('documents.assign-teams');

@@ -29,6 +29,7 @@ const emit = defineEmits([
     'assign-teams',
     'toggle-visibility',
     'toggle-favorite',
+    'toggle-encryption',
     'move-folder',
     'bulk-download',
     'bulk-delete',
@@ -231,6 +232,15 @@ const moreMenuItems = computed(() => {
                     document: activeRowDocument.value,
                     visibility: isPrivate ? 'publish' : 'private',
                 }),
+        });
+    }
+
+    if (activeRowDocument.value) {
+        const isEncrypted = Boolean(activeRowDocument.value.is_encrypted);
+        items.push({
+            label: isEncrypted ? t('table.action_decrypt') : t('table.action_encrypt'),
+            icon: isEncrypted ? 'pi pi-lock-open text-slate-500' : 'pi pi-shield text-amber-500',
+            command: () => activeRowDocument.value && emit('toggle-encryption', activeRowDocument.value),
         });
     }
 
@@ -646,6 +656,11 @@ watch(
                             <i :class="[getDocumentIconClass(data), 'shrink-0']"></i>
                             <span class="truncate">{{ data.name }}</span>
                         </button>
+                        <i
+                            v-if="data.is_encrypted"
+                            v-tooltip.top="t('table.encrypted_tooltip')"
+                            class="pi pi-shield text-xs text-amber-500 shrink-0"
+                        ></i>
                         <button
                             v-if="data.share_link"
                             v-tooltip.top="'Shared via public link (click to manage)'"

@@ -32,10 +32,15 @@ export function useDocumentActions() {
         });
     };
 
-    const upload = (files, { folderId = null, notifyMembers = false, onSuccess } = {}) => {
+    const upload = (files, { folderId = null, notifyMembers = false, encryptedFiles = [], onSuccess } = {}) => {
         router.post(
             route('documents.store'),
-            { files, folder_id: folderId, notify_members: notifyMembers ? 1 : 0 },
+            {
+                files,
+                folder_id: folderId,
+                notify_members: notifyMembers ? 1 : 0,
+                encrypted_files: encryptedFiles.map((val) => (val ? 1 : 0)),
+            },
             {
                 forceFormData: true,
                 preserveScroll: true,
@@ -138,6 +143,17 @@ export function useDocumentActions() {
             {
                 preserveScroll: true,
                 onError: (errors) => notifyError('Favorite Failed', errors),
+            },
+        );
+    };
+
+    const toggleEncryption = (document) => {
+        router.patch(
+            route('documents.encryption', document.id),
+            {},
+            {
+                preserveScroll: true,
+                onError: (errors) => notifyError('Encryption Failed', errors),
             },
         );
     };
@@ -308,6 +324,7 @@ export function useDocumentActions() {
         assignTeams,
         updateVisibility,
         toggleFavorite,
+        toggleEncryption,
         moveFolder,
         bulkMoveFolder,
         bulkAssignTeams,

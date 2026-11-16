@@ -66,7 +66,7 @@ class ShareController extends Controller
                 'updated_at' => $doc->updated_at?->toIso8601String(),
                 'is_stored_file' => $doc->isStoredFile(),
                 'mime_type' => $doc->mime_type,
-                'content' => $doc->isStoredFile() ? null : $doc->content,
+                'content' => $doc->isStoredFile() ? null : $doc->decryptedContent(),
                 'preview_url' => $doc->isStoredFile() ? route('share.preview', $queryParams) : null,
                 'download_url' => route('share.download', $queryParams),
             ],
@@ -113,10 +113,18 @@ class ShareController extends Controller
 
         abort_unless($doc->isStoredFile() && Storage::disk('local')->exists($doc->file_path), 404);
 
-        return Storage::disk('local')->response($doc->file_path, $doc->name, [
+        $headers = [
             'Content-Type' => $doc->mime_type ?: 'application/octet-stream',
             'Content-Disposition' => 'inline; filename="'.$doc->name.'"',
-        ]);
+        ];
+
+        if ($doc->is_encrypted) {
+            $bytes = $this->documents->readStoredFileBytes($doc);
+
+            return response()->stream(fn () => print($bytes), 200, $headers);
+        }
+
+        return Storage::disk('local')->response($doc->file_path, $doc->name, $headers);
     }
 
     /**
@@ -130,6 +138,16 @@ class ShareController extends Controller
 
         if ($doc->isStoredFile()) {
             abort_unless(Storage::disk('local')->exists($doc->file_path), 404);
+
+            if ($doc->is_encrypted) {
+                $bytes = $this->documents->readStoredFileBytes($doc);
+
+                return response()->streamDownload(
+                    fn () => print($bytes),
+                    $doc->name,
+                    ['Content-Type' => $doc->mime_type ?: 'application/octet-stream'],
+                );
+            }
 
             return Storage::disk('local')->download($doc->file_path, $doc->name);
         }

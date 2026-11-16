@@ -7,8 +7,10 @@ use App\Models\DocumentFolder;
 use App\Models\DocumentShareLink;
 use App\Models\User;
 use App\Notifications\DocumentCreatedNotification;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -22,7 +24,7 @@ class DocumentService
      *
      * @var list<string>
      */
-    private const BINARY_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'png', 'jpg', 'jpeg', 'webp', 'gif'];
+    private const BINARY_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'];
     /**
      * Daftar dokumen untuk user yang login (superadmin melihat semua dokumen lintas tim).
      *
@@ -118,19 +120,27 @@ class DocumentService
     /**
      * Buat dokumen baru dari file yang di-upload (teks disimpan ke DB, file biner seperti PDF ke storage server).
      */
-    public function createFromUpload(User $user, UploadedFile $file, ?int $folderId = null): Document
+    public function createFromUpload(User $user, UploadedFile $file, ?int $folderId = null, bool $isEncrypted = false): Document
     {
         $extension = strtolower($file->getClientOriginalExtension());
         $isBinary = in_array($extension, self::BINARY_EXTENSIONS, true);
 
         $filePath = null;
         $content = null;
+        $encryptContent = $isEncrypted;
 
         if ($isBinary) {
-            $filePath = Storage::disk('local')->putFile('documents', $file);
+            if ($encryptContent) {
+                $raw = (string) file_get_contents($file->getRealPath());
+                $filePath = 'documents/'.Str::uuid().'.enc';
+                Storage::disk('local')->put($filePath, Crypt::encryptString($raw));
+            } else {
+                $filePath = Storage::disk('local')->putFile('documents', $file);
+            }
         } else {
             $raw = (string) file_get_contents($file->getRealPath());
-            $content = text_to_html($raw);
+            $html = text_to_html($raw);
+            $content = $encryptContent ? Crypt::encryptString($html) : $html;
         }
 
         $document = Document::create([
@@ -138,6 +148,7 @@ class DocumentService
             'folder_id' => $folderId,
             'name' => $file->getClientOriginalName(),
             'visibility' => 'publish',
+            'is_encrypted' => $encryptContent,
             'content' => $content,
             'file_path' => $filePath,
             'mime_type' => $file->getMimeType(),
@@ -156,7 +167,7 @@ class DocumentService
     /**
      * Buat dokumen baru langsung dari form Create File (nama + pilihan ekstensi + visibility + konten opsional).
      */
-    public function createBlank(User $user, string $name, string $extension, string $content = '', string $visibility = 'publish', ?int $folderId = null): Document
+    public function createBlank(User $user, string $name, string $extension, string $content = '', string $visibility = 'publish', ?int $folderId = null, bool $isEncrypted = false): Document
     {
         $finalName = $this->buildDocumentName($name, $extension);
         $htmlContent = $content !== '' ? $content : '<p><br></p>';
@@ -167,7 +178,8 @@ class DocumentService
             'folder_id' => $folderId,
             'name' => $finalName,
             'visibility' => $visibility,
-            'content' => $htmlContent,
+            'is_encrypted' => $isEncrypted,
+            'content' => $isEncrypted ? Crypt::encryptString($htmlContent) : $htmlContent,
             'size' => strlen(trim(html_to_text($htmlContent))),
         ]);
 
@@ -208,7 +220,7 @@ class DocumentService
         abort_if($document->isStoredFile(), 422, 'Stored binary files cannot be edited in the text editor.');
 
         $document->update([
-            'content' => $content,
+            'content' => $document->is_encrypted ? Crypt::encryptString($content) : $content,
             'size' => strlen(html_to_text($content)),
         ]);
 
@@ -217,6 +229,56 @@ class DocumentService
         record_document_log($document, 'updated this document', $user);
 
         return $document;
+    }
+
+    /**
+     * Aktifkan atau nonaktifkan (revoke) enkripsi dokumen (baik teks di DB maupun file biner di disk).
+     */
+    public function toggleEncryption(Document $document, ?User $user = null): Document
+    {
+        $nextEncrypted = ! $document->is_encrypted;
+
+        if ($document->isStoredFile()) {
+            abort_unless(Storage::disk('local')->exists($document->file_path), 404, 'Stored file not found.');
+            $rawBytes = $this->readStoredFileBytes($document);
+            Storage::disk('local')->put(
+                $document->file_path,
+                $nextEncrypted ? Crypt::encryptString($rawBytes) : $rawBytes,
+            );
+            $document->update(['is_encrypted' => $nextEncrypted]);
+        } else {
+            $plain = $document->decryptedContent();
+            $document->update([
+                'is_encrypted' => $nextEncrypted,
+                'content' => $nextEncrypted ? Crypt::encryptString($plain) : $plain,
+            ]);
+        }
+
+        $document->touch();
+        record_document_log(
+            $document,
+            $nextEncrypted ? 'encrypted document content' : 'removed content encryption',
+            $user,
+        );
+
+        return $document;
+    }
+
+    /**
+     * Baca isi byte file biner di disk (otomatis decrypt jika terenkripsi).
+     */
+    public function readStoredFileBytes(Document $document): string
+    {
+        $raw = (string) Storage::disk('local')->get($document->file_path);
+        if (! $document->is_encrypted || $raw === '') {
+            return $raw;
+        }
+
+        try {
+            return Crypt::decryptString($raw);
+        } catch (DecryptException) {
+            return $raw;
+        }
     }
 
     /**
@@ -376,7 +438,11 @@ class DocumentService
             }
 
             if ($doc->isStoredFile() && Storage::disk('local')->exists($doc->file_path)) {
-                $zip->addFile(Storage::disk('local')->path($doc->file_path), $entryName);
+                if ($doc->is_encrypted) {
+                    $zip->addFromString($entryName, $this->readStoredFileBytes($doc));
+                } else {
+                    $zip->addFile(Storage::disk('local')->path($doc->file_path), $entryName);
+                }
             } else {
                 $zip->addFromString($entryName, $this->toPlainText($doc));
             }
@@ -392,7 +458,7 @@ class DocumentService
      */
     public function toPlainText(Document $document): string
     {
-        return html_to_text((string) $document->content);
+        return html_to_text($document->decryptedContent());
     }
 
     /**

@@ -24,6 +24,18 @@ const selectedFiles = ref([]);
 const folderId = ref(null);
 const isDragging = ref(false);
 const notifyMembers = ref(false);
+const encryptedMap = ref({});
+
+const BINARY_EXTENSIONS = new Set(['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'png', 'jpg', 'jpeg', 'webp', 'gif']);
+const fileKey = (file) => `${file.name}-${file.size}-${file.lastModified}`;
+const isBinaryFile = (file) => BINARY_EXTENSIONS.has(getFileExtension(file?.name));
+const toggleFileEncrypt = (file) => {
+    const key = fileKey(file);
+    encryptedMap.value = {
+        ...encryptedMap.value,
+        [key]: !encryptedMap.value[key],
+    };
+};
 
 const folderOptions = computed(() => [
     { id: null, name: t('dashboard.uncategorized') },
@@ -42,6 +54,7 @@ watch(
             folderId.value = null;
             isDragging.value = false;
             notifyMembers.value = false;
+            encryptedMap.value = {};
         }
     },
 );
@@ -109,7 +122,12 @@ const removeFile = (index) => {
 
 const onConfirm = () => {
     if (!selectedFiles.value.length) return;
-    emit('confirm', { files: selectedFiles.value, folderId: folderId.value, notifyMembers: notifyMembers.value });
+    emit('confirm', {
+        files: selectedFiles.value,
+        folderId: folderId.value,
+        notifyMembers: notifyMembers.value,
+        encryptedFiles: selectedFiles.value.map((file) => Boolean(encryptedMap.value[fileKey(file)])),
+    });
 };
 </script>
 
@@ -213,7 +231,10 @@ const onConfirm = () => {
                     <button
                         type="button"
                         class="text-slate-500 hover:text-red-500 font-medium cursor-pointer"
-                        @click="selectedFiles = []"
+                        @click="
+                            selectedFiles = [];
+                            encryptedMap = {};
+                        "
                     >
                         {{ t('table.clear') }}
                     </button>
@@ -241,7 +262,25 @@ const onConfirm = () => {
                                 </p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 shrink-0">
+                        <div class="flex items-center gap-2.5 shrink-0">
+                            <label
+                                v-if="!hasFileIssue(file)"
+                                v-tooltip.top="t('dialogs.encrypt_content_upload')"
+                                class="inline-flex items-center gap-1.5 text-[11px] font-medium cursor-pointer select-none"
+                                :class="
+                                    encryptedMap[fileKey(file)]
+                                        ? 'text-amber-700 dark:text-amber-300 font-semibold'
+                                        : 'text-slate-500 dark:text-surface-400'
+                                "
+                                @click.stop
+                            >
+                                <Checkbox
+                                    :modelValue="Boolean(encryptedMap[fileKey(file)])"
+                                    binary
+                                    @update:modelValue="toggleFileEncrypt(file)"
+                                />
+                                <span>Encrypt</span>
+                            </label>
                             <span class="text-[11px] opacity-80">
                                 {{ formatFileSize(file.size) }}
                             </span>

@@ -111,6 +111,9 @@
         "action_assign_teams": "Atur Tim",
         "action_make_publish": "Jadikan Publik",
         "action_make_private": "Jadikan Privat",
+        "action_encrypt": "Enkripsi Konten",
+        "action_decrypt": "Hapus Enkripsi",
+        "encrypted_tooltip": "File terenkripsi",
         "action_rename": "Ubah Nama",
         "action_share_link": "Bagikan Link",
         "action_move_folder": "Pindah ke Folder",
@@ -164,7 +167,9 @@
         "editor_save": "Simpan Dokumen",
         "notify_members_create": "Beri notifikasi ke semua anggota tim saat disimpan",
         "notify_members_upload": "Beri notifikasi ke semua anggota tim saat diunggah",
-        "notify_members_share": "Beri notifikasi ke semua anggota tim saat link dibuat atau dicabut"
+        "notify_members_share": "Beri notifikasi ke semua anggota tim saat link dibuat atau dicabut",
+        "encrypt_content_create": "Enkripsi konten di database",
+        "encrypt_content_upload": "Enkripsi file"
     },
     "team_control": {
         "page_title": "Kontrol Tim",

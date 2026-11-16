@@ -26,6 +26,7 @@ const visibility = ref('publish');
 const folderId = ref(null);
 const content = ref('');
 const notifyMembers = ref(false);
+const isEncrypted = ref(false);
 
 const folderOptions = computed(() => [
     { id: null, name: t('dashboard.uncategorized') },
@@ -37,7 +38,7 @@ const visibilityOptions = computed(() => [
     { label: 'Private', value: 'private' },
 ]);
 
-const BINARY_EXTENSIONS = new Set(['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'png', 'jpg', 'jpeg', 'webp', 'gif']);
+const BINARY_EXTENSIONS = new Set(['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'svg']);
 
 const editableExtensions = computed(() =>
     props.extensions.filter((ext) => !BINARY_EXTENSIONS.has(String(ext).toLowerCase())),
@@ -70,6 +71,7 @@ watch(
             folderId.value = null;
             content.value = '';
             notifyMembers.value = false;
+            isEncrypted.value = false;
         }
     },
 );
@@ -109,6 +111,7 @@ const onSubmit = () => {
         folder_id: folderId.value,
         content: content.value,
         notify_members: visibility.value === 'publish' ? notifyMembers.value : false,
+        is_encrypted: isEncrypted.value,
     });
 };
 </script>
@@ -221,6 +224,14 @@ const onSubmit = () => {
                 <Checkbox v-model="notifyMembers" inputId="create-notify-members" binary />
                 <label for="create-notify-members" class="text-sm text-slate-700 dark:text-surface-200 cursor-pointer select-none">
                     {{ t('dialogs.notify_members_create') }}
+                </label>
+            </div>
+
+            <!-- Encrypt Content -->
+            <div class="flex items-center gap-2.5">
+                <Checkbox v-model="isEncrypted" inputId="create-encrypt-content" binary />
+                <label for="create-encrypt-content" class="text-sm text-slate-700 dark:text-surface-200 cursor-pointer select-none">
+                    {{ t('dialogs.encrypt_content_create') }}
                 </label>
             </div>
         </form>

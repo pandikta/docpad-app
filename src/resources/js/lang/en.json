@@ -111,6 +111,9 @@
         "action_assign_teams": "Assign Teams",
         "action_make_publish": "Make Publish",
         "action_make_private": "Make Private",
+        "action_encrypt": "Encrypt Content",
+        "action_decrypt": "Remove Encryption",
+        "encrypted_tooltip": "Content encrypted in database",
         "action_rename": "Rename",
         "action_share_link": "Share Link",
         "action_move_folder": "Move to Folder",
@@ -164,7 +167,9 @@
         "editor_save": "Save Document",
         "notify_members_create": "Notify all team members when saved",
         "notify_members_upload": "Notify all team members when uploaded",
-        "notify_members_share": "Notify all team members when link is generated or revoked"
+        "notify_members_share": "Notify all team members when link is generated or revoked",
+        "encrypt_content_create": "Encrypt content in database",
+        "encrypt_content_upload": "Encrypt file"
     },
     "team_control": {
         "page_title": "Team Control",

@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Crypt;
 
 class Document extends Model
 {
@@ -17,11 +19,33 @@ class Document extends Model
         'folder_id',
         'name',
         'visibility',
+        'is_encrypted',
         'content',
         'file_path',
         'mime_type',
         'size',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_encrypted' => 'boolean',
+        ];
+    }
+
+    public function decryptedContent(): string
+    {
+        $raw = (string) ($this->content ?? '');
+        if (! $this->is_encrypted || $raw === '') {
+            return $raw;
+        }
+
+        try {
+            return Crypt::decryptString($raw);
+        } catch (DecryptException) {
+            return $raw;
+        }
+    }
 
     public function isStoredFile(): bool
     {
@@ -69,7 +93,10 @@ class Document extends Model
 
         return $query->where(function (Builder $q) use ($keyword) {
             $q->where('name', 'like', "%{$keyword}%")
-              ->orWhere('content', 'like', "%{$keyword}%")
+              ->orWhere(function (Builder $sub) use ($keyword) {
+                  $sub->where('is_encrypted', false)
+                      ->where('content', 'like', "%{$keyword}%");
+              })
               ->orWhereHas('user', fn (Builder $u) => $u->where('name', 'like', "%{$keyword}%"));
         });
     }
@@ -129,6 +156,7 @@ class Document extends Model
             ] : null,
             'name' => $this->name,
             'visibility' => $this->visibility ?? 'publish',
+            'is_encrypted' => (bool) ($this->is_encrypted ?? false),
             'is_stored_file' => $this->isStoredFile(),
             'mime_type' => $this->mime_type,
             'preview_url' => $this->isStoredFile() ? route('documents.preview', $this->id) : null,
@@ -136,7 +164,7 @@ class Document extends Model
             'created_by' => $this->user?->name ?? 'Unknown',
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
-            'content' => $this->content,
+            'content' => $this->isStoredFile() ? null : $this->decryptedContent(),
             'teams' => $this->teams->map(fn (Team $team) => [
                 'id' => $team->id,
                 'name' => $team->team_name,

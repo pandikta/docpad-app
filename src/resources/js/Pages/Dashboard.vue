@@ -55,6 +55,7 @@ const {
     assignTeams,
     updateVisibility,
     toggleFavorite,
+    toggleEncryption,
     moveFolder,
     bulkMoveFolder,
     bulkAssignTeams,
@@ -308,10 +309,11 @@ const confirmBulkDelete = () => {
     });
 };
 
-const confirmUpload = ({ files, folderId, notifyMembers }) => {
+const confirmUpload = ({ files, folderId, notifyMembers, encryptedFiles }) => {
     upload(files, {
         folderId,
         notifyMembers,
+        encryptedFiles,
         onSuccess: () => {
             uploadDialogVisible.value = false;
         },
@@ -446,6 +448,7 @@ const confirmUpload = ({ files, folderId, notifyMembers }) => {
                 @assign-teams="openAssignTeams"
                 @toggle-visibility="onToggleVisibility"
                 @toggle-favorite="toggleFavorite"
+                @toggle-encryption="toggleEncryption"
                 @move-folder="openMoveFolder"
                 @bulk-download="bulkDownload"
                 @bulk-delete="openBulkDelete"
