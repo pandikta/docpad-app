@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
 use App\Models\Team;
+use App\Models\TeamRequest;
+use App\Services\TeamRequestService;
 use App\Services\TeamService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,12 +17,14 @@ class TeamController extends Controller
 {
     public function __construct(
         private readonly TeamService $teams,
+        private readonly TeamRequestService $teamRequests,
     ) {}
 
     public function index(): Response
     {
         return Inertia::render('Settings/MasterTeams', [
             'teams' => $this->teams->listAllForManagement(),
+            'teamRequests' => $this->teamRequests->listForManagement(),
         ]);
     }
 
@@ -66,5 +70,23 @@ class TeamController extends Controller
         $this->teams->delete($team);
 
         return back()->with('success', "Team {$name} deleted.");
+    }
+
+    public function approveRequest(Request $request, TeamRequest $teamRequest): RedirectResponse
+    {
+        $team = $this->teamRequests->approve($teamRequest, $request->user());
+
+        return back()->with('success', "Team {$team->team_name} ({$team->team_code}) approved and {$teamRequest->requester_name} assigned as Team Leader.");
+    }
+
+    public function rejectRequest(Request $request, TeamRequest $teamRequest): RedirectResponse
+    {
+        $validated = $request->validate([
+            'rejection_reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $this->teamRequests->reject($teamRequest, $request->user(), $validated['rejection_reason'] ?? null);
+
+        return back()->with('success', "Team request for {$teamRequest->team_name} rejected.");
     }
 }

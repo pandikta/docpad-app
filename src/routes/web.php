@@ -90,6 +90,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/teams', [TeamController::class, 'store'])->name('teams.store');
             Route::put('/teams/{team}', [TeamController::class, 'update'])->name('teams.update');
             Route::delete('/teams/{team}', [TeamController::class, 'destroy'])->name('teams.destroy');
+            Route::post('/teams/requests/{teamRequest}/approve', [TeamController::class, 'approveRequest'])->name('teams.requests.approve');
+            Route::post('/teams/requests/{teamRequest}/reject', [TeamController::class, 'rejectRequest'])->name('teams.requests.reject');
         });
 
         Route::middleware('menu.auth:menu.settings.users')->group(function () {

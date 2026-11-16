@@ -144,6 +144,9 @@ const formatNotifText = (item) => {
     if (data.action === 'password_changed_by_admin') {
         return t('topbar.notif_password_changed', { actor });
     }
+    if (data.action === 'team_request_submitted') {
+        return t('topbar.notif_team_request', { actor, name: data.document_name ?? '' });
+    }
     return t('topbar.notif_created', { actor, name: data.document_name ?? '' });
 };
 
@@ -153,6 +156,10 @@ const handleNotifClick = (item) => {
         router.post(route('notifications.read', item.id), {}, { preserveScroll: true });
     }
     notifMenu.value?.hide();
+    if (item?.data?.action === 'team_request_submitted') {
+        router.visit(route('settings.teams.index'));
+        return;
+    }
     if (!route().current('dashboard')) {
         router.visit(route('dashboard'));
     }

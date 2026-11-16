@@ -30,6 +30,7 @@
         "notif_shared": "{actor} shared {name}",
         "notif_revoked": "{actor} revoked share link for {name}",
         "notif_password_changed": "Your password was reset by {actor}",
+        "notif_team_request": "{actor} requested a new team: {name}",
         "profile": "Profile",
         "logout": "Logout"
     },
@@ -326,6 +327,18 @@
         "about_feat_4_title": "Activity Logs & Notifications",
         "about_feat_4_desc": "Track document history, monitor storage quotas, and get notified when teammates upload or share files.",
         "about_cta_register": "Create an Account",
-        "about_cta_close": "Got it"
+        "about_cta_close": "Got it",
+        "no_team_code": "Don't have a team code?",
+        "request_team_link": "Request a new team",
+        "request_team_title": "Request New Team",
+        "request_team_heading": "Request a Team Code",
+        "request_team_subtitle": "Submit a request to create your team workspace. Once approved by an admin, you will become the Team Leader / PM.",
+        "request_team_success_title": "Request Submitted!",
+        "request_team_success_desc": "Your team request has been sent to the admin for review. Once approved, your team will be created and you can sign in as Team Leader / PM using your email and password.",
+        "request_team_button": "Submit Team Request",
+        "request_team_confirm_title": "Confirm Team Request",
+        "request_team_confirm_desc": "Please verify your details before submitting. Once approved by an admin, you will become the Team Leader / PM.",
+        "request_team_confirm_submit": "Yes, Submit Request",
+        "back_to_register": "Already have a team code? Register here"
     }
 }

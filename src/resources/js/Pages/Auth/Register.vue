@@ -256,9 +256,17 @@ const passwordInputClass = '!pl-10 !py-2.5 !rounded-xl !border-slate-200 dark:!b
                             />
                         </IconField>
                         <small v-if="form.errors.team_code" class="text-red-500 text-xs">{{ form.errors.team_code }}</small>
-                        <small v-else class="text-slate-400 dark:text-surface-500 text-xs">
-                            You'll join this team after registration.
-                        </small>
+                        <div v-else class="flex flex-wrap items-center justify-between gap-1 text-xs">
+                            <span class="text-slate-400 dark:text-surface-500">
+                                You'll join this team after registration.
+                            </span>
+                            <Link
+                                :href="route('team-request.create')"
+                                class="font-semibold text-[#1f6f46] hover:text-[#165334] dark:text-emerald-400 transition-colors"
+                            >
+                                {{ t('auth.no_team_code') }} {{ t('auth.request_team_link') }}
+                            </Link>
+                        </div>
                     </div>
 
                     <!-- Name -->

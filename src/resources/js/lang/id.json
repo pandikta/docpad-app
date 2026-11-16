@@ -30,6 +30,7 @@
         "notif_shared": "{actor} membagikan {name}",
         "notif_revoked": "{actor} mencabut link berbagi {name}",
         "notif_password_changed": "Password Anda direset oleh {actor}",
+        "notif_team_request": "{actor} mengajukan tim baru: {name}",
         "profile": "Profil",
         "logout": "Keluar"
     },
@@ -326,6 +327,18 @@
         "about_feat_4_title": "Log Aktivitas & Notifikasi",
         "about_feat_4_desc": "Pantau riwayat dokumen, kuota penyimpanan, dan terima notifikasi saat rekan tim mengunggah atau berbagi file.",
         "about_cta_register": "Buat Akun",
-        "about_cta_close": "Mengerti"
+        "about_cta_close": "Mengerti",
+        "no_team_code": "Belum punya kode tim?",
+        "request_team_link": "Ajukan pembuatan tim",
+        "request_team_title": "Ajukan Tim Baru",
+        "request_team_heading": "Ajukan Kode Tim Baru",
+        "request_team_subtitle": "Kirim pengajuan untuk membuat workspace tim Anda. Setelah disetujui admin, Anda otomatis menjadi Team Leader / PM.",
+        "request_team_success_title": "Pengajuan Terkirim!",
+        "request_team_success_desc": "Pengajuan tim Anda telah dikirim ke admin untuk ditinjau. Setelah disetujui, tim akan dibuat dan Anda bisa masuk sebagai Team Leader / PM menggunakan email dan kata sandi tersebut.",
+        "request_team_button": "Kirim Pengajuan Tim",
+        "request_team_confirm_title": "Konfirmasi Pengajuan Tim",
+        "request_team_confirm_desc": "Pastikan data berikut sudah benar sebelum dikirim. Setelah disetujui admin, Anda akan menjadi Team Leader / PM.",
+        "request_team_confirm_submit": "Ya, Kirim Pengajuan",
+        "back_to_register": "Sudah punya kode tim? Daftar di sini"
     }
 }
