@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
 
 class NotificationController extends Controller
 {
@@ -14,10 +13,6 @@ class NotificationController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        if (! Schema::hasTable('notifications')) {
-            return response()->json(['unread_count' => 0, 'items' => []]);
-        }
-
         $user = $request->user();
 
         return response()->json([
