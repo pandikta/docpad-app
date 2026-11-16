@@ -312,6 +312,20 @@
         "confirm_button": "Confirm",
         "verify_title": "Email Verification",
         "verify_desc": "Thanks for signing up! Before getting started, could you verify your email address by clicking on the link we just emailed to you?",
-        "resend_verification": "Resend Verification Email"
+        "resend_verification": "Resend Verification Email",
+        "what_is_docpad": "What is DocPad?",
+        "about_badge": "Team Document Workspace",
+        "about_title": "Share. Organize. Work Together.",
+        "about_subtitle": "DocPad is a centralized, secure workspace for teams to create, organize, edit, and share documents in one place.",
+        "about_feat_1_title": "Create & Upload Easily",
+        "about_feat_1_desc": "Write documents directly in the built-in editor or upload files with folder organization and favorites.",
+        "about_feat_2_title": "Team & Role Access Control",
+        "about_feat_2_desc": "Organize members into teams with flexible visibility (Public, Team, Private) and granular permissions.",
+        "about_feat_3_title": "Encrypted & Protected Sharing",
+        "about_feat_3_desc": "Encrypt sensitive files and generate shareable links with optional password protection and instant revocation.",
+        "about_feat_4_title": "Activity Logs & Notifications",
+        "about_feat_4_desc": "Track document history, monitor storage quotas, and get notified when teammates upload or share files.",
+        "about_cta_register": "Create an Account",
+        "about_cta_close": "Got it"
     }
 }

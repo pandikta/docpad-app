@@ -312,6 +312,20 @@
         "confirm_button": "Konfirmasi",
         "verify_title": "Verifikasi Email",
         "verify_desc": "Terima kasih telah mendaftar! Silakan verifikasi alamat email Anda dengan mengklik link yang baru kami kirimkan.",
-        "resend_verification": "Kirim Ulang Email Verifikasi"
+        "resend_verification": "Kirim Ulang Email Verifikasi",
+        "what_is_docpad": "Apa itu DocPad?",
+        "about_badge": "Workspace Dokumen Tim",
+        "about_title": "Share. Organize. Work Together.",
+        "about_subtitle": "DocPad adalah ruang kerja terpusat dan aman bagi tim untuk membuat, mengatur, mengedit, dan membagikan dokumen dalam satu tempat.",
+        "about_feat_1_title": "Buat & Unggah dengan Mudah",
+        "about_feat_1_desc": "Tulis dokumen langsung di editor bawaan atau unggah file dengan pengelompokan folder dan favorit.",
+        "about_feat_2_title": "Kontrol Akses Tim & Peran",
+        "about_feat_2_desc": "Atur anggota ke dalam tim dengan visibilitas fleksibel (Publik, Tim, Privat) dan izin akses terperinci.",
+        "about_feat_3_title": "Enkripsi & Berbagi Aman",
+        "about_feat_3_desc": "Enkripsi file sensitif dan buat link berbagi dengan perlindungan kata sandi serta pencabutan instan.",
+        "about_feat_4_title": "Log Aktivitas & Notifikasi",
+        "about_feat_4_desc": "Pantau riwayat dokumen, kuota penyimpanan, dan terima notifikasi saat rekan tim mengunggah atau berbagi file.",
+        "about_cta_register": "Buat Akun",
+        "about_cta_close": "Mengerti"
     }
 }

@@ -8,6 +8,7 @@ import Button from 'primevue/button';
 import Message from 'primevue/message';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
+import Dialog from 'primevue/dialog';
 import { useLocale } from '@/composables/useLocale';
 
 const { t } = useLocale();
@@ -29,6 +30,14 @@ const form = useForm({
 
 const appName = import.meta.env.VITE_APP_NAME || 'DocPad';
 const isDark = ref(false);
+const showAboutModal = ref(false);
+
+const aboutFeatures = [
+    { icon: 'pi-file-edit', titleKey: 'auth.about_feat_1_title', descKey: 'auth.about_feat_1_desc' },
+    { icon: 'pi-users', titleKey: 'auth.about_feat_2_title', descKey: 'auth.about_feat_2_desc' },
+    { icon: 'pi-shield', titleKey: 'auth.about_feat_3_title', descKey: 'auth.about_feat_3_desc' },
+    { icon: 'pi-bell', titleKey: 'auth.about_feat_4_title', descKey: 'auth.about_feat_4_desc' },
+];
 
 const toggleDarkMode = () => {
     isDark.value = !isDark.value;
@@ -238,16 +247,27 @@ const submit = () => {
 
         <!-- Right Column: Login Form -->
         <div class="relative flex flex-col justify-center items-center px-6 py-12 sm:px-12 lg:px-20 bg-[#fcfdfc] dark:bg-surface-950 transition-colors duration-200">
-            <!-- Theme Toggle Button (Top Right) -->
-            <button
-                type="button"
-                @click="toggleDarkMode"
-                :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
-                class="absolute top-6 right-6 flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-surface-800 bg-white dark:bg-surface-900 text-slate-600 dark:text-surface-300 hover:bg-slate-50 dark:hover:bg-surface-800 text-xs font-medium shadow-sm transition-all cursor-pointer"
-            >
-                <i :class="[isDark ? 'pi pi-sun text-amber-400' : 'pi pi-moon text-slate-600']"></i>
-                <span>{{ isDark ? 'Light' : 'Dark' }}</span>
-            </button>
+            <!-- Top Right Action Cluster -->
+            <div class="absolute top-6 right-6 flex items-center gap-2">
+                <button
+                    type="button"
+                    @click="showAboutModal = true"
+                    class="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800/70 bg-emerald-50/80 dark:bg-emerald-950/50 text-[#1f6f46] dark:text-emerald-300 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/50 text-xs font-semibold shadow-sm transition-all cursor-pointer"
+                >
+                    <i class="pi pi-sparkles text-xs"></i>
+                    <span>{{ t('auth.what_is_docpad') }}</span>
+                </button>
+
+                <button
+                    type="button"
+                    @click="toggleDarkMode"
+                    :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+                    class="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-surface-800 bg-white dark:bg-surface-900 text-slate-600 dark:text-surface-300 hover:bg-slate-50 dark:hover:bg-surface-800 text-xs font-medium shadow-sm transition-all cursor-pointer"
+                >
+                    <i :class="[isDark ? 'pi pi-sun text-amber-400' : 'pi pi-moon text-slate-600']"></i>
+                    <span>{{ isDark ? 'Light' : 'Dark' }}</span>
+                </button>
+            </div>
 
             <div class="w-full max-w-[400px]">
                 <!-- Mobile Brand Logo (Visible only on small screens) -->
@@ -400,4 +420,81 @@ const submit = () => {
             </div>
         </div>
     </div>
+
+    <!-- What is DocPad? Dialog -->
+    <Dialog
+        v-model:visible="showAboutModal"
+        modal
+        :draggable="false"
+        :style="{ width: '40rem' }"
+        :breakpoints="{ '768px': '92vw' }"
+    >
+        <template #header>
+            <div class="flex items-center gap-2.5">
+                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eaf7f0] dark:bg-emerald-950/60 text-[#1f6f46] dark:text-emerald-400">
+                    <i class="pi pi-sparkles text-sm"></i>
+                </span>
+                <span class="font-bold text-base text-slate-800 dark:text-surface-0">
+                    {{ t('auth.what_is_docpad') }}
+                </span>
+            </div>
+        </template>
+
+        <div class="space-y-5 pt-1">
+            <!-- Hero Intro Banner -->
+            <div class="rounded-xl bg-gradient-to-br from-[#eaf7f0] to-[#d6efe1] dark:from-emerald-950/60 dark:to-emerald-900/30 border border-emerald-100 dark:border-emerald-900/50 p-5">
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-white/80 dark:bg-emerald-950/80 px-2.5 py-0.5 text-[11px] font-semibold text-[#1f6f46] dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800">
+                    {{ t('auth.about_badge') }}
+                </span>
+                <h3 class="mt-2.5 text-xl font-extrabold tracking-tight text-[#18221d] dark:text-surface-0">
+                    {{ t('auth.about_title') }}
+                </h3>
+                <p class="mt-1.5 text-sm text-[#3c5247] dark:text-surface-300 leading-relaxed">
+                    {{ t('auth.about_subtitle') }}
+                </p>
+            </div>
+
+            <!-- Feature Highlights -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div
+                    v-for="feat in aboutFeatures"
+                    :key="feat.titleKey"
+                    class="rounded-xl border border-slate-200/80 dark:border-surface-800 bg-slate-50/60 dark:bg-surface-900/60 p-3.5"
+                >
+                    <div class="flex items-center gap-2.5 mb-1.5">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100/80 dark:bg-emerald-950/70 text-[#1f6f46] dark:text-emerald-400">
+                            <i :class="['pi text-xs', feat.icon]"></i>
+                        </span>
+                        <h4 class="text-sm font-bold text-slate-800 dark:text-surface-0">
+                            {{ t(feat.titleKey) }}
+                        </h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-surface-400 leading-relaxed">
+                        {{ t(feat.descKey) }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <template #footer>
+            <div class="flex items-center justify-end gap-2.5 pt-2">
+                <Link :href="route('register')">
+                    <Button
+                        type="button"
+                        :label="t('auth.about_cta_register')"
+                        icon="pi pi-user-plus"
+                        outlined
+                        class="!border-[#1f6f46] !text-[#1f6f46] hover:!bg-emerald-50 dark:!border-emerald-400 dark:!text-emerald-400 dark:hover:!bg-emerald-950/40 !rounded-xl !text-sm"
+                    />
+                </Link>
+                <Button
+                    type="button"
+                    :label="t('auth.about_cta_close')"
+                    icon="pi pi-check"
+                    class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white !rounded-xl !text-sm"
+                    @click="showAboutModal = false"
+                />
+            </div>
+        </template>
+    </Dialog>
 </template>
