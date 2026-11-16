@@ -185,12 +185,17 @@ const confirmDelete = (doc) => {
 // --- Upload & Folders & Bulk Actions -------------------------------------
 const tableRef = ref(null);
 const uploadDialogVisible = ref(false);
-const activeFolderFilter = ref('all'); // 'all' | 'uncategorized' | folder.id
+const activeFolderFilter = ref('all'); // 'all' | 'uncategorized' | 'unassigned' | folder.id
+
+const isUnassignedDoc = (doc) => doc?.visibility !== 'private' && (!doc?.teams || doc.teams.length === 0);
 
 const folderFilteredDocuments = computed(() => {
     if (activeFolderFilter.value === 'all') return props.documents;
     if (activeFolderFilter.value === 'uncategorized') {
         return props.documents.filter((d) => !d.folder_id);
+    }
+    if (activeFolderFilter.value === 'unassigned') {
+        return props.documents.filter(isUnassignedDoc);
     }
     return props.documents.filter((d) => Number(d.folder_id) === Number(activeFolderFilter.value));
 });
@@ -198,6 +203,7 @@ const folderFilteredDocuments = computed(() => {
 const folderDocCount = (folderId) => {
     if (folderId === 'all') return props.documents.length;
     if (folderId === 'uncategorized') return props.documents.filter((d) => !d.folder_id).length;
+    if (folderId === 'unassigned') return props.documents.filter(isUnassignedDoc).length;
     return props.documents.filter((d) => Number(d.folder_id) === Number(folderId)).length;
 };
 
@@ -424,6 +430,21 @@ const confirmUpload = ({ files, folderId, notifyMembers, encryptedFiles }) => {
                     @click="activeFolderFilter = 'uncategorized'"
                 >
                     <span>{{ t('dashboard.uncategorized') }} ({{ folderDocCount('uncategorized') }})</span>
+                </button>
+
+                <button
+                    v-if="isSuperAdmin"
+                    type="button"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer"
+                    :class="
+                        activeFolderFilter === 'unassigned'
+                            ? 'bg-amber-600 text-white border-amber-600'
+                            : 'bg-white dark:bg-surface-900 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/70 hover:border-amber-500'
+                    "
+                    @click="activeFolderFilter = 'unassigned'"
+                >
+                    <i class="pi pi-exclamation-circle text-[11px]"></i>
+                    <span>{{ t('dashboard.unassigned') }} ({{ folderDocCount('unassigned') }})</span>
                 </button>
 
                 <button
