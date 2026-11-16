@@ -24,15 +24,18 @@ class TeamLeaderRequestService
      */
     public function getStatusForUser(?User $user): ?array
     {
-        if (! $user || $user->isSuperAdmin() || ! $user->team_id) {
+        if (! $user || $user->isSuperAdmin() || ! $user->team_id || $user->isTeamLeader()) {
             return null;
         }
+
+        $team = Team::find($user->team_id);
+        $allowMultiple = (bool) ($team?->allow_multiple_leaders ?? false);
 
         $hasLeader = User::where('team_id', $user->team_id)
             ->where('is_team_leader', true)
             ->exists();
 
-        if ($hasLeader) {
+        if (! $allowMultiple && $hasLeader) {
             return [
                 'show_button' => false,
                 'has_pending_request' => false,
@@ -70,13 +73,19 @@ class TeamLeaderRequestService
             ]);
         }
 
+        if ($user->isTeamLeader()) {
+            throw ValidationException::withMessages([
+                'team' => 'You are already a Team Leader.',
+            ]);
+        }
+
         $team = Team::findOrFail($user->team_id);
 
         $hasLeader = User::where('team_id', $team->id)
             ->where('is_team_leader', true)
             ->exists();
 
-        if ($hasLeader) {
+        if (! $team->allow_multiple_leaders && $hasLeader) {
             throw ValidationException::withMessages([
                 'team' => 'This team already has a Team Leader.',
             ]);
@@ -185,17 +194,22 @@ class TeamLeaderRequestService
             ]);
         }
 
+        $team = $leaderRequest->team;
+        $allowMultiple = (bool) ($team?->allow_multiple_leaders ?? false);
+
         $hasLeader = User::where('team_id', $leaderRequest->team_id)
             ->where('is_team_leader', true)
             ->exists();
 
-        if ($hasLeader) {
+        if (! $allowMultiple && $hasLeader) {
             throw ValidationException::withMessages([
                 'request' => 'This team already has a Team Leader.',
             ]);
         }
 
-        DB::transaction(function () use ($leaderRequest, $reviewer) {
+        $otherPending = collect();
+
+        DB::transaction(function () use ($leaderRequest, $reviewer, $allowMultiple, &$otherPending) {
             $leaderRequest->user?->forceFill(['is_team_leader' => true])->save();
 
             $leaderRequest->update([
@@ -203,10 +217,31 @@ class TeamLeaderRequestService
                 'reviewed_by' => $reviewer->id,
                 'reviewed_at' => now(),
             ]);
+
+            if (! $allowMultiple) {
+                $otherPending = TeamLeaderRequest::where('team_id', $leaderRequest->team_id)
+                    ->where('id', '!=', $leaderRequest->id)
+                    ->where('status', 'pending')
+                    ->get();
+
+                foreach ($otherPending as $pending) {
+                    $pending->update([
+                        'status' => 'rejected',
+                        'rejection_reason' => 'Another member was approved as Team Leader.',
+                        'reviewed_by' => $reviewer->id,
+                        'reviewed_at' => now(),
+                    ]);
+                }
+            }
         });
 
         $this->markNotificationsAsRead($leaderRequest);
         $this->notifyDecision($leaderRequest, $reviewer, 'approved');
+
+        foreach ($otherPending as $rejected) {
+            $this->markNotificationsAsRead($rejected);
+            $this->notifyDecision($rejected, $reviewer, 'rejected');
+        }
     }
 
     public function reject(TeamLeaderRequest $leaderRequest, User $reviewer, ?string $reason = null): void
@@ -273,10 +308,21 @@ class TeamLeaderRequestService
 
     private function markNotificationsAsRead(TeamLeaderRequest $leaderRequest): void
     {
-        DB::table('notifications')
+        $ids = DB::table('notifications')
             ->whereNull('read_at')
             ->where('type', TeamLeaderRequestedNotification::class)
-            ->where('data->team_leader_request_id', $leaderRequest->id)
-            ->update(['read_at' => now()]);
+            ->get(['id', 'data'])
+            ->filter(function ($row) use ($leaderRequest) {
+                $data = json_decode((string) $row->data, true);
+                return (int) ($data['team_leader_request_id'] ?? 0) === $leaderRequest->id;
+            })
+            ->pluck('id')
+            ->all();
+
+        if ($ids !== []) {
+            DB::table('notifications')
+                ->whereIn('id', $ids)
+                ->update(['read_at' => now()]);
+        }
     }
 }

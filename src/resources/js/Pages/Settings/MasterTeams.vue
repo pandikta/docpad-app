@@ -168,6 +168,7 @@ const form = useForm({
     max_member: 5,
     description: '',
     is_active: true,
+    allow_multiple_leaders: false,
 });
 
 const filteredTeams = computed(() => {
@@ -187,6 +188,7 @@ const openCreate = () => {
     form.clearErrors();
     form.max_member = 5;
     form.is_active = true;
+    form.allow_multiple_leaders = false;
     dialogVisible.value = true;
 };
 
@@ -198,6 +200,7 @@ const openEdit = (team) => {
     form.max_member = team.max_member;
     form.description = team.description ?? '';
     form.is_active = Boolean(team.is_active);
+    form.allow_multiple_leaders = Boolean(team.allow_multiple_leaders);
     dialogVisible.value = true;
 };
 
@@ -351,7 +354,14 @@ const deleteTeam = () => {
 
                     <Column field="team_name" header="Team Name">
                         <template #body="{ data }">
-                            <span class="font-semibold text-slate-800 dark:text-surface-0">{{ data.team_name }}</span>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="font-semibold text-slate-800 dark:text-surface-0">{{ data.team_name }}</span>
+                                <Tag
+                                    v-if="data.allow_multiple_leaders"
+                                    :value="t('settings.multi_leader_badge')"
+                                    severity="info"
+                                />
+                            </div>
                         </template>
                     </Column>
 
@@ -509,7 +519,14 @@ const deleteTeam = () => {
 
                     <Column field="team_name" header="Team Name">
                         <template #body="{ data }">
-                            <span class="font-semibold text-slate-800 dark:text-surface-0">{{ data.team_name }}</span>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="font-semibold text-slate-800 dark:text-surface-0">{{ data.team_name }}</span>
+                                <Tag
+                                    v-if="data.allow_multiple_leaders"
+                                    :value="t('settings.multi_leader_badge')"
+                                    severity="info"
+                                />
+                            </div>
                         </template>
                     </Column>
 
@@ -613,6 +630,14 @@ const deleteTeam = () => {
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-semibold">Description</label>
                     <Textarea v-model="form.description" rows="2" placeholder="Optional description" fluid />
+                </div>
+
+                <div class="flex items-center justify-between pt-1">
+                    <div>
+                        <span class="text-sm font-semibold">{{ t('settings.allow_multiple_leaders') }}</span>
+                        <p class="text-xs text-slate-500 dark:text-surface-400">{{ t('settings.allow_multiple_leaders_desc') }}</p>
+                    </div>
+                    <ToggleSwitch v-model="form.allow_multiple_leaders" />
                 </div>
 
                 <div class="flex items-center justify-between pt-1">

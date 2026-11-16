@@ -134,11 +134,22 @@ class TeamRequestService
      */
     private function markRequestNotificationsAsRead(TeamRequest $teamRequest): void
     {
-        DB::table('notifications')
+        $ids = DB::table('notifications')
             ->whereNull('read_at')
             ->where('type', TeamRequestSubmittedNotification::class)
-            ->where('data->team_request_id', $teamRequest->id)
-            ->update(['read_at' => now()]);
+            ->get(['id', 'data'])
+            ->filter(function ($row) use ($teamRequest) {
+                $data = json_decode((string) $row->data, true);
+                return (int) ($data['team_request_id'] ?? 0) === $teamRequest->id;
+            })
+            ->pluck('id')
+            ->all();
+
+        if ($ids !== []) {
+            DB::table('notifications')
+                ->whereIn('id', $ids)
+                ->update(['read_at' => now()]);
+        }
     }
 
     /**

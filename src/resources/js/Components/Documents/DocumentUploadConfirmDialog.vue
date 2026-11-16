@@ -5,9 +5,12 @@ import Select from 'primevue/select';
 import Checkbox from 'primevue/checkbox';
 import Button from 'primevue/button';
 import { formatFileSize } from '@/utils/formatters';
+import { useAuth } from '@/composables/useAuth';
 import { useLocale } from '@/composables/useLocale';
 
+const { user, isSuperAdmin } = useAuth();
 const { t } = useLocale();
+const mustBePrivate = computed(() => !isSuperAdmin.value && !user.value?.team_id);
 
 const props = defineProps({
     visible: { type: Boolean, default: false },
@@ -297,8 +300,17 @@ const onConfirm = () => {
                 </ul>
             </div>
 
+            <!-- Highlight: Auto-Private when user has no team -->
+            <div
+                v-if="mustBePrivate"
+                class="flex items-start gap-2 rounded-xl border border-amber-200 dark:border-amber-800/70 bg-amber-50/80 dark:bg-amber-950/40 px-3.5 py-2.5 text-xs text-amber-800 dark:text-amber-200"
+            >
+                <i class="pi pi-lock text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"></i>
+                <span>{{ t('dialogs.no_team_private_hint') }}</span>
+            </div>
+
             <!-- Notify Team Members -->
-            <div class="flex items-center gap-2.5 pt-1">
+            <div v-if="!mustBePrivate" class="flex items-center gap-2.5 pt-1">
                 <Checkbox v-model="notifyMembers" inputId="upload-notify-members" binary />
                 <label for="upload-notify-members" class="text-sm text-slate-700 dark:text-surface-200 cursor-pointer select-none">
                     {{ t('dialogs.notify_members_upload') }}

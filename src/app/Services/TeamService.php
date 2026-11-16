@@ -64,13 +64,14 @@ class TeamService
                 'users_count' => $team->users_count,
                 'description' => $team->description,
                 'is_active' => (bool) $team->is_active,
+                'allow_multiple_leaders' => (bool) $team->allow_multiple_leaders,
             ]);
     }
 
     /**
      * Buat team baru.
      *
-     * @param  array{team_code: string, team_name: string, max_member: int, description?: ?string, is_active?: bool}  $data
+     * @param  array{team_code: string, team_name: string, max_member: int, description?: ?string, is_active?: bool, allow_multiple_leaders?: bool}  $data
      */
     public function create(array $data): Team
     {
@@ -80,13 +81,14 @@ class TeamService
             'max_member' => (int) $data['max_member'],
             'description' => isset($data['description']) ? trim($data['description']) : null,
             'is_active' => ($data['is_active'] ?? true) ? 1 : 0,
+            'allow_multiple_leaders' => (bool) ($data['allow_multiple_leaders'] ?? false),
         ]);
     }
 
     /**
      * Perbarui data team.
      *
-     * @param  array{team_code: string, team_name: string, max_member: int, description?: ?string, is_active?: bool}  $data
+     * @param  array{team_code: string, team_name: string, max_member: int, description?: ?string, is_active?: bool, allow_multiple_leaders?: bool}  $data
      */
     public function update(Team $team, array $data): Team
     {
@@ -96,6 +98,7 @@ class TeamService
             'max_member' => (int) $data['max_member'],
             'description' => isset($data['description']) ? trim($data['description']) : null,
             'is_active' => ($data['is_active'] ?? true) ? 1 : 0,
+            'allow_multiple_leaders' => (bool) ($data['allow_multiple_leaders'] ?? $team->allow_multiple_leaders ?? false),
         ]);
 
         return $team;

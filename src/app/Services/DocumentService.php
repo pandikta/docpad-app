@@ -143,11 +143,13 @@ class DocumentService
             $content = $encryptContent ? Crypt::encryptString($html) : $html;
         }
 
+        $visibility = (! $user->isSuperAdmin() && ! $user->team_id) ? 'private' : 'publish';
+
         $document = Document::create([
             'user_id' => $user->id,
             'folder_id' => $folderId,
             'name' => $file->getClientOriginalName(),
-            'visibility' => 'publish',
+            'visibility' => $visibility,
             'is_encrypted' => $encryptContent,
             'content' => $content,
             'file_path' => $filePath,
@@ -171,7 +173,9 @@ class DocumentService
     {
         $finalName = $this->buildDocumentName($name, $extension);
         $htmlContent = $content !== '' ? $content : '<p><br></p>';
-        $visibility = $visibility === 'private' ? 'private' : 'publish';
+        $visibility = (! $user->isSuperAdmin() && ! $user->team_id)
+            ? 'private'
+            : ($visibility === 'private' ? 'private' : 'publish');
 
         $document = Document::create([
             'user_id' => $user->id,

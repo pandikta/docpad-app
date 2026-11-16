@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
@@ -31,10 +31,41 @@ const props = defineProps({
     storageQuota: { type: Object, default: () => ({ used_bytes: 0, limit_mb: 100, limit_bytes: 104857600 }) },
     teams: { type: Array, default: () => [] },
     myTeam: { type: Object, default: null },
+    pendingJoinRequest: { type: Object, default: null },
 });
 
 const myTeamDialogVisible = ref(false);
-const myTeamLeader = computed(() => props.myTeam?.members?.find((m) => m.is_team_leader) ?? null);
+const myTeamLeaderNames = computed(() =>
+    (props.myTeam?.members ?? [])
+        .filter((m) => m.is_team_leader)
+        .map((m) => m.name)
+        .join(', '),
+);
+
+const joinTeamDialogVisible = ref(false);
+const joinConfirmDialogVisible = ref(false);
+const joinTeamForm = useForm({
+    team_code: '',
+});
+
+const openJoinConfirm = () => {
+    if (!joinTeamForm.team_code.trim()) return;
+    joinConfirmDialogVisible.value = true;
+};
+
+const submitJoinTeam = () => {
+    joinTeamForm.post(route('team-join.request'), {
+        preserveScroll: true,
+        onError: () => {
+            joinConfirmDialogVisible.value = false;
+        },
+        onSuccess: () => {
+            joinConfirmDialogVisible.value = false;
+            joinTeamDialogVisible.value = false;
+            joinTeamForm.reset();
+        },
+    });
+};
 
 const page = usePage();
 const { can, isSuperAdmin, isTeamLeader } = useAuth();
@@ -359,14 +390,51 @@ const confirmUpload = ({ files, folderId, notifyMembers, encryptedFiles }) => {
                         </p>
                         <p class="text-[11px] text-slate-500 dark:text-surface-400 truncate mt-0.5">
                             {{
-                                myTeamLeader
-                                    ? t('dashboard.team_leader_label', { name: myTeamLeader.name })
+                                myTeamLeaderNames
+                                    ? t('dashboard.team_leader_label', { name: myTeamLeaderNames })
                                     : t('dashboard.no_team_leader')
                             }}
                         </p>
                     </div>
                     <i class="pi pi-chevron-right text-xs text-slate-400"></i>
                 </button>
+
+                <!-- No Team Assigned Card (for non-superadmin users removed from / without a team) -->
+                <div
+                    v-else-if="!isSuperAdmin"
+                    class="flex flex-wrap items-center justify-between gap-4 px-5 py-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/70 shadow-sm min-w-[16rem] max-w-md"
+                >
+                    <div class="flex items-start gap-3 min-w-0 flex-1">
+                        <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 shrink-0">
+                            <i class="pi pi-users text-base"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm font-bold text-slate-800 dark:text-surface-0">
+                                {{ t('dashboard.no_team_title') }}
+                            </p>
+                            <template v-if="pendingJoinRequest">
+                                <p class="text-xs font-medium text-amber-800 dark:text-amber-200 mt-0.5">
+                                    {{ t('dashboard.no_team_pending', { team: pendingJoinRequest.team_name, code: pendingJoinRequest.team_code }) }}
+                                </p>
+                                <p class="text-[11px] text-slate-600 dark:text-surface-300 mt-0.5">
+                                    {{ pendingJoinRequest.has_team_leader ? t('dashboard.no_team_pending_leader') : t('dashboard.no_team_pending_admin') }}
+                                </p>
+                            </template>
+                            <p v-else class="text-xs text-slate-600 dark:text-surface-300 mt-0.5">
+                                {{ t('dashboard.no_team_desc') }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <Button
+                        v-if="!pendingJoinRequest"
+                        :label="t('dashboard.join_team')"
+                        icon="pi pi-sign-in"
+                        size="small"
+                        class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white !font-semibold !rounded-xl shrink-0"
+                        @click="joinTeamDialogVisible = true"
+                    />
+                </div>
 
                 <div v-if="can('documents.create') || can('documents.upload')" class="sm:ml-auto flex flex-wrap items-center gap-3">
                     <Button
@@ -582,8 +650,8 @@ const confirmUpload = ({ files, folderId, notifyMembers, encryptedFiles }) => {
                             ·
                             <span class="font-medium text-[#1f6f46] dark:text-emerald-400">
                                 {{
-                                    myTeamLeader
-                                        ? t('dashboard.team_leader_label', { name: myTeamLeader.name })
+                                    myTeamLeaderNames
+                                        ? t('dashboard.team_leader_label', { name: myTeamLeaderNames })
                                         : t('dashboard.no_team_leader')
                                 }}
                             </span>
@@ -632,6 +700,104 @@ const confirmUpload = ({ files, folderId, notifyMembers, encryptedFiles }) => {
 
             <template #footer>
                 <Button :label="t('common.close')" severity="secondary" variant="outlined" @click="myTeamDialogVisible = false" />
+            </template>
+        </Dialog>
+
+        <!-- Join Team Dialog -->
+        <Dialog
+            v-model:visible="joinTeamDialogVisible"
+            modal
+            :draggable="false"
+            :style="{ width: '28rem' }"
+            :breakpoints="{ '640px': '92vw' }"
+        >
+            <template #header>
+                <div class="flex items-center gap-2.5">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eaf7f0] dark:bg-emerald-950/60 text-[#1f6f46] dark:text-emerald-400">
+                        <i class="pi pi-users text-sm"></i>
+                    </span>
+                    <span class="text-lg font-bold">{{ t('dashboard.join_team_title') }}</span>
+                </div>
+            </template>
+
+            <form class="space-y-4 pt-1" @submit.prevent="openJoinConfirm">
+                <div class="flex flex-col gap-1.5">
+                    <label for="join-team-code" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
+                        {{ t('dashboard.join_team_code_label') }}
+                    </label>
+                    <InputText
+                        id="join-team-code"
+                        v-model="joinTeamForm.team_code"
+                        :placeholder="t('dashboard.join_team_code_placeholder')"
+                        autofocus
+                        required
+                        fluid
+                        :invalid="Boolean(joinTeamForm.errors.team_code)"
+                        class="!rounded-xl"
+                    />
+                    <small v-if="joinTeamForm.errors.team_code" class="text-red-500 text-xs">
+                        {{ joinTeamForm.errors.team_code }}
+                    </small>
+                </div>
+
+                <div class="flex items-start gap-2 rounded-xl border border-emerald-200/80 dark:border-emerald-800/70 bg-emerald-50/70 dark:bg-emerald-950/40 px-3 py-2.5 text-xs text-[#1f5137] dark:text-emerald-200">
+                    <i class="pi pi-info-circle text-[#1f6f46] dark:text-emerald-400 mt-0.5 shrink-0"></i>
+                    <span>{{ t('dashboard.join_team_info') }}</span>
+                </div>
+            </form>
+
+            <template #footer>
+                <Button
+                    :label="t('common.cancel')"
+                    severity="secondary"
+                    variant="outlined"
+                    :disabled="joinTeamForm.processing"
+                    @click="joinTeamDialogVisible = false"
+                />
+                <Button
+                    :label="t('dashboard.join_team_submit')"
+                    icon="pi pi-send"
+                    :disabled="!joinTeamForm.team_code.trim() || joinTeamForm.processing"
+                    class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white"
+                    @click="openJoinConfirm"
+                />
+            </template>
+        </Dialog>
+
+        <!-- Join Team Confirm Dialog -->
+        <Dialog
+            v-model:visible="joinConfirmDialogVisible"
+            modal
+            :draggable="false"
+            :style="{ width: '26rem' }"
+            :breakpoints="{ '640px': '92vw' }"
+        >
+            <template #header>
+                <div class="flex items-center gap-2.5">
+                    <i class="pi pi-exclamation-circle text-[#1f6f46] dark:text-emerald-400"></i>
+                    <span class="text-lg font-bold">{{ t('dashboard.join_team_confirm_title') }}</span>
+                </div>
+            </template>
+
+            <p class="text-sm text-slate-600 dark:text-surface-300 leading-relaxed pt-1">
+                {{ t('dashboard.join_team_confirm_desc', { code: joinTeamForm.team_code.trim() }) }}
+            </p>
+
+            <template #footer>
+                <Button
+                    :label="t('common.cancel')"
+                    severity="secondary"
+                    variant="outlined"
+                    :disabled="joinTeamForm.processing"
+                    @click="joinConfirmDialogVisible = false"
+                />
+                <Button
+                    :label="t('dashboard.join_team_confirm_submit')"
+                    icon="pi pi-check"
+                    :loading="joinTeamForm.processing"
+                    class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white"
+                    @click="submitJoinTeam"
+                />
             </template>
         </Dialog>
 

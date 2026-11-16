@@ -16,7 +16,16 @@ class Team extends Model
         'max_member',
         'description',
         'is_active',
+        'allow_multiple_leaders',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+            'allow_multiple_leaders' => 'boolean',
+        ];
+    }
 
     /**
      * Members of this team.

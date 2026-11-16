@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\DocumentService;
 use App\Services\ExtensionService;
+use App\Services\TeamMembershipService;
 use App\Services\TeamService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,8 +15,13 @@ class DashboardController extends Controller
     /**
      * Display the dashboard (document list milik team user).
      */
-    public function index(Request $request, DocumentService $documents, TeamService $teams, ExtensionService $extensions): Response
-    {
+    public function index(
+        Request $request,
+        DocumentService $documents,
+        TeamService $teams,
+        ExtensionService $extensions,
+        TeamMembershipService $membership,
+    ): Response {
         $user = $request->user();
         $search = $request->string('search')->toString();
 
@@ -53,6 +59,7 @@ class DashboardController extends Controller
             'storageQuota' => $documents->getStorageQuotaSummary($user),
             'teams' => is_superadmin($user) ? $teams->listActiveTeams() : [],
             'myTeam' => $myTeam,
+            'pendingJoinRequest' => $membership->getPendingJoinRequestForUser($user),
             'filters' => [
                 'search' => $search,
             ],

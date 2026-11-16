@@ -13,6 +13,7 @@ use App\Http\Controllers\Settings\TeamController;
 use App\Http\Controllers\Settings\UserController;
 use App\Http\Controllers\ShareController;
 use App\Http\Controllers\TeamControlController;
+use App\Http\Controllers\TeamJoinRequestController;
 use App\Http\Controllers\TeamLeaderRequestController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -63,6 +64,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/password/force-update', [PasswordController::class, 'forceUpdate'])->name('password.force-update');
     Route::post('/team-leader-request', [TeamLeaderRequestController::class, 'store'])->name('team-leader.request');
+    Route::post('/team-join-request', [TeamJoinRequestController::class, 'store'])->name('team-join.request');
 
     // Team Control (dikontrol oleh Menu Authorization, Superadmin selalu punya akses penuh)
     Route::middleware('menu.auth:menu.team-control')->group(function () {
@@ -70,6 +72,9 @@ Route::middleware('auth')->group(function () {
         Route::delete('/team-control/share-links/{shareLink}', [TeamControlController::class, 'revokeShareLink'])->name('team-control.share-links.revoke');
         Route::put('/team-control/permissions', [TeamControlController::class, 'updatePermission'])->name('team-control.permissions.update');
         Route::delete('/team-control/permissions/reset', [TeamControlController::class, 'resetPermission'])->name('team-control.permissions.reset');
+        Route::delete('/team-control/members/{member}', [TeamControlController::class, 'takeOutMember'])->name('team-control.members.take-out');
+        Route::post('/team-control/join-requests/{joinRequest}/approve', [TeamControlController::class, 'approveJoinRequest'])->name('team-control.join-requests.approve');
+        Route::post('/team-control/join-requests/{joinRequest}/reject', [TeamControlController::class, 'rejectJoinRequest'])->name('team-control.join-requests.reject');
     });
 
     Route::middleware('menu.auth:menu.profile')->group(function () {

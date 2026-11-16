@@ -1,9 +1,11 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import Textarea from 'primevue/textarea';
 import Tag from 'primevue/tag';
 import Select from 'primevue/select';
 import ToggleSwitch from 'primevue/toggleswitch';
@@ -20,13 +22,81 @@ const props = defineProps({
     functions: { type: Array, default: () => [] },
     teamRules: { type: Array, default: () => [] },
     userRules: { type: Array, default: () => [] },
+    joinRequests: { type: Array, default: () => [] },
 });
+
+const page = usePage();
+const currentUserId = computed(() => page.props.auth.user?.id ?? null);
 
 const activeTab = ref('links');
 const selectedTeamId = ref('all');
 const selectedMemberId = ref(props.members[0]?.id ?? null);
 const busyKey = ref(null);
 const copiedId = ref(null);
+
+const takeOutConfirmVisible = ref(false);
+const takingOut = ref(false);
+
+const confirmTakeOut = () => {
+    if (!selectedMember.value) return;
+    takingOut.value = true;
+    router.delete(route('team-control.members.take-out', selectedMember.value.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            takeOutConfirmVisible.value = false;
+        },
+        onFinish: () => {
+            takingOut.value = false;
+        },
+    });
+};
+
+const pendingJoinCount = computed(
+    () => props.joinRequests.filter((r) => r.status === 'pending').length,
+);
+
+const joinStatusSeverity = (status) => {
+    if (status === 'approved') return 'success';
+    if (status === 'rejected') return 'danger';
+    if (status === 'cancelled') return 'secondary';
+    return 'warn';
+};
+
+const approveJoinRequest = (req) => {
+    busyKey.value = `approve-join-${req.id}`;
+    router.post(
+        route('team-control.join-requests.approve', req.id),
+        {},
+        {
+            preserveScroll: true,
+            onFinish: () => (busyKey.value = null),
+        },
+    );
+};
+
+const rejectDialogVisible = ref(false);
+const rejectingJoin = ref(null);
+const rejectForm = useForm({
+    rejection_reason: '',
+});
+
+const openRejectJoin = (req) => {
+    rejectingJoin.value = req;
+    rejectForm.reset();
+    rejectForm.clearErrors();
+    rejectDialogVisible.value = true;
+};
+
+const submitRejectJoin = () => {
+    if (!rejectingJoin.value) return;
+    rejectForm.post(route('team-control.join-requests.reject', rejectingJoin.value.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            rejectDialogVisible.value = false;
+            rejectingJoin.value = null;
+        },
+    });
+};
 
 const teamOptions = computed(() => {
     const map = new Map();
@@ -196,6 +266,20 @@ const resetPermission = (member, fn) => {
                     <i class="pi pi-users text-xs"></i>
                     <span>{{ t('team_control.tab_permissions', { count: members.length }) }}</span>
                 </button>
+
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-colors cursor-pointer"
+                    :class="
+                        activeTab === 'join_requests'
+                            ? 'border-[#1f6f46] bg-[#1f6f46] text-white'
+                            : 'border-slate-200 bg-white text-slate-600 hover:border-[#1f6f46] dark:border-surface-700 dark:bg-surface-900 dark:text-surface-300'
+                    "
+                    @click="activeTab = 'join_requests'"
+                >
+                    <i class="pi pi-user-plus text-xs"></i>
+                    <span>{{ t('team_control.tab_join_requests', { count: pendingJoinCount }) }}</span>
+                </button>
             </div>
 
             <!-- Tab 1: Active Share Links (Point 3) -->
@@ -267,7 +351,7 @@ const resetPermission = (member, fn) => {
             </section>
 
             <!-- Tab 2: Member Permissions (Point 4) -->
-            <section v-else class="space-y-4">
+            <section v-else-if="activeTab === 'permissions'" class="space-y-4">
                 <div
                     v-if="!members.length"
                     class="rounded-2xl border border-slate-200 bg-white py-12 text-center text-slate-500 shadow-sm dark:border-surface-800 dark:bg-surface-900 dark:text-surface-400"
@@ -322,6 +406,17 @@ const resetPermission = (member, fn) => {
                                 </div>
                                 <p class="text-xs text-slate-500 dark:text-surface-400">{{ selectedMember.email }}</p>
                             </div>
+
+                            <Button
+                                v-if="selectedMember.team_id && Number(selectedMember.id) !== Number(currentUserId)"
+                                :label="t('team_control.take_out_button')"
+                                icon="pi pi-user-minus"
+                                severity="danger"
+                                variant="outlined"
+                                size="small"
+                                class="!rounded-xl"
+                                @click="takeOutConfirmVisible = true"
+                            />
                         </div>
 
                         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -366,6 +461,173 @@ const resetPermission = (member, fn) => {
                     </div>
                 </template>
             </section>
+
+            <!-- Tab 3: Join Team Requests -->
+            <section
+                v-else
+                class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-surface-800 dark:bg-surface-900"
+            >
+                <DataTable :value="joinRequests" dataKey="id" paginator :rows="10">
+                    <template #empty>
+                        <div class="py-12 text-center text-slate-500 dark:text-surface-400">
+                            <i class="pi pi-inbox mb-2 text-3xl"></i>
+                            <p>{{ t('team_control.empty_join_requests') }}</p>
+                        </div>
+                    </template>
+
+                    <Column :header="t('team_control.col_applicant')">
+                        <template #body="{ data }">
+                            <div>
+                                <div class="font-semibold text-slate-800 dark:text-surface-0">{{ data.user_name }}</div>
+                                <div class="text-xs text-slate-500 dark:text-surface-400">{{ data.user_email }}</div>
+                            </div>
+                        </template>
+                    </Column>
+
+                    <Column :header="t('team_control.col_team')">
+                        <template #body="{ data }">
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium text-slate-700 dark:text-surface-200">{{ data.team_name }}</span>
+                                <code class="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-[#1f6f46] dark:text-emerald-300 text-xs font-semibold">
+                                    {{ data.team_code }}
+                                </code>
+                            </div>
+                        </template>
+                    </Column>
+
+                    <Column :header="t('team_control.col_status')">
+                        <template #body="{ data }">
+                            <div class="space-y-1">
+                                <Tag :value="data.status.toUpperCase()" :severity="joinStatusSeverity(data.status)" />
+                                <p v-if="data.rejection_reason" class="text-xs text-red-500 max-w-[12rem]">
+                                    {{ data.rejection_reason }}
+                                </p>
+                            </div>
+                        </template>
+                    </Column>
+
+                    <Column :header="t('common.actions')" headerClass="!text-right" bodyClass="!text-right">
+                        <template #body="{ data }">
+                            <div v-if="data.status === 'pending'" class="flex justify-end gap-2">
+                                <Button
+                                    :label="t('team_control.approve')"
+                                    icon="pi pi-check"
+                                    size="small"
+                                    :loading="busyKey === `approve-join-${data.id}`"
+                                    class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white"
+                                    @click="approveJoinRequest(data)"
+                                />
+                                <Button
+                                    :label="t('team_control.reject')"
+                                    icon="pi pi-times"
+                                    severity="danger"
+                                    variant="outlined"
+                                    size="small"
+                                    :disabled="busyKey === `approve-join-${data.id}`"
+                                    @click="openRejectJoin(data)"
+                                />
+                            </div>
+                            <span v-else class="text-xs text-slate-400 dark:text-surface-500">
+                                {{ data.reviewer_name || '—' }}
+                            </span>
+                        </template>
+                    </Column>
+                </DataTable>
+            </section>
         </div>
+
+        <!-- Take Out Confirmation Dialog -->
+        <Dialog
+            v-model:visible="takeOutConfirmVisible"
+            modal
+            :draggable="false"
+            :style="{ width: '28rem' }"
+            :breakpoints="{ '640px': '92vw' }"
+        >
+            <template #header>
+                <div class="flex items-center gap-2">
+                    <i class="pi pi-exclamation-triangle text-red-500"></i>
+                    <span class="text-lg font-bold">{{ t('team_control.take_out_confirm_title') }}</span>
+                </div>
+            </template>
+
+            <div class="space-y-3 pt-1">
+                <p class="text-sm text-slate-600 dark:text-surface-300 leading-relaxed">
+                    {{ t('team_control.take_out_confirm_desc', { name: selectedMember?.name ?? '', team: selectedMember?.team_name ?? '' }) }}
+                </p>
+
+                <div
+                    v-if="selectedMember?.is_team_leader"
+                    class="flex items-start gap-2 rounded-xl border border-amber-200 dark:border-amber-800/70 bg-amber-50/80 dark:bg-amber-950/40 px-3 py-2.5 text-xs text-amber-800 dark:text-amber-200"
+                >
+                    <i class="pi pi-crown text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"></i>
+                    <span>{{ t('team_control.take_out_leader_warning') }}</span>
+                </div>
+            </div>
+
+            <template #footer>
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <Button
+                        :label="t('common.cancel')"
+                        severity="secondary"
+                        variant="outlined"
+                        :disabled="takingOut"
+                        @click="takeOutConfirmVisible = false"
+                    />
+                    <Button
+                        :label="t('team_control.take_out_confirm_submit')"
+                        icon="pi pi-user-minus"
+                        severity="danger"
+                        :loading="takingOut"
+                        @click="confirmTakeOut"
+                    />
+                </div>
+            </template>
+        </Dialog>
+
+        <!-- Reject Join Request Dialog -->
+        <Dialog
+            v-model:visible="rejectDialogVisible"
+            modal
+            :draggable="false"
+            :style="{ width: '28rem' }"
+            :breakpoints="{ '640px': '92vw' }"
+        >
+            <template #header>
+                <div class="flex items-center gap-2">
+                    <i class="pi pi-times-circle text-red-500"></i>
+                    <span class="text-lg font-bold">{{ t('team_control.reject_join_title') }}</span>
+                </div>
+            </template>
+
+            <div class="space-y-3 pt-1">
+                <p class="text-sm text-slate-600 dark:text-surface-300">
+                    {{ t('team_control.reject_join_desc', { name: rejectingJoin?.user_name ?? '', team: rejectingJoin?.team_name ?? '' }) }}
+                </p>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-semibold">{{ t('team_control.reject_reason_optional') }}</label>
+                    <Textarea v-model="rejectForm.rejection_reason" rows="2" fluid />
+                </div>
+            </div>
+
+            <template #footer>
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <Button
+                        :label="t('common.cancel')"
+                        severity="secondary"
+                        variant="outlined"
+                        :disabled="rejectForm.processing"
+                        @click="rejectDialogVisible = false"
+                    />
+                    <Button
+                        :label="t('team_control.reject')"
+                        icon="pi pi-times"
+                        severity="danger"
+                        :loading="rejectForm.processing"
+                        @click="submitRejectJoin"
+                    />
+                </div>
+            </template>
+        </Dialog>
     </AppLayout>
 </template>

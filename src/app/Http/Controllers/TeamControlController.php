@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\AppFunction;
 use App\Models\DocumentShareLink;
 use App\Models\FunctionAuth;
+use App\Models\TeamJoinRequest;
 use App\Models\User;
 use App\Services\FunctionAuthService;
+use App\Services\TeamMembershipService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -16,6 +18,7 @@ class TeamControlController extends Controller
 {
     public function __construct(
         private readonly FunctionAuthService $functionAuth,
+        private readonly TeamMembershipService $membership,
     ) {}
 
     /**
@@ -56,6 +59,7 @@ class TeamControlController extends Controller
 
         // 2. Member Permissions (Point 4)
         $membersQuery = User::where('is_superadmin', false)
+            ->whereNotNull('team_id')
             ->with('team:id,team_name')
             ->orderBy('name');
 
@@ -98,6 +102,7 @@ class TeamControlController extends Controller
             'functions' => $functions,
             'teamRules' => $teamRules,
             'userRules' => $userRules,
+            'joinRequests' => $this->membership->listJoinRequestsForActor($user),
         ]);
     }
 
@@ -177,6 +182,40 @@ class TeamControlController extends Controller
         $this->functionAuth->resetUserOverride($appFunction->id, $targetUser->id);
 
         return back()->with('success', "Reset {$appFunction->name} for {$targetUser->name} to team default.");
+    }
+
+    public function takeOutMember(Request $request, User $member): RedirectResponse
+    {
+        $user = $request->user();
+        $this->authorizeTeamControl($user);
+
+        $this->membership->takeOutMember($user, $member);
+
+        return back()->with('success', "{$member->name} has been removed from the team.");
+    }
+
+    public function approveJoinRequest(Request $request, TeamJoinRequest $joinRequest): RedirectResponse
+    {
+        $user = $request->user();
+        $this->authorizeTeamControl($user);
+
+        $this->membership->approveJoinRequest($joinRequest, $user);
+
+        return back()->with('success', "{$joinRequest->user?->name} has been added to {$joinRequest->team?->team_name}.");
+    }
+
+    public function rejectJoinRequest(Request $request, TeamJoinRequest $joinRequest): RedirectResponse
+    {
+        $user = $request->user();
+        $this->authorizeTeamControl($user);
+
+        $validated = $request->validate([
+            'rejection_reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $this->membership->rejectJoinRequest($joinRequest, $user, $validated['rejection_reason'] ?? null);
+
+        return back()->with('success', 'Join request rejected.');
     }
 
     private function authorizeTeamControl(User $user): void

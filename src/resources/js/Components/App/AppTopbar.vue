@@ -181,6 +181,18 @@ const formatNotifText = (item) => {
     if (data.action === 'team_leader_rejected') {
         return t('topbar.notif_team_leader_rejected', { actor, name: data.document_name ?? '' });
     }
+    if (data.action === 'removed_from_team') {
+        return t('topbar.notif_removed_from_team', { actor, name: data.document_name ?? '' });
+    }
+    if (data.action === 'join_team_requested') {
+        return t('topbar.notif_join_team_requested', { actor, name: data.document_name ?? '' });
+    }
+    if (data.action === 'join_team_approved') {
+        return t('topbar.notif_join_team_approved', { actor, name: data.document_name ?? '' });
+    }
+    if (data.action === 'join_team_rejected') {
+        return t('topbar.notif_join_team_rejected', { actor, name: data.document_name ?? '' });
+    }
     return t('topbar.notif_created', { actor, name: data.document_name ?? '' });
 };
 
@@ -189,6 +201,10 @@ const handleNotifClick = (item) => {
     notifMenu.value?.hide();
 
     const navigate = () => {
+        if (item?.data?.action === 'join_team_requested') {
+            router.visit(route('team-control.index'));
+            return;
+        }
         if (item?.data?.action === 'team_request_submitted' || (item?.data?.action === 'team_leader_requested' && isSuperAdmin.value)) {
             router.visit(route('settings.teams.index'));
             return;

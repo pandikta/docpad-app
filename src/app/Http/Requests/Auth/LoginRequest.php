@@ -51,9 +51,10 @@ class LoginRequest extends FormRequest
             ]);
         }
 
-        // Kecualikan superadmin dari pengecekan status tim aktif saat login.
+        // Kecualikan superadmin & user tanpa tim (Opsi A: masih bisa login untuk akses file pribadi / Join Team).
+        // Jika user terikat ke sebuah tim, pastikan tim tersebut masih ada & aktif.
         $user = Auth::user();
-        if (! is_superadmin($user) && (! $user->team || ! $user->team->is_active)) {
+        if (! is_superadmin($user) && $user->team_id !== null && (! $user->team || ! $user->team->is_active)) {
             Auth::logout();
 
             throw ValidationException::withMessages([

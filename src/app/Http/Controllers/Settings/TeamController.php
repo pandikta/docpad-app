@@ -40,6 +40,7 @@ class TeamController extends Controller
             'max_member' => ['required', 'integer', 'min:0', 'max:10000'],
             'description' => ['nullable', 'string', 'max:500'],
             'is_active' => ['boolean'],
+            'allow_multiple_leaders' => ['boolean'],
         ]);
 
         $team = $this->teams->create($validated);
@@ -61,6 +62,7 @@ class TeamController extends Controller
             'max_member' => ['required', 'integer', 'min:0', 'max:10000'],
             'description' => ['nullable', 'string', 'max:500'],
             'is_active' => ['boolean'],
+            'allow_multiple_leaders' => ['boolean'],
         ]);
 
         $this->teams->update($team, $validated);

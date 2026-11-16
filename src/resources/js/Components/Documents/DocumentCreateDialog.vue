@@ -6,9 +6,12 @@ import Select from 'primevue/select';
 import Editor from 'primevue/editor';
 import Checkbox from 'primevue/checkbox';
 import Button from 'primevue/button';
+import { useAuth } from '@/composables/useAuth';
 import { useLocale } from '@/composables/useLocale';
 
+const { user, isSuperAdmin } = useAuth();
 const { t } = useLocale();
+const mustBePrivate = computed(() => !isSuperAdmin.value && !user.value?.team_id);
 
 const props = defineProps({
     visible: { type: Boolean, default: false },
@@ -71,7 +74,7 @@ watch(
         if (isOpen) {
             name.value = '';
             selectedExtension.value = editableExtensions.value[0] ?? 'txt';
-            visibility.value = 'publish';
+            visibility.value = mustBePrivate.value ? 'private' : 'publish';
             folderId.value = null;
             content.value = '';
             notifyMembers.value = false;
@@ -203,9 +206,13 @@ const onSubmit = () => {
                         :options="visibilityOptions"
                         option-label="label"
                         option-value="value"
+                        :disabled="mustBePrivate"
                         fluid
                         class="!rounded-xl"
                     />
+                    <small v-if="mustBePrivate" class="text-[11px] text-amber-600 dark:text-amber-400 leading-tight">
+                        {{ t('dialogs.no_team_private_hint') }}
+                    </small>
                 </div>
             </div>
 

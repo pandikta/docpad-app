@@ -81,7 +81,7 @@ const visibilityFilterOptions = [
 const columnLabels = {
     name: 'Name',
     folder: 'Folder',
-    visibility: 'Visibility',
+    visibility: t('table.col_visibility'),
     size: 'Size',
     teams: 'Teams',
     created: 'Created At',
@@ -706,10 +706,10 @@ watch(
             <Column v-if="columnPrefs.visible.visibility" field="visibility" sortable>
                 <template #header>
                     <div class="flex items-center justify-between gap-2 w-full">
-                        <span>Visibility</span>
+                        <span>{{ t('table.col_visibility') }}</span>
                         <button
                             type="button"
-                            v-tooltip.top="'Filter Visibility'"
+                            v-tooltip.top="t('table.search_col', { col: t('table.col_visibility') })"
                             class="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-surface-800 cursor-pointer transition-colors"
                             :class="isColumnFiltered('visibility') ? 'text-[#1f6f46] dark:text-emerald-400' : 'text-slate-400 dark:text-surface-400'"
                             @click.stop="openFilterPopover($event, 'visibility')"
@@ -909,7 +909,7 @@ watch(
                     :options="visibilityFilterOptions"
                     optionLabel="label"
                     optionValue="value"
-                    placeholder="Select Visibility"
+                    :placeholder="t('table.col_visibility')"
                     appendTo="self"
                     showClear
                     class="w-full"
