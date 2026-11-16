@@ -142,7 +142,7 @@ const onSubmit = () => {
             <div class="rounded-xl border border-emerald-200/80 dark:border-emerald-800/60 bg-emerald-50/70 dark:bg-emerald-950/30 px-3.5 py-2.5 text-xs text-[#1f5137] dark:text-emerald-200">
                 <div class="flex flex-wrap items-center gap-1.5">
                     <i class="pi pi-info-circle text-[#1f6f46] dark:text-emerald-400 shrink-0"></i>
-                    <span class="font-semibold">Create directly from form:</span>
+                    <span class="font-semibold">{{ t('dialogs.create_from_form_label') }}</span>
                     <template v-if="editableExtensions.length">
                         <code
                             v-for="ext in editableExtensions"
@@ -153,11 +153,11 @@ const onSubmit = () => {
                         </code>
                     </template>
                     <span v-else class="text-amber-700 dark:text-amber-300 font-medium">
-                        No extensions enabled for form creation.
+                        {{ t('dialogs.create_from_form_empty') }}
                     </span>
                 </div>
                 <p class="mt-1 text-[11px] text-[#3c5e4c] dark:text-emerald-300/80">
-                    Other allowed formats (e.g. PDF, Office, Images) can be added via <strong>Upload File</strong>.
+                    {{ t('dialogs.create_from_form_upload_hint') }}
                 </p>
             </div>
 

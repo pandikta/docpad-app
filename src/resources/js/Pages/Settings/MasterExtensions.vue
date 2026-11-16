@@ -224,7 +224,7 @@ const deleteItem = () => {
                         </template>
                     </Column>
 
-                    <Column field="create_from_form" header="Create from Form">
+                    <Column field="create_from_form" :header="t('settings.create_from_form')">
                         <template #body="{ data }">
                             <div class="flex items-center gap-2">
                                 <ToggleSwitch
@@ -232,7 +232,7 @@ const deleteItem = () => {
                                     @update:model-value="(val) => toggleCreateFromForm(data, val)"
                                 />
                                 <Tag
-                                    :value="data.create_from_form ? 'Yes' : 'Upload Only'"
+                                    :value="data.create_from_form ? t('settings.create_from_form_yes') : t('settings.create_from_form_upload_only')"
                                     :severity="data.create_from_form ? 'info' : 'secondary'"
                                 />
                             </div>
@@ -341,8 +341,8 @@ const deleteItem = () => {
 
                 <div class="flex items-center justify-between pt-1">
                     <div>
-                        <span class="text-sm font-semibold">Create from Form</span>
-                        <p class="text-xs text-slate-500 dark:text-surface-400">Allow creating new files with this extension directly in the editor form.</p>
+                        <span class="text-sm font-semibold">{{ t('settings.create_from_form') }}</span>
+                        <p class="text-xs text-slate-500 dark:text-surface-400">{{ t('settings.create_from_form_desc') }}</p>
                     </div>
                     <ToggleSwitch v-model="form.create_from_form" />
                 </div>
