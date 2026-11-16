@@ -48,6 +48,7 @@ class DashboardController extends Controller
             'documents' => $documents->listForUser($user, $search),
             'folders' => $documents->listFolders(),
             'allowedExtensions' => allowed_document_extensions(),
+            'creatableExtensions' => $extensions->listCreatableFromFormCodes(),
             'extensionMaxSizes' => $extensions->listActiveWithLimits(),
             'storageQuota' => $documents->getStorageQuotaSummary($user),
             'teams' => is_superadmin($user) ? $teams->listActiveTeams() : [],

@@ -34,6 +34,7 @@ const form = useForm({
     description: '',
     max_size_kb: 1024,
     is_active: true,
+    create_from_form: false,
 });
 
 const formatMaxSize = (kb) => {
@@ -62,6 +63,7 @@ const openCreate = () => {
     form.clearErrors();
     form.max_size_kb = 1024;
     form.is_active = true;
+    form.create_from_form = false;
     dialogVisible.value = true;
 };
 
@@ -73,6 +75,7 @@ const openEdit = (item) => {
     form.description = item.description ?? '';
     form.max_size_kb = Number(item.max_size_kb ?? 1024);
     form.is_active = Boolean(item.is_active);
+    form.create_from_form = Boolean(item.create_from_form);
     dialogVisible.value = true;
 };
 
@@ -106,6 +109,22 @@ const toggleActive = (item, value) => {
             description: item.description,
             max_size_kb: Number(item.max_size_kb ?? 1024),
             is_active: value,
+            create_from_form: Boolean(item.create_from_form),
+        },
+        { preserveScroll: true },
+    );
+};
+
+const toggleCreateFromForm = (item, value) => {
+    router.put(
+        route('settings.extensions.update', item.id),
+        {
+            extension: item.extension,
+            label: item.label,
+            description: item.description,
+            max_size_kb: Number(item.max_size_kb ?? 1024),
+            is_active: Boolean(item.is_active),
+            create_from_form: value,
         },
         { preserveScroll: true },
     );
@@ -202,6 +221,21 @@ const deleteItem = () => {
                             <span class="text-sm font-medium text-slate-700 dark:text-surface-200">
                                 {{ formatMaxSize(data.max_size_kb) }}
                             </span>
+                        </template>
+                    </Column>
+
+                    <Column field="create_from_form" header="Create from Form">
+                        <template #body="{ data }">
+                            <div class="flex items-center gap-2">
+                                <ToggleSwitch
+                                    :model-value="Boolean(data.create_from_form)"
+                                    @update:model-value="(val) => toggleCreateFromForm(data, val)"
+                                />
+                                <Tag
+                                    :value="data.create_from_form ? 'Yes' : 'Upload Only'"
+                                    :severity="data.create_from_form ? 'info' : 'secondary'"
+                                />
+                            </div>
                         </template>
                     </Column>
 
@@ -303,6 +337,14 @@ const deleteItem = () => {
                         Equivalent to {{ formatMaxSize(form.max_size_kb) }} (e.g. 1024 KB = 1 MB, 10240 KB = 10 MB)
                     </small>
                     <small v-if="form.errors.max_size_kb" class="text-red-500 text-xs">{{ form.errors.max_size_kb }}</small>
+                </div>
+
+                <div class="flex items-center justify-between pt-1">
+                    <div>
+                        <span class="text-sm font-semibold">Create from Form</span>
+                        <p class="text-xs text-slate-500 dark:text-surface-400">Allow creating new files with this extension directly in the editor form.</p>
+                    </div>
+                    <ToggleSwitch v-model="form.create_from_form" />
                 </div>
 
                 <div class="flex items-center justify-between pt-1">

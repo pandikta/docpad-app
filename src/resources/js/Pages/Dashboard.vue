@@ -26,6 +26,7 @@ const props = defineProps({
     documents: { type: Array, default: () => [] },
     folders: { type: Array, default: () => [] },
     allowedExtensions: { type: Array, default: () => ['txt', 'md'] },
+    creatableExtensions: { type: Array, default: () => ['txt', 'md'] },
     extensionMaxSizes: { type: Object, default: () => ({}) },
     storageQuota: { type: Object, default: () => ({ used_bytes: 0, limit_mb: 100, limit_bytes: 104857600 }) },
     teams: { type: Array, default: () => [] },
@@ -483,6 +484,7 @@ const confirmUpload = ({ files, folderId, notifyMembers, encryptedFiles }) => {
         <DocumentCreateDialog
             v-model:visible="createVisible"
             :extensions="allowedExtensions"
+            :creatable-extensions="creatableExtensions"
             :extension-max-sizes="extensionMaxSizes"
             :folders="folders"
             :loading="creating"

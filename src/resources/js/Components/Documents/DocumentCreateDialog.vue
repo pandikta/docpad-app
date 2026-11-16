@@ -13,6 +13,7 @@ const { t } = useLocale();
 const props = defineProps({
     visible: { type: Boolean, default: false },
     extensions: { type: Array, default: () => ['txt', 'md'] },
+    creatableExtensions: { type: Array, default: null },
     extensionMaxSizes: { type: Object, default: () => ({}) },
     folders: { type: Array, default: () => [] },
     loading: { type: Boolean, default: false },
@@ -40,9 +41,12 @@ const visibilityOptions = computed(() => [
 
 const BINARY_EXTENSIONS = new Set(['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'svg']);
 
-const editableExtensions = computed(() =>
-    props.extensions.filter((ext) => !BINARY_EXTENSIONS.has(String(ext).toLowerCase())),
-);
+const editableExtensions = computed(() => {
+    if (Array.isArray(props.creatableExtensions)) {
+        return props.creatableExtensions;
+    }
+    return props.extensions.filter((ext) => !BINARY_EXTENSIONS.has(String(ext).toLowerCase()));
+});
 
 const extensionOptions = computed(() =>
     editableExtensions.value.map((ext) => ({
@@ -134,6 +138,29 @@ const onSubmit = () => {
         </template>
 
         <form class="space-y-4 pt-1" @submit.prevent="onSubmit">
+            <!-- Highlight: Available Extensions for Create from Form -->
+            <div class="rounded-xl border border-emerald-200/80 dark:border-emerald-800/60 bg-emerald-50/70 dark:bg-emerald-950/30 px-3.5 py-2.5 text-xs text-[#1f5137] dark:text-emerald-200">
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <i class="pi pi-info-circle text-[#1f6f46] dark:text-emerald-400 shrink-0"></i>
+                    <span class="font-semibold">Create directly from form:</span>
+                    <template v-if="editableExtensions.length">
+                        <code
+                            v-for="ext in editableExtensions"
+                            :key="ext"
+                            class="px-1.5 py-0.5 rounded bg-white/90 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-[#1f6f46] dark:text-emerald-300 font-semibold"
+                        >
+                            .{{ ext }}
+                        </code>
+                    </template>
+                    <span v-else class="text-amber-700 dark:text-amber-300 font-medium">
+                        No extensions enabled for form creation.
+                    </span>
+                </div>
+                <p class="mt-1 text-[11px] text-[#3c5e4c] dark:text-emerald-300/80">
+                    Other allowed formats (e.g. PDF, Office, Images) can be added via <strong>Upload File</strong>.
+                </p>
+            </div>
+
             <!-- File Name + Extension + Visibility -->
             <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
                 <div class="sm:col-span-6 flex flex-col gap-1.5">

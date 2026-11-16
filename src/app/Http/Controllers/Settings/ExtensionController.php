@@ -35,6 +35,7 @@ class ExtensionController extends Controller
             'description' => ['nullable', 'string', 'max:255'],
             'max_size_kb' => ['required', 'integer', 'min:1', 'max:102400'],
             'is_active' => ['boolean'],
+            'create_from_form' => ['boolean'],
         ]);
 
         $ext = $this->extensions->create($validated);
@@ -59,6 +60,7 @@ class ExtensionController extends Controller
             'description' => ['nullable', 'string', 'max:255'],
             'max_size_kb' => ['required', 'integer', 'min:1', 'max:102400'],
             'is_active' => ['boolean'],
+            'create_from_form' => ['boolean'],
         ]);
 
         $this->extensions->update($extension, $validated);

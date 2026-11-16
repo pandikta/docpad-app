@@ -14,6 +14,7 @@ class DocumentExtension extends Model
         'description',
         'max_size_kb',
         'is_active',
+        'create_from_form',
     ];
 
     protected function casts(): array
@@ -21,6 +22,7 @@ class DocumentExtension extends Model
         return [
             'max_size_kb' => 'integer',
             'is_active' => 'boolean',
+            'create_from_form' => 'boolean',
         ];
     }
 }

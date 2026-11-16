@@ -35,6 +35,36 @@ class ExtensionService
     }
 
     /**
+     * Daftar kode ekstensi aktif yang bisa dibuat langsung dari form Create New File.
+     *
+     * @return list<string>
+     */
+    public function listCreatableFromFormCodes(): array
+    {
+        try {
+            if (! Schema::hasTable('mst_extensions')) {
+                return ['txt', 'md'];
+            }
+
+            $query = DocumentExtension::where('is_active', true);
+
+            if (Schema::hasColumn('mst_extensions', 'create_from_form')) {
+                $query->where('create_from_form', true);
+            }
+
+            $codes = $query->orderBy('id')
+                ->pluck('extension')
+                ->map(fn (string $ext) => strtolower(ltrim($ext, '.')))
+                ->values()
+                ->all();
+
+            return $codes;
+        } catch (\Throwable) {
+            return ['txt', 'md'];
+        }
+    }
+
+    /**
      * Map ekstensi aktif ke batas maksimal ukuran file dalam KB (mis. ['txt' => 1024, 'pdf' => 10240]).
      *
      * @return array<string, int>
@@ -105,13 +135,14 @@ class ExtensionService
             'description' => isset($data['description']) ? trim($data['description']) : null,
             'max_size_kb' => max(1, (int) ($data['max_size_kb'] ?? 1024)),
             'is_active' => $data['is_active'] ?? true,
+            'create_from_form' => $data['create_from_form'] ?? false,
         ]);
     }
 
     /**
      * Perbarui data ekstensi.
      *
-     * @param  array{extension: string, label: string, description?: ?string, max_size_kb?: int, is_active?: bool}  $data
+     * @param  array{extension: string, label: string, description?: ?string, max_size_kb?: int, is_active?: bool, create_from_form?: bool}  $data
      */
     public function update(DocumentExtension $extension, array $data): DocumentExtension
     {
@@ -121,6 +152,7 @@ class ExtensionService
             'description' => isset($data['description']) ? trim($data['description']) : null,
             'max_size_kb' => max(1, (int) ($data['max_size_kb'] ?? $extension->max_size_kb ?? 1024)),
             'is_active' => $data['is_active'] ?? $extension->is_active,
+            'create_from_form' => $data['create_from_form'] ?? $extension->create_from_form ?? false,
         ]);
 
         return $extension;
