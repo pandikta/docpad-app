@@ -123,4 +123,7 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'superadmin_email' => env('SUPERADMIN_EMAIL', 'superadmin@docpad.local'),
+    'superadmin_password' => env('SUPERADMIN_PASSWORD', 'SuperAdmin@123'),
+
 ];
