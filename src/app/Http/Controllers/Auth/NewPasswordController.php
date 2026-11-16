@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Services\PasswordHistoryService;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -40,16 +42,25 @@ class NewPasswordController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
+        $passwordHistory = app(PasswordHistoryService::class);
+        if ($targetUser = User::where('email', $request->email)->first()) {
+            $passwordHistory->ensureNotRecentlyUsed($targetUser, (string) $request->password);
+        }
+
         // Here we will attempt to reset the user's password. If it is successful we
         // will update the password on an actual user model and persist it to the
         // database. Otherwise we will parse the error and return the response.
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user) use ($request) {
+            function ($user) use ($request, $passwordHistory) {
+                $hash = Hash::make($request->password);
                 $user->forceFill([
-                    'password' => Hash::make($request->password),
+                    'password' => $hash,
+                    'is_reset' => false,
                     'remember_token' => Str::random(60),
                 ])->save();
+
+                $passwordHistory->record($user, $hash);
 
                 event(new PasswordReset($user));
             }

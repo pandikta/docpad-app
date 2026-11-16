@@ -41,6 +41,8 @@ class HandleInertiaRequests extends Middleware
                     ...$request->user()->only('id', 'name', 'email', 'team_id', 'email_verified_at'),
                     'is_superadmin' => $request->user()->isSuperAdmin(),
                     'is_team_leader' => $request->user()->isTeamLeader(),
+                    'is_reset' => (bool) ($request->user()->is_reset ?? false),
+                    'last_reset' => $request->user()->last_reset?->toISOString(),
                 ] : null,
                 'permissions' => fn () => $request->user()
                     ? app(FunctionAuthService::class)->getPermissionsMap($request->user())

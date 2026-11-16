@@ -141,6 +141,9 @@ const formatNotifText = (item) => {
     if (data.action === 'revoked') {
         return t('topbar.notif_revoked', { actor, name: data.document_name ?? '' });
     }
+    if (data.action === 'password_changed_by_admin') {
+        return t('topbar.notif_password_changed', { actor });
+    }
     return t('topbar.notif_created', { actor, name: data.document_name ?? '' });
 };
 

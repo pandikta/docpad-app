@@ -29,6 +29,7 @@
         "notif_uploaded_multi": "{actor} uploaded {count} documents",
         "notif_shared": "{actor} shared {name}",
         "notif_revoked": "{actor} revoked share link for {name}",
+        "notif_password_changed": "Your password was reset by {actor}",
         "profile": "Profile",
         "logout": "Logout"
     },

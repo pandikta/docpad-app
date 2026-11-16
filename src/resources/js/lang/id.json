@@ -29,6 +29,7 @@
         "notif_uploaded_multi": "{actor} mengunggah {count} dokumen",
         "notif_shared": "{actor} membagikan {name}",
         "notif_revoked": "{actor} mencabut link berbagi {name}",
+        "notif_password_changed": "Password Anda direset oleh {actor}",
         "profile": "Profil",
         "logout": "Keluar"
     },

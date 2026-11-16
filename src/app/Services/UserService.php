@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Hash;
 
 class UserService
 {
+    public function __construct(
+        private readonly PasswordHistoryService $passwordHistory,
+    ) {}
+
     /**
      * Buat user baru yang bergabung ke team tertentu.
      *
@@ -16,12 +20,16 @@ class UserService
      */
     public function registerForTeam(Team $team, array $data): User
     {
-        return User::create([
+        $user = User::create([
             'team_id' => $team->id,
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
         ]);
+
+        $this->passwordHistory->record($user, $user->password);
+
+        return $user;
     }
 
     /**
@@ -47,9 +55,14 @@ class UserService
      */
     public function updatePassword(User $user, string $password): void
     {
+        $this->passwordHistory->ensureNotRecentlyUsed($user, $password);
+
+        $hash = Hash::make($password);
         $user->update([
-            'password' => Hash::make($password),
+            'password' => $hash,
         ]);
+
+        $this->passwordHistory->record($user, $hash);
     }
 
     /**
@@ -111,6 +124,7 @@ class UserService
         ]);
 
         $user->save();
+        $this->passwordHistory->record($user, $user->password);
 
         return $user;
     }
@@ -137,10 +151,15 @@ class UserService
         ]);
 
         if (! empty($data['password'])) {
+            $this->passwordHistory->ensureNotRecentlyUsed($user, $data['password']);
             $user->password = Hash::make($data['password']);
         }
 
         $user->save();
+
+        if (! empty($data['password'])) {
+            $this->passwordHistory->record($user, $user->password);
+        }
 
         return $user;
     }

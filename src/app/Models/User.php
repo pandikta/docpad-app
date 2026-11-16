@@ -100,7 +100,9 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'last_login' => 'datetime',
+            'last_reset' => 'datetime',
             'password' => 'hashed',
+            'is_reset' => 'boolean',
             'is_superadmin' => 'boolean',
             'is_team_leader' => 'boolean',
             'storage_limit_mb' => 'integer',

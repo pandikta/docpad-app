@@ -10,6 +10,7 @@ import InputText from 'primevue/inputtext';
 import Password from 'primevue/password';
 import Select from 'primevue/select';
 import ToggleSwitch from 'primevue/toggleswitch';
+import Checkbox from 'primevue/checkbox';
 import Tag from 'primevue/tag';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
@@ -125,6 +126,101 @@ const submitForm = () => {
 const confirmDelete = (user) => {
     deletingUser.value = user;
     deleteDialogVisible.value = true;
+};
+
+// --- Change Password Modal (Superadmin) ---------------------------------
+const passwordDialogVisible = ref(false);
+const passwordTargetUser = ref(null);
+const sendingResetEmail = ref(false);
+
+const passwordForm = useForm({
+    password: '',
+    password_confirmation: '',
+    notify_in_app: true,
+    notify_email: true,
+});
+
+const passwordRules = computed(() => {
+    const val = passwordForm.password ?? '';
+    return {
+        upper: /[A-Z]/.test(val),
+        lower: /[a-z]/.test(val),
+        number: /[0-9]/.test(val),
+        special: /[^A-Za-z0-9]/.test(val),
+        length: val.length >= 8,
+    };
+});
+
+const passedRuleCount = computed(() => Object.values(passwordRules.value).filter(Boolean).length);
+const allPasswordRulesMet = computed(() => passedRuleCount.value === 5);
+const passwordMismatch = computed(
+    () =>
+        passwordForm.password_confirmation.length > 0 &&
+        passwordForm.password !== passwordForm.password_confirmation,
+);
+const canSubmitPassword = computed(
+    () =>
+        allPasswordRulesMet.value &&
+        passwordForm.password_confirmation.length > 0 &&
+        !passwordMismatch.value,
+);
+
+const openChangePassword = (user) => {
+    passwordTargetUser.value = user;
+    passwordForm.reset();
+    passwordForm.clearErrors();
+    passwordForm.notify_in_app = true;
+    passwordForm.notify_email = true;
+    passwordDialogVisible.value = true;
+};
+
+const submitChangePassword = () => {
+    if (!passwordTargetUser.value || !canSubmitPassword.value) return;
+
+    passwordForm.patch(route('settings.users.password', passwordTargetUser.value.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            passwordDialogVisible.value = false;
+            passwordForm.reset();
+        },
+        onError: (errors) => {
+            toast.add({
+                severity: 'error',
+                summary: 'Reset Password Failed',
+                detail: Object.values(errors)[0] ?? 'Please check the password requirements.',
+                life: 4000,
+            });
+        },
+    });
+};
+
+const confirmEmailResetVisible = ref(false);
+
+const sendResetByEmail = () => {
+    if (!passwordTargetUser.value || sendingResetEmail.value) return;
+    sendingResetEmail.value = true;
+
+    router.post(
+        route('settings.users.send-reset-link', passwordTargetUser.value.id),
+        {},
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                confirmEmailResetVisible.value = false;
+                passwordDialogVisible.value = false;
+                passwordForm.reset();
+            },
+            onError: (errors) => {
+                toast.add({
+                    severity: 'error',
+                    summary: 'Send Email Failed',
+                    detail: Object.values(errors)[0] ?? 'Could not send reset email.',
+                    life: 4000,
+                });
+            },
+            onFinish: () => (sendingResetEmail.value = false),
+        },
+    );
 };
 
 const deleteUser = () => {
@@ -262,6 +358,14 @@ const deleteUser = () => {
                         <template #body="{ data }">
                             <div class="flex justify-end gap-2">
                                 <Button
+                                    v-tooltip.top="'Change Password'"
+                                    icon="pi pi-key"
+                                    severity="secondary"
+                                    variant="outlined"
+                                    size="small"
+                                    @click="openChangePassword(data)"
+                                />
+                                <Button
                                     v-tooltip.top="'Edit'"
                                     icon="pi pi-pencil"
                                     severity="secondary"
@@ -383,6 +487,201 @@ const deleteUser = () => {
                     :loading="form.processing"
                     class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white"
                     @click="submitForm"
+                />
+            </template>
+        </Dialog>
+
+        <!-- Change Password Dialog -->
+        <Dialog
+            v-model:visible="passwordDialogVisible"
+            modal
+            :draggable="false"
+            :style="{ width: '32rem' }"
+            :breakpoints="{ '640px': '94vw' }"
+        >
+            <template #header>
+                <div class="flex items-center gap-2.5">
+                    <i class="pi pi-lock text-[#1f6f46] dark:text-emerald-400"></i>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800 dark:text-surface-0 leading-tight">
+                            Change Password
+                        </h3>
+                        <p v-if="passwordTargetUser" class="text-xs text-slate-500 dark:text-surface-400">
+                            {{ passwordTargetUser.name }} · {{ passwordTargetUser.email }}
+                        </p>
+                    </div>
+                </div>
+            </template>
+
+            <form id="admin-change-password-form" class="space-y-4 pt-1" autocomplete="off" @submit.prevent="submitChangePassword">
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-semibold text-slate-700 dark:text-surface-200">
+                        <span class="text-red-500">*</span> New Password
+                    </label>
+                    <Password
+                        v-model="passwordForm.password"
+                        :feedback="false"
+                        toggle-mask
+                        fluid
+                        placeholder="Enter new password"
+                        inputClass="!rounded-xl"
+                        :inputProps="{ autocomplete: 'new-password' }"
+                        :invalid="Boolean(passwordForm.errors.password)"
+                    />
+
+                    <!-- Strength Bar (3 segments) -->
+                    <div class="grid grid-cols-3 gap-1.5 pt-1">
+                        <div
+                            class="h-1.5 rounded-full transition-colors"
+                            :class="
+                                passedRuleCount >= 1
+                                    ? passedRuleCount <= 2
+                                        ? 'bg-red-500'
+                                        : passedRuleCount <= 4
+                                          ? 'bg-amber-500'
+                                          : 'bg-[#1f6f46]'
+                                    : 'bg-slate-200 dark:bg-surface-700'
+                            "
+                        ></div>
+                        <div
+                            class="h-1.5 rounded-full transition-colors"
+                            :class="
+                                passedRuleCount >= 3
+                                    ? passedRuleCount <= 4
+                                        ? 'bg-amber-500'
+                                        : 'bg-[#1f6f46]'
+                                    : 'bg-slate-200 dark:bg-surface-700'
+                            "
+                        ></div>
+                        <div
+                            class="h-1.5 rounded-full transition-colors"
+                            :class="passedRuleCount === 5 ? 'bg-[#1f6f46]' : 'bg-slate-200 dark:bg-surface-700'"
+                        ></div>
+                    </div>
+
+                    <!-- Checklist Rules -->
+                    <div class="flex flex-wrap gap-x-4 gap-y-1.5 pt-1 text-xs">
+                        <span class="inline-flex items-center gap-1" :class="passwordRules.upper ? 'text-[#1f6f46] dark:text-emerald-400 font-medium' : 'text-slate-400'">
+                            <i :class="passwordRules.upper ? 'pi pi-check-circle' : 'pi pi-times-circle'"></i>
+                            Should contain uppercase
+                        </span>
+                        <span class="inline-flex items-center gap-1" :class="passwordRules.lower ? 'text-[#1f6f46] dark:text-emerald-400 font-medium' : 'text-slate-400'">
+                            <i :class="passwordRules.lower ? 'pi pi-check-circle' : 'pi pi-times-circle'"></i>
+                            Should contain lowercase
+                        </span>
+                        <span class="inline-flex items-center gap-1" :class="passwordRules.number ? 'text-[#1f6f46] dark:text-emerald-400 font-medium' : 'text-slate-400'">
+                            <i :class="passwordRules.number ? 'pi pi-check-circle' : 'pi pi-times-circle'"></i>
+                            Should contain number
+                        </span>
+                        <span class="inline-flex items-center gap-1" :class="passwordRules.special ? 'text-[#1f6f46] dark:text-emerald-400 font-medium' : 'text-slate-400'">
+                            <i :class="passwordRules.special ? 'pi pi-check-circle' : 'pi pi-times-circle'"></i>
+                            Should contain special character
+                        </span>
+                        <span class="inline-flex items-center gap-1" :class="passwordRules.length ? 'text-[#1f6f46] dark:text-emerald-400 font-medium' : 'text-slate-400'">
+                            <i :class="passwordRules.length ? 'pi pi-check-circle' : 'pi pi-times-circle'"></i>
+                            Password must be at least 8 characters
+                        </span>
+                    </div>
+
+                    <small v-if="passwordForm.errors.password" class="text-red-500 text-xs">
+                        {{ passwordForm.errors.password }}
+                    </small>
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-semibold text-slate-700 dark:text-surface-200">
+                        <span class="text-red-500">*</span> Confirm Password
+                    </label>
+                    <Password
+                        v-model="passwordForm.password_confirmation"
+                        :feedback="false"
+                        toggle-mask
+                        fluid
+                        placeholder="Re-enter new password"
+                        inputClass="!rounded-xl"
+                        :inputProps="{ autocomplete: 'new-password' }"
+                        :invalid="passwordMismatch || Boolean(passwordForm.errors.password_confirmation)"
+                    />
+                    <small v-if="passwordMismatch" class="flex items-center gap-1 text-red-500 text-xs">
+                        <i class="pi pi-times-circle text-xs"></i>
+                        <span>Passwords do not match.</span>
+                    </small>
+                    <small v-else-if="passwordForm.password_confirmation && !passwordMismatch" class="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-xs">
+                        <i class="pi pi-check-circle text-xs"></i>
+                        <span>Passwords match.</span>
+                    </small>
+                </div>
+
+                <!-- Mandatory Self Notifications (Read-only) -->
+                <div class="rounded-xl border border-emerald-200/80 dark:border-emerald-900/50 bg-emerald-50/60 dark:bg-emerald-950/30 p-3 space-y-2">
+                    <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-surface-200 opacity-85 cursor-not-allowed select-none">
+                        <Checkbox :modelValue="true" binary disabled />
+                        <span>Send in-app notification to user</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-surface-200 opacity-85 cursor-not-allowed select-none">
+                        <Checkbox :modelValue="true" binary disabled />
+                        <span>Send email notification to user</span>
+                    </label>
+                </div>
+            </form>
+
+            <template #footer>
+                <div class="flex flex-wrap items-center justify-between gap-2 w-full">
+                    <Button
+                        type="button"
+                        label="Change by Email"
+                        icon="pi pi-envelope"
+                        severity="secondary"
+                        variant="outlined"
+                        size="small"
+                        :loading="sendingResetEmail"
+                        @click="confirmEmailResetVisible = true"
+                    />
+                    <div class="flex items-center gap-2 ml-auto">
+                        <Button :label="t('common.cancel')" severity="secondary" variant="outlined" @click="passwordDialogVisible = false" />
+                        <Button
+                            type="submit"
+                            form="admin-change-password-form"
+                            label="Save Password"
+                            icon="pi pi-check"
+                            :loading="passwordForm.processing"
+                            :disabled="!canSubmitPassword"
+                            class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white"
+                        />
+                    </div>
+                </div>
+            </template>
+        </Dialog>
+
+        <!-- Confirm Reset by Email Dialog -->
+        <Dialog
+            v-model:visible="confirmEmailResetVisible"
+            modal
+            :draggable="false"
+            :style="{ width: '26rem' }"
+            :breakpoints="{ '640px': '92vw' }"
+        >
+            <template #header>
+                <div class="flex items-center gap-2">
+                    <i class="pi pi-exclamation-triangle text-amber-500"></i>
+                    <span class="text-lg font-bold">Reset Password by Email</span>
+                </div>
+            </template>
+
+            <p class="text-sm text-slate-600 dark:text-surface-300 leading-relaxed">
+                Are you sure you want to generate a new random password and send it to
+                <span class="font-semibold text-slate-800 dark:text-surface-0">{{ passwordTargetUser?.email }}</span>?
+                The user's current password will be replaced.
+            </p>
+
+            <template #footer>
+                <Button :label="t('common.cancel')" severity="secondary" variant="outlined" :disabled="sendingResetEmail" @click="confirmEmailResetVisible = false" />
+                <Button
+                    label="Send Random Password"
+                    icon="pi pi-send"
+                    severity="warn"
+                    :loading="sendingResetEmail"
+                    @click="sendResetByEmail"
                 />
             </template>
         </Dialog>

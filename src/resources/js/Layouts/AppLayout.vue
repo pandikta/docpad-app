@@ -6,6 +6,7 @@ import { useToast } from 'primevue/usetoast';
 import AppSidebar from '@/Components/App/AppSidebar.vue';
 import AppTopbar from '@/Components/App/AppTopbar.vue';
 import SessionReloginDialog from '@/Components/App/SessionReloginDialog.vue';
+import ForcePasswordChangeDialog from '@/Components/App/ForcePasswordChangeDialog.vue';
 
 // Layout utama halaman setelah login: Sidebar + Topbar + konten halaman (slot).
 const sidebarOpen = ref(false);
@@ -26,6 +27,7 @@ const toggleSidebarMinimize = () => setSidebarMinimized(!sidebarMinimized.value)
 const page = usePage();
 const toast = useToast();
 const reloginVisible = ref(false);
+const forcePasswordResetVisible = computed(() => Boolean(page.props.auth?.user?.is_reset));
 const userEmail = computed(() => page.props.auth?.user?.email ?? '');
 const sessionLifetimeMs = computed(() => Math.max(1, Number(page.props.sessionLifetime ?? 120)) * 60 * 1000);
 
@@ -112,5 +114,7 @@ onBeforeUnmount(() => {
             :email="userEmail"
             @relogged-in="onReloggedIn"
         />
+
+        <ForcePasswordChangeDialog :visible="forcePasswordResetVisible && !reloginVisible" />
     </div>
 </template>

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\NotificationController;
@@ -7,6 +8,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Settings\ExtensionController;
 use App\Http\Controllers\Settings\FunctionAuthController;
 use App\Http\Controllers\Settings\MenuAuthController;
+use App\Http\Controllers\Settings\SystemConfigController;
 use App\Http\Controllers\Settings\TeamController;
 use App\Http\Controllers\Settings\UserController;
 use App\Http\Controllers\ShareController;
@@ -58,6 +60,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 
+    Route::post('/password/force-update', [PasswordController::class, 'forceUpdate'])->name('password.force-update');
+
     // Team Control (dikontrol oleh Menu Authorization, Superadmin selalu punya akses penuh)
     Route::middleware('menu.auth:menu.team-control')->group(function () {
         Route::get('/team-control', [TeamControlController::class, 'index'])->name('team-control.index');
@@ -92,6 +96,8 @@ Route::middleware('auth')->group(function () {
             Route::get('/users', [UserController::class, 'index'])->name('users.index');
             Route::post('/users', [UserController::class, 'store'])->name('users.store');
             Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+            Route::patch('/users/{user}/password', [UserController::class, 'resetPassword'])->name('users.password');
+            Route::post('/users/{user}/send-reset-link', [UserController::class, 'sendResetLink'])->name('users.send-reset-link');
             Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
         });
 
@@ -111,6 +117,11 @@ Route::middleware('auth')->group(function () {
             Route::post('/menu-auth/menus', [MenuAuthController::class, 'storeMenu'])->name('menu-auth.menus.store');
             Route::put('/menu-auth/menus/{menu}', [MenuAuthController::class, 'updateMenu'])->name('menu-auth.menus.update');
             Route::delete('/menu-auth/menus/{menu}', [MenuAuthController::class, 'destroyMenu'])->name('menu-auth.menus.destroy');
+        });
+
+        Route::middleware('menu.auth:menu.settings.system-config')->group(function () {
+            Route::get('/system-config', [SystemConfigController::class, 'index'])->name('system-config.index');
+            Route::put('/system-config', [SystemConfigController::class, 'update'])->name('system-config.update');
         });
     });
 });
