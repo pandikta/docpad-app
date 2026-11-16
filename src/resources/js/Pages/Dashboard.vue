@@ -102,8 +102,11 @@ const openEditor = (doc) => {
     const name = String(doc?.name ?? '').toLowerCase();
     const isPdf = doc?.mime_type === 'application/pdf' || name.endsWith('.pdf');
     const isDocx = name.endsWith('.docx');
+    const isImage =
+        Boolean(doc?.mime_type?.startsWith('image/')) ||
+        ['.png', '.jpg', '.jpeg', '.webp', '.gif'].some((ext) => name.endsWith(ext));
 
-    if (doc?.is_stored_file && !isPdf && !isDocx && can('documents.download')) {
+    if (doc?.is_stored_file && !isPdf && !isDocx && !isImage && can('documents.download')) {
         download(doc);
         return;
     }

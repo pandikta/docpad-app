@@ -22,7 +22,7 @@ class DocumentService
      *
      * @var list<string>
      */
-    private const BINARY_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'];
+    private const BINARY_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'png', 'jpg', 'jpeg', 'webp', 'gif'];
     /**
      * Daftar dokumen untuk user yang login (superadmin melihat semua dokumen lintas tim).
      *

@@ -39,6 +39,12 @@ const isPdf = computed(
         (props.document?.mime_type === 'application/pdf' || fileNameLower.value.endsWith('.pdf')),
 );
 const isDocx = computed(() => Boolean(props.document?.is_stored_file) && fileNameLower.value.endsWith('.docx'));
+const isImage = computed(
+    () =>
+        Boolean(props.document?.is_stored_file) &&
+        (Boolean(props.document?.mime_type?.startsWith('image/')) ||
+            ['.png', '.jpg', '.jpeg', '.webp', '.gif'].some((ext) => fileNameLower.value.endsWith(ext))),
+);
 
 const formattedSize = computed(() => {
     const bytes = Number(props.document?.size ?? 0);
@@ -231,6 +237,18 @@ watch(() => [props.requiresPassword, props.document?.preview_url], loadDocx);
                 class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs dark:border-surface-800 dark:bg-surface-900"
             >
                 <iframe :src="document.preview_url" class="h-[78vh] w-full border-0" title="PDF Preview" />
+            </div>
+
+            <!-- Image Viewer -->
+            <div
+                v-else-if="isImage && document.preview_url"
+                class="flex items-center justify-center rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-6 dark:border-surface-800 dark:bg-surface-900"
+            >
+                <img
+                    :src="document.preview_url"
+                    :alt="document.name"
+                    class="max-h-[78vh] max-w-full rounded-xl object-contain"
+                />
             </div>
 
             <!-- DOCX Viewer -->

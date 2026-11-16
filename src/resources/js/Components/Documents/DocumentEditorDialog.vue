@@ -31,6 +31,13 @@ const isPdf = computed(
         props.document?.name?.toLowerCase().endsWith('.pdf'),
 );
 const isDocx = computed(() => Boolean(props.document?.name?.toLowerCase().endsWith('.docx')));
+const isImage = computed(() => {
+    const name = String(props.document?.name ?? '').toLowerCase();
+    return (
+        Boolean(props.document?.mime_type?.startsWith('image/')) ||
+        ['.png', '.jpg', '.jpeg', '.webp', '.gif'].some((ext) => name.endsWith(ext))
+    );
+});
 
 const docxContainer = ref(null);
 const docxLoading = ref(false);
@@ -97,7 +104,9 @@ const save = () => emit('save', { ...props.document, content: content.value });
                             ? 'pi pi-file-pdf text-red-500'
                             : isDocx
                               ? 'pi pi-file-word text-blue-500'
-                              : 'pi pi-file-edit text-[#1f6f46] dark:text-emerald-400'
+                              : isImage
+                                ? 'pi pi-image text-emerald-500'
+                                : 'pi pi-file-edit text-[#1f6f46] dark:text-emerald-400'
                     "
                 ></i>
                 <span class="text-lg font-bold">{{ document?.name }}</span>
@@ -168,6 +177,35 @@ const save = () => emit('save', { ...props.document, content: content.value });
                     :src="document.preview_url"
                     class="w-full h-[65vh] rounded-xl border border-slate-200 dark:border-surface-700 bg-white"
                 />
+            </div>
+
+            <div v-else-if="isImage && document?.preview_url" class="space-y-3">
+                <div class="flex flex-wrap items-center justify-end gap-2 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-surface-800/70 border border-slate-200/80 dark:border-surface-700 text-xs">
+                    <a
+                        :href="document.preview_url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-surface-600 bg-white dark:bg-surface-900 text-slate-700 dark:text-surface-200 hover:border-[#1f6f46] hover:text-[#1f6f46] font-medium transition-colors"
+                    >
+                        <i class="pi pi-external-link text-[11px]"></i>
+                        <span>{{ t('share.open_new_tab') }}</span>
+                    </a>
+                    <a
+                        :href="route('documents.download', document.id)"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1f6f46] hover:bg-[#185a38] text-white font-medium transition-colors"
+                    >
+                        <i class="pi pi-download text-[11px]"></i>
+                        <span>{{ t('share.download') }}</span>
+                    </a>
+                </div>
+
+                <div class="flex items-center justify-center rounded-xl border border-slate-200 dark:border-surface-700 bg-slate-100 dark:bg-surface-900 p-4">
+                    <img
+                        :src="document.preview_url"
+                        :alt="document.name"
+                        class="max-h-[65vh] max-w-full rounded-lg object-contain shadow-sm"
+                    />
+                </div>
             </div>
             <div
                 v-else

@@ -37,7 +37,7 @@ const visibilityOptions = computed(() => [
     { label: 'Private', value: 'private' },
 ]);
 
-const BINARY_EXTENSIONS = new Set(['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx']);
+const BINARY_EXTENSIONS = new Set(['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'png', 'jpg', 'jpeg', 'webp', 'gif']);
 
 const editableExtensions = computed(() =>
     props.extensions.filter((ext) => !BINARY_EXTENSIONS.has(String(ext).toLowerCase())),
