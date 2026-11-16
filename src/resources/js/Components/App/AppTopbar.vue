@@ -23,6 +23,34 @@ const userName = computed(() => page.props.auth.user?.name ?? '');
 const userEmail = computed(() => page.props.auth.user?.email ?? '');
 const initials = computed(() => getInitials(userName.value));
 
+// Storage quota bar
+const formatStorageBytes = (bytes) => {
+    const value = Number(bytes ?? 0);
+    if (value < 1024) return `${value} B`;
+    if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+    if (value < 1024 * 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(value / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+};
+
+const storageQuota = computed(() => page.props.storageQuota ?? null);
+const storageUsageLabel = computed(() => {
+    const used = formatStorageBytes(storageQuota.value?.used_bytes ?? 0);
+    const limitMb = storageQuota.value?.limit_mb;
+    const limit = limitMb === null || limitMb === undefined ? t('common.unlimited') : `${limitMb} MB`;
+    return `${used} / ${limit}`;
+});
+const storagePercent = computed(() => {
+    const limitBytes = Number(storageQuota.value?.limit_bytes ?? 0);
+    if (!limitBytes || limitBytes <= 0) return 0;
+    const usedBytes = Number(storageQuota.value?.used_bytes ?? 0);
+    return Math.min(100, Math.max(0, Math.round((usedBytes / limitBytes) * 100)));
+});
+const storageBarColor = computed(() => {
+    if (storagePercent.value >= 90) return 'bg-red-500';
+    if (storagePercent.value >= 75) return 'bg-amber-500';
+    return 'bg-[#1f6f46] dark:bg-emerald-500';
+});
+
 // Search (Ctrl/Cmd + K untuk fokus, Esc untuk reset)
 const searchInput = ref(null);
 
@@ -184,6 +212,24 @@ const handleLogout = () => {
         </IconField>
 
         <div class="ml-auto flex items-center gap-2 sm:gap-3">
+            <!-- Storage Quota Bar -->
+            <div
+                v-if="storageQuota"
+                v-tooltip.bottom="t('dashboard.storage_used')"
+                class="hidden sm:flex flex-col justify-center min-w-[7.5rem] max-w-[10.5rem] gap-1 mr-1"
+            >
+                <span class="text-xs font-medium text-slate-600 dark:text-surface-200 leading-none truncate">
+                    {{ storageUsageLabel }}
+                </span>
+                <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-surface-700">
+                    <div
+                        class="h-full rounded-full transition-all duration-300"
+                        :class="storageBarColor"
+                        :style="{ width: `${storagePercent}%` }"
+                    ></div>
+                </div>
+            </div>
+
             <!-- Dark mode -->
             <button
                 type="button"

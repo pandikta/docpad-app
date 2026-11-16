@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\DocumentService;
 use App\Services\FunctionAuthService;
 use App\Services\MenuAuthService;
 use Illuminate\Http\Request;
@@ -65,6 +66,9 @@ class HandleInertiaRequests extends Middleware
                     'created_at' => $n->created_at?->toISOString(),
                 ]),
             ] : ['unread_count' => 0, 'items' => []],
+            'storageQuota' => fn () => $request->user()
+                ? app(DocumentService::class)->getStorageQuotaSummary($request->user())
+                : null,
             'sessionLifetime' => (int) config('session.lifetime', 120),
         ];
     }

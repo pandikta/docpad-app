@@ -72,21 +72,6 @@ const {
 
 const userName = computed(() => page.props.auth.user?.name ?? '');
 
-const formatStorageBytes = (bytes) => {
-    const value = Number(bytes ?? 0);
-    if (value < 1024) return `${value} B`;
-    if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
-    if (value < 1024 * 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1)} MB`;
-    return `${(value / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-};
-
-const storageUsageLabel = computed(() => {
-    const used = formatStorageBytes(props.storageQuota?.used_bytes ?? 0);
-    const limitMb = props.storageQuota?.limit_mb;
-    const limit = limitMb === null || limitMb === undefined ? t('common.unlimited') : `${limitMb} MB`;
-    return `${used} / ${limit}`;
-});
-
 // --- Create dialog -------------------------------------------------------
 const createVisible = ref(false);
 
@@ -343,7 +328,6 @@ const confirmUpload = ({ files, folderId, notifyMembers }) => {
 
             <!-- Stats + Upload -->
             <div class="flex flex-wrap items-center gap-4">
-                <StatCard icon="pi pi-database" :label="t('dashboard.storage_used')" :value="storageUsageLabel" />
                 <StatCard icon="pi pi-file" :label="t('dashboard.total_documents')" :value="documents.length" />
 
                 <button
