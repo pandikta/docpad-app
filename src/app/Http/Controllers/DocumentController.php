@@ -459,7 +459,9 @@ class DocumentController extends Controller
      */
     public function createShareLink(Request $request, Document $document): RedirectResponse
     {
-        $this->documents->authorizeAccess($request->user(), $document);
+        $user = $request->user();
+        $this->documents->authorizeAccess($user, $document);
+        $this->authorizeShareLinkManagement($user, $document);
 
         $validated = $request->validate([
             'expiry' => ['required', 'string', 'in:1h,24h,7d,30d,never'],
@@ -486,7 +488,9 @@ class DocumentController extends Controller
      */
     public function updateSharePassword(Request $request, Document $document): RedirectResponse
     {
-        $this->documents->authorizeAccess($request->user(), $document);
+        $user = $request->user();
+        $this->documents->authorizeAccess($user, $document);
+        $this->authorizeShareLinkManagement($user, $document);
 
         $validated = $request->validate([
             'password' => ['nullable', 'string', 'min:4', 'max:50'],
@@ -517,18 +521,36 @@ class DocumentController extends Controller
      */
     public function revokeShareLink(Request $request, Document $document): RedirectResponse
     {
-        $this->documents->authorizeAccess($request->user(), $document);
+        $user = $request->user();
+        $this->documents->authorizeAccess($user, $document);
+        $this->authorizeShareLinkManagement($user, $document);
 
         $request->validate([
             'notify_members' => ['nullable', 'boolean'],
         ]);
 
-        $this->documents->revokeShareLinks($document, $request->user());
+        $this->documents->revokeShareLinks($document, $user);
 
         if ($request->boolean('notify_members')) {
-            $this->documents->notifyTeamMembers($request->user(), 'revoked', [$document]);
+            $this->documents->notifyTeamMembers($user, 'revoked', [$document]);
         }
 
         return back()->with('success', "Shareable link revoked for {$document->name}.");
+    }
+
+    private function authorizeShareLinkManagement(\App\Models\User $user, Document $document): void
+    {
+        $activeLink = $document->shareLinks()->where('is_active', true)->latest('id')->first();
+        if (! $activeLink) {
+            return;
+        }
+
+        $isCreator = (int) $activeLink->created_by === (int) $user->id;
+        $canManage = $user->isSuperAdmin()
+            || $user->isTeamLeader()
+            || $isCreator
+            || app(\App\Services\FunctionAuthService::class)->isAllowed($user, 'documents.revoke_link');
+
+        abort_unless($canManage, 403, 'You do not have permission to manage this share link.');
     }
 }

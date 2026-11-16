@@ -6,8 +6,10 @@ import InputText from 'primevue/inputtext';
 import Password from 'primevue/password';
 import Checkbox from 'primevue/checkbox';
 import Button from 'primevue/button';
+import { useAuth } from '@/composables/useAuth';
 import { useLocale } from '@/composables/useLocale';
 
+const { user, isSuperAdmin, isTeamLeader, can } = useAuth();
 const { t } = useLocale();
 
 const props = defineProps({
@@ -45,6 +47,18 @@ watch(
 );
 
 const shareLink = computed(() => props.document?.share_link ?? null);
+
+const canRevoke = computed(() => {
+    if (!shareLink.value) return false;
+    return (
+        isSuperAdmin.value ||
+        isTeamLeader.value ||
+        Number(shareLink.value.created_by) === Number(user.value?.id) ||
+        can('documents.revoke_link')
+    );
+});
+
+const canManageShare = computed(() => !shareLink.value || canRevoke.value);
 
 const formattedExpiry = computed(() => {
     const expiresAt = shareLink.value?.expires_at;
@@ -164,81 +178,83 @@ const revoke = () => emit('revoke', { notify_members: notifyMembers.value });
                 </div>
             </div>
 
-            <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                    {{ shareLink ? t('dialogs.share_new_label') : t('dialogs.share_expiration_label') }}
-                </label>
-                <div class="flex items-center gap-2">
-                    <Select
-                        v-model="selectedExpiry"
-                        :options="expiryOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        fluid
-                        class="!rounded-xl"
-                    />
-                    <Button
-                        :label="shareLink ? t('dialogs.share_regenerate') : t('dialogs.share_generate')"
-                        icon="pi pi-link"
-                        :loading="loading"
-                        class="shrink-0 !bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white"
-                        @click="generate"
-                    />
-                </div>
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-                <div class="flex items-center justify-between gap-2">
-                    <label for="share-password" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
-                        {{ t('dialogs.share_password_label') }}
+            <template v-if="canManageShare">
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-semibold text-slate-700 dark:text-surface-200">
+                        {{ shareLink ? t('dialogs.share_new_label') : t('dialogs.share_expiration_label') }}
                     </label>
-                    <button
-                        v-if="shareLink?.has_password"
-                        type="button"
-                        :disabled="loading"
-                        class="text-xs font-semibold text-red-500 hover:underline cursor-pointer disabled:opacity-50"
-                        @click="updatePassword(true)"
-                    >
-                        {{ t('dialogs.share_remove_password') }}
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <Select
+                            v-model="selectedExpiry"
+                            :options="expiryOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            fluid
+                            class="!rounded-xl"
+                        />
+                        <Button
+                            :label="shareLink ? t('dialogs.share_regenerate') : t('dialogs.share_generate')"
+                            icon="pi pi-link"
+                            :loading="loading"
+                            class="shrink-0 !bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white"
+                            @click="generate"
+                        />
+                    </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <Password
-                        inputId="share-password"
-                        v-model="sharePassword"
-                        :feedback="false"
-                        toggleMask
-                        autocomplete="new-password"
-                        :placeholder="t('dialogs.share_password_placeholder')"
-                        fluid
-                        inputClass="!rounded-xl !text-sm"
-                    />
-                    <Button
-                        v-if="shareLink"
-                        :label="t('dialogs.share_reset_password')"
-                        icon="pi pi-key"
-                        severity="secondary"
-                        variant="outlined"
-                        :loading="loading"
-                        :disabled="sharePassword.trim().length < 4"
-                        class="shrink-0"
-                        @click="updatePassword(false)"
-                    />
-                </div>
-            </div>
 
-            <!-- Notify Team Members -->
-            <div class="flex items-center gap-2.5 pt-1">
-                <Checkbox v-model="notifyMembers" inputId="share-notify-members" binary />
-                <label for="share-notify-members" class="text-sm text-slate-700 dark:text-surface-200 cursor-pointer select-none">
-                    {{ t('dialogs.notify_members_share') }}
-                </label>
-            </div>
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex items-center justify-between gap-2">
+                        <label for="share-password" class="text-sm font-semibold text-slate-700 dark:text-surface-200">
+                            {{ t('dialogs.share_password_label') }}
+                        </label>
+                        <button
+                            v-if="shareLink?.has_password"
+                            type="button"
+                            :disabled="loading"
+                            class="text-xs font-semibold text-red-500 hover:underline cursor-pointer disabled:opacity-50"
+                            @click="updatePassword(true)"
+                        >
+                            {{ t('dialogs.share_remove_password') }}
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <Password
+                            inputId="share-password"
+                            v-model="sharePassword"
+                            :feedback="false"
+                            toggleMask
+                            autocomplete="new-password"
+                            :placeholder="t('dialogs.share_password_placeholder')"
+                            fluid
+                            inputClass="!rounded-xl !text-sm"
+                        />
+                        <Button
+                            v-if="shareLink"
+                            :label="t('dialogs.share_reset_password')"
+                            icon="pi pi-key"
+                            severity="secondary"
+                            variant="outlined"
+                            :loading="loading"
+                            :disabled="sharePassword.trim().length < 4"
+                            class="shrink-0"
+                            @click="updatePassword(false)"
+                        />
+                    </div>
+                </div>
+
+                <!-- Notify Team Members -->
+                <div class="flex items-center gap-2.5 pt-1">
+                    <Checkbox v-model="notifyMembers" inputId="share-notify-members" binary />
+                    <label for="share-notify-members" class="text-sm text-slate-700 dark:text-surface-200 cursor-pointer select-none">
+                        {{ t('dialogs.notify_members_share') }}
+                    </label>
+                </div>
+            </template>
         </div>
 
         <template #footer>
             <Button
-                v-if="shareLink"
+                v-if="canRevoke"
                 :label="t('dialogs.share_revoke')"
                 icon="pi pi-ban"
                 severity="danger"

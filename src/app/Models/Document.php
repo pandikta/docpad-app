@@ -150,6 +150,7 @@ class Document extends Model
             'is_favorite' => (bool) ($this->is_favorite ?? false),
             'share_link' => $activeShare ? [
                 'id' => $activeShare->id,
+                'created_by' => $activeShare->created_by,
                 'url' => route('share.show', $activeShare->token),
                 'expires_at' => $activeShare->expires_at?->toIso8601String(),
                 'has_password' => $activeShare->hasPassword(),
