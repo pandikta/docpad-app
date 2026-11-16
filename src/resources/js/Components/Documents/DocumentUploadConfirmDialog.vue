@@ -147,11 +147,14 @@ const onConfirm = () => {
                         <span class="text-slate-500 dark:text-surface-400">max {{ formatMaxKb(getMaxSizeKb(ext)) }}</span>
                     </span>
                 </div>
-                <p class="text-[11px] text-slate-500 dark:text-surface-400">
-                    All uploaded documents will be set to
-                    <span class="font-semibold text-[#1f6f46] dark:text-emerald-400">Publish</span>
-                    and shared with your team.
-                </p>
+                <div class="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] text-emerald-800 dark:border-emerald-800/60 dark:bg-emerald-950/50 dark:text-emerald-200">
+                    <i class="pi pi-globe text-xs text-[#1f6f46] dark:text-emerald-400 shrink-0"></i>
+                    <p>
+                        All uploaded documents will be set to
+                        <span class="font-bold text-[#1f6f46] dark:text-emerald-300">Publish</span>
+                        and shared with your team.
+                    </p>
+                </div>
             </div>
 
             <!-- Optional Folder -->
