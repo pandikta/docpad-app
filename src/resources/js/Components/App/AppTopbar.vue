@@ -5,6 +5,8 @@ import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import InputText from 'primevue/inputtext';
 import Popover from 'primevue/popover';
+import Dialog from 'primevue/dialog';
+import Button from 'primevue/button';
 import { useToast } from 'primevue/usetoast';
 import { useDarkMode } from '@/composables/useDarkMode';
 import { useDocumentSearch } from '@/composables/useDocumentSearch';
@@ -21,7 +23,30 @@ const { locale, setLocale, t } = useLocale();
 
 const userName = computed(() => page.props.auth.user?.name ?? '');
 const userEmail = computed(() => page.props.auth.user?.email ?? '');
+const isSuperAdmin = computed(() => Boolean(page.props.auth.user?.is_superadmin));
 const initials = computed(() => getInitials(userName.value));
+
+// Team Leader Request (when team has no Team Leader yet)
+const teamLeaderStatus = computed(() => page.props.teamLeaderStatus ?? null);
+const leaderConfirmVisible = ref(false);
+const requestingLeader = ref(false);
+
+const submitLeaderRequest = () => {
+    requestingLeader.value = true;
+    router.post(
+        route('team-leader.request'),
+        {},
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                leaderConfirmVisible.value = false;
+            },
+            onFinish: () => {
+                requestingLeader.value = false;
+            },
+        },
+    );
+};
 
 // Storage quota bar
 const formatStorageBytes = (bytes) => {
@@ -147,6 +172,15 @@ const formatNotifText = (item) => {
     if (data.action === 'team_request_submitted') {
         return t('topbar.notif_team_request', { actor, name: data.document_name ?? '' });
     }
+    if (data.action === 'team_leader_requested') {
+        return t('topbar.notif_team_leader_request', { actor, name: data.document_name ?? '' });
+    }
+    if (data.action === 'team_leader_approved') {
+        return t('topbar.notif_team_leader_approved', { actor, name: data.document_name ?? '' });
+    }
+    if (data.action === 'team_leader_rejected') {
+        return t('topbar.notif_team_leader_rejected', { actor, name: data.document_name ?? '' });
+    }
     return t('topbar.notif_created', { actor, name: data.document_name ?? '' });
 };
 
@@ -155,7 +189,7 @@ const handleNotifClick = (item) => {
     notifMenu.value?.hide();
 
     const navigate = () => {
-        if (item?.data?.action === 'team_request_submitted') {
+        if (item?.data?.action === 'team_request_submitted' || (item?.data?.action === 'team_leader_requested' && isSuperAdmin.value)) {
             router.visit(route('settings.teams.index'));
             return;
         }
@@ -238,6 +272,25 @@ const handleLogout = () => {
         </IconField>
 
         <div class="ml-auto flex items-center gap-2 sm:gap-3">
+            <!-- Request as Team Leader Button (shown when team has no Team Leader yet) -->
+            <button
+                v-if="teamLeaderStatus?.show_button"
+                type="button"
+                :disabled="teamLeaderStatus.has_pending_request"
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all"
+                :class="
+                    teamLeaderStatus.has_pending_request
+                        ? 'border-amber-200 bg-amber-50/80 text-amber-700 dark:border-amber-800/70 dark:bg-amber-950/40 dark:text-amber-300 cursor-default'
+                        : 'border-emerald-200 bg-emerald-50/80 text-[#1f6f46] hover:bg-emerald-100/80 dark:border-emerald-800/70 dark:bg-emerald-950/50 dark:text-emerald-300 dark:hover:bg-emerald-900/60 cursor-pointer'
+                "
+                @click="!teamLeaderStatus.has_pending_request && (leaderConfirmVisible = true)"
+            >
+                <i :class="['pi text-xs', teamLeaderStatus.has_pending_request ? 'pi-clock' : 'pi-crown']"></i>
+                <span class="hidden md:inline">
+                    {{ teamLeaderStatus.has_pending_request ? t('topbar.request_team_leader_pending') : t('topbar.request_team_leader') }}
+                </span>
+            </button>
+
             <!-- Storage Quota Bar -->
             <div
                 v-if="storageQuota"
@@ -430,4 +483,49 @@ const handleLogout = () => {
             </Popover>
         </div>
     </header>
+
+    <!-- Confirm Request as Team Leader Dialog -->
+    <Dialog
+        v-model:visible="leaderConfirmVisible"
+        modal
+        :draggable="false"
+        :style="{ width: '28rem' }"
+        :breakpoints="{ '640px': '92vw' }"
+    >
+        <template #header>
+            <div class="flex items-center gap-2.5">
+                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eaf7f0] dark:bg-emerald-950/60 text-[#1f6f46] dark:text-emerald-400">
+                    <i class="pi pi-crown text-sm"></i>
+                </span>
+                <span class="font-bold text-base text-slate-800 dark:text-surface-0">
+                    {{ t('topbar.request_leader_confirm_title') }}
+                </span>
+            </div>
+        </template>
+
+        <p class="text-sm text-slate-600 dark:text-surface-300 leading-relaxed pt-1">
+            {{ teamLeaderStatus?.auto_approve ? t('topbar.request_leader_confirm_auto') : t('topbar.request_leader_confirm_review') }}
+        </p>
+
+        <template #footer>
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <Button
+                    type="button"
+                    :label="t('common.cancel')"
+                    severity="secondary"
+                    variant="outlined"
+                    :disabled="requestingLeader"
+                    @click="leaderConfirmVisible = false"
+                />
+                <Button
+                    type="button"
+                    :label="t('topbar.request_leader_confirm_submit')"
+                    icon="pi pi-check"
+                    :loading="requestingLeader"
+                    class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white"
+                    @click="submitLeaderRequest"
+                />
+            </div>
+        </template>
+    </Dialog>
 </template>

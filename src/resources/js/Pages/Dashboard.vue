@@ -34,6 +34,7 @@ const props = defineProps({
 });
 
 const myTeamDialogVisible = ref(false);
+const myTeamLeader = computed(() => props.myTeam?.members?.find((m) => m.is_team_leader) ?? null);
 
 const page = usePage();
 const { can, isSuperAdmin, isTeamLeader } = useAuth();
@@ -356,6 +357,13 @@ const confirmUpload = ({ files, folderId, notifyMembers, encryptedFiles }) => {
                         <p class="text-[11px] font-medium text-[#1f6f46] dark:text-emerald-400">
                             {{ t('dashboard.team_members_count', { count: myTeam.members?.length ?? 0 }) }}
                         </p>
+                        <p class="text-[11px] text-slate-500 dark:text-surface-400 truncate mt-0.5">
+                            {{
+                                myTeamLeader
+                                    ? t('dashboard.team_leader_label', { name: myTeamLeader.name })
+                                    : t('dashboard.no_team_leader')
+                            }}
+                        </p>
                     </div>
                     <i class="pi pi-chevron-right text-xs text-slate-400"></i>
                 </button>
@@ -571,6 +579,14 @@ const confirmUpload = ({ files, folderId, notifyMembers, encryptedFiles }) => {
                         </h3>
                         <p v-if="myTeam" class="text-xs text-slate-500 dark:text-surface-400">
                             {{ t('dashboard.team_members_count', { count: myTeam.members?.length ?? 0 }) }}
+                            ·
+                            <span class="font-medium text-[#1f6f46] dark:text-emerald-400">
+                                {{
+                                    myTeamLeader
+                                        ? t('dashboard.team_leader_label', { name: myTeamLeader.name })
+                                        : t('dashboard.no_team_leader')
+                                }}
+                            </span>
                         </p>
                     </div>
                 </div>

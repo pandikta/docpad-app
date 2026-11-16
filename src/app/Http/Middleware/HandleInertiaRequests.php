@@ -6,6 +6,7 @@ use App\Models\SystemConfig;
 use App\Services\DocumentService;
 use App\Services\FunctionAuthService;
 use App\Services\MenuAuthService;
+use App\Services\TeamLeaderRequestService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -43,6 +44,7 @@ class HandleInertiaRequests extends Middleware
                     'is_team_leader' => $request->user()->isTeamLeader(),
                     'is_reset' => (bool) ($request->user()->is_reset ?? false),
                     'last_reset' => $request->user()->last_reset?->toISOString(),
+                    'email_notifications_enabled' => (bool) ($request->user()->email_notifications_enabled ?? true),
                 ] : null,
                 'permissions' => fn () => $request->user()
                     ? app(FunctionAuthService::class)->getPermissionsMap($request->user())
@@ -71,6 +73,7 @@ class HandleInertiaRequests extends Middleware
             'storageQuota' => fn () => $request->user()
                 ? app(DocumentService::class)->getStorageQuotaSummary($request->user())
                 : null,
+            'teamLeaderStatus' => fn () => app(TeamLeaderRequestService::class)->getStatusForUser($request->user()),
             'sessionLifetime' => (int) config('session.lifetime', 120),
             'guestLanguageSwitcher' => fn () => SystemConfig::getBool('guest_language_switcher', true),
         ];

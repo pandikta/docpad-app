@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
 use App\Models\Team;
+use App\Models\TeamLeaderRequest;
 use App\Models\TeamRequest;
+use App\Services\TeamLeaderRequestService;
 use App\Services\TeamRequestService;
 use App\Services\TeamService;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +20,7 @@ class TeamController extends Controller
     public function __construct(
         private readonly TeamService $teams,
         private readonly TeamRequestService $teamRequests,
+        private readonly TeamLeaderRequestService $leaderRequests,
     ) {}
 
     public function index(): Response
@@ -25,6 +28,7 @@ class TeamController extends Controller
         return Inertia::render('Settings/MasterTeams', [
             'teams' => $this->teams->listAllForManagement(),
             'teamRequests' => $this->teamRequests->listForManagement(),
+            'leaderRequests' => $this->leaderRequests->listForManagement(),
         ]);
     }
 
@@ -88,5 +92,23 @@ class TeamController extends Controller
         $this->teamRequests->reject($teamRequest, $request->user(), $validated['rejection_reason'] ?? null);
 
         return back()->with('success', "Team request for {$teamRequest->team_name} rejected.");
+    }
+
+    public function approveLeaderRequest(Request $request, TeamLeaderRequest $leaderRequest): RedirectResponse
+    {
+        $this->leaderRequests->approve($leaderRequest, $request->user());
+
+        return back()->with('success', "{$leaderRequest->user?->name} is now Team Leader for {$leaderRequest->team?->team_name}.");
+    }
+
+    public function rejectLeaderRequest(Request $request, TeamLeaderRequest $leaderRequest): RedirectResponse
+    {
+        $validated = $request->validate([
+            'rejection_reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $this->leaderRequests->reject($leaderRequest, $request->user(), $validated['rejection_reason'] ?? null);
+
+        return back()->with('success', 'Team Leader request rejected.');
     }
 }

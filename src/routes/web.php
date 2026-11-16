@@ -13,6 +13,7 @@ use App\Http\Controllers\Settings\TeamController;
 use App\Http\Controllers\Settings\UserController;
 use App\Http\Controllers\ShareController;
 use App\Http\Controllers\TeamControlController;
+use App\Http\Controllers\TeamLeaderRequestController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -61,6 +62,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 
     Route::post('/password/force-update', [PasswordController::class, 'forceUpdate'])->name('password.force-update');
+    Route::post('/team-leader-request', [TeamLeaderRequestController::class, 'store'])->name('team-leader.request');
 
     // Team Control (dikontrol oleh Menu Authorization, Superadmin selalu punya akses penuh)
     Route::middleware('menu.auth:menu.team-control')->group(function () {
@@ -73,6 +75,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('menu.auth:menu.profile')->group(function () {
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::patch('/profile/notifications', [ProfileController::class, 'updateNotificationPreferences'])->name('profile.notifications.update');
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     });
 
@@ -92,6 +95,8 @@ Route::middleware('auth')->group(function () {
             Route::delete('/teams/{team}', [TeamController::class, 'destroy'])->name('teams.destroy');
             Route::post('/teams/requests/{teamRequest}/approve', [TeamController::class, 'approveRequest'])->name('teams.requests.approve');
             Route::post('/teams/requests/{teamRequest}/reject', [TeamController::class, 'rejectRequest'])->name('teams.requests.reject');
+            Route::post('/teams/leader-requests/{leaderRequest}/approve', [TeamController::class, 'approveLeaderRequest'])->name('teams.leader-requests.approve');
+            Route::post('/teams/leader-requests/{leaderRequest}/reject', [TeamController::class, 'rejectLeaderRequest'])->name('teams.leader-requests.reject');
         });
 
         Route::middleware('menu.auth:menu.settings.users')->group(function () {

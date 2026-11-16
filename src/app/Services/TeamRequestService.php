@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\SystemConfig;
 use App\Models\Team;
 use App\Models\TeamRequest;
 use App\Models\User;
@@ -81,10 +82,13 @@ class TeamRequestService
         Notification::send($superadmins, new TeamRequestSubmittedNotification($teamRequest, ['database']));
 
         // Attempt email notification safely so missing/unconfigured SMTP never blocks submission
-        $this->sendMailSafely(
-            fn () => Notification::send($superadmins, new TeamRequestSubmittedNotification($teamRequest, ['mail'])),
-            ['team_request_id' => $teamRequest->id, 'recipient' => 'superadmins'],
-        );
+        $emailRecipients = $superadmins->filter(fn (User $u) => (bool) ($u->email_notifications_enabled ?? true));
+        if ($emailRecipients->isNotEmpty()) {
+            $this->sendMailSafely(
+                fn () => Notification::send($emailRecipients, new TeamRequestSubmittedNotification($teamRequest, ['mail'])),
+                ['team_request_id' => $teamRequest->id, 'recipient' => 'superadmins'],
+            );
+        }
     }
 
     /**
@@ -106,6 +110,10 @@ class TeamRequestService
      */
     private function sendMailSafely(callable $callback, array $context = []): void
     {
+        if (! SystemConfig::getBool('email_notif_team_request', true)) {
+            return;
+        }
+
         $mailer = config('mail.default');
         if (! $mailer || in_array($mailer, ['log', 'array'], true)) {
             return;

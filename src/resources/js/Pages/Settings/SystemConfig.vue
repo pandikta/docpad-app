@@ -11,13 +11,20 @@ const { t } = useLocale();
 const props = defineProps({
     configs: {
         type: Object,
-        default: () => ({ password_history_limit: 2, guest_language_switcher: true }),
+        default: () => ({
+            password_history_limit: 2,
+            guest_language_switcher: true,
+            email_notif_team_request: true,
+            email_notif_team_leader_request: true,
+        }),
     },
 });
 
 const form = useForm({
     password_history_limit: Number(props.configs?.password_history_limit ?? 2),
     guest_language_switcher: Boolean(props.configs?.guest_language_switcher ?? true),
+    email_notif_team_request: Boolean(props.configs?.email_notif_team_request ?? true),
+    email_notif_team_leader_request: Boolean(props.configs?.email_notif_team_leader_request ?? true),
 });
 
 const submit = () => {
@@ -106,6 +113,32 @@ const submit = () => {
                         </div>
 
                         <ToggleSwitch inputId="guest-language-switcher" v-model="form.guest_language_switcher" />
+                    </div>
+
+                    <div class="pt-5 border-t border-slate-100 dark:border-surface-800 flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <label for="email-notif-team-request" class="text-sm font-semibold text-slate-800 dark:text-surface-100">
+                                {{ t('settings.email_notif_team_request') }}
+                            </label>
+                            <p class="text-xs text-slate-500 dark:text-surface-400 mt-0.5">
+                                {{ t('settings.email_notif_team_request_desc') }}
+                            </p>
+                        </div>
+
+                        <ToggleSwitch inputId="email-notif-team-request" v-model="form.email_notif_team_request" />
+                    </div>
+
+                    <div class="pt-5 border-t border-slate-100 dark:border-surface-800 flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <label for="email-notif-team-leader" class="text-sm font-semibold text-slate-800 dark:text-surface-100">
+                                {{ t('settings.email_notif_team_leader_request') }}
+                            </label>
+                            <p class="text-xs text-slate-500 dark:text-surface-400 mt-0.5">
+                                {{ t('settings.email_notif_team_leader_request_desc') }}
+                            </p>
+                        </div>
+
+                        <ToggleSwitch inputId="email-notif-team-leader" v-model="form.email_notif_team_leader_request" />
                     </div>
 
                     <div class="pt-2 border-t border-slate-100 dark:border-surface-800 flex justify-end">

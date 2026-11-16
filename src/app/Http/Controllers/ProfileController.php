@@ -42,6 +42,19 @@ class ProfileController extends Controller
         return Redirect::route('profile.edit')->with('success', 'Profile information updated successfully.');
     }
 
+    public function updateNotificationPreferences(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'email_notifications_enabled' => ['required', 'boolean'],
+        ]);
+
+        $request->user()->update([
+            'email_notifications_enabled' => $validated['email_notifications_enabled'],
+        ]);
+
+        return Redirect::route('profile.edit')->with('success', 'Notification preferences updated.');
+    }
+
     /**
      * Delete the user's account.
      */

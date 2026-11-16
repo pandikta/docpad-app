@@ -4,6 +4,7 @@ import { Head, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { getInitials } from '@/utils/formatters';
 import DeleteUserForm from './Partials/DeleteUserForm.vue';
+import NotificationPreferencesForm from './Partials/NotificationPreferencesForm.vue';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
 import { useLocale } from '@/composables/useLocale';
@@ -67,6 +68,8 @@ const initials = computed(() => getInitials(user.value.name));
 
                 <UpdatePasswordForm />
             </div>
+
+            <NotificationPreferencesForm />
 
             <DeleteUserForm />
         </div>

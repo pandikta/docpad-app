@@ -29,6 +29,7 @@ class User extends Authenticatable
         'email',
         'password',
         'storage_limit_mb',
+        'email_notifications_enabled',
     ];
 
     /**
