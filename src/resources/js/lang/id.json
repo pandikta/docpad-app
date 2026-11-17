@@ -164,6 +164,8 @@
         "extension": "Ekstensi",
         "visibility": "Akses File",
         "no_team_private_hint": "Anda belum tergabung di tim — file ini otomatis disimpan sebagai Private.",
+        "max_file_uploads_hint": "Maksimal {max} file dapat dipilih sekaligus.",
+        "max_file_uploads_exceeded": "Terlalu banyak file dipilih ({count}). Maksimal per unggahan adalah {max} file — silakan hapus {excess} file.",
         "folder": "Folder",
         "content_optional": "Isi Awal (Opsional)",
         "rename_title": "Ubah Nama Dokumen",

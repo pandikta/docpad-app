@@ -22,7 +22,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Konfigurasi upload limit & OPcache PHP
-RUN echo "upload_max_filesize = 50M\npost_max_size = 50M\nmemory_limit = 256M" > /usr/local/etc/php/conf.d/uploads.ini \
+RUN echo "upload_max_filesize = 50M\npost_max_size = 100M\nmax_file_uploads = 50\nmemory_limit = 256M" > /usr/local/etc/php/conf.d/uploads.ini \
     && echo "opcache.enable=1\nopcache.memory_consumption=128\nopcache.interned_strings_buffer=16\nopcache.max_accelerated_files=20000\nopcache.validate_timestamps=1\nopcache.revalidate_freq=2" > /usr/local/etc/php/conf.d/opcache.ini
 
 WORKDIR /var/www/html

@@ -16,6 +16,7 @@ const props = defineProps({
     visible: { type: Boolean, default: false },
     allowedExtensions: { type: Array, default: () => ['txt', 'md'] },
     extensionMaxSizes: { type: Object, default: () => ({}) },
+    maxFileUploads: { type: Number, default: 20 },
     folders: { type: Array, default: () => [] },
     loading: { type: Boolean, default: false },
 });
@@ -123,8 +124,10 @@ const removeFile = (index) => {
     selectedFiles.value = selectedFiles.value.filter((_, idx) => idx !== index);
 };
 
+const exceedsMaxFiles = computed(() => selectedFiles.value.length > props.maxFileUploads);
+
 const onConfirm = () => {
-    if (!selectedFiles.value.length) return;
+    if (!selectedFiles.value.length || exceedsMaxFiles.value) return;
     emit('confirm', {
         files: selectedFiles.value,
         folderId: folderId.value,
@@ -221,7 +224,7 @@ const onConfirm = () => {
                     Click to choose files or drag &amp; drop here
                 </p>
                 <p class="text-xs text-slate-500 dark:text-surface-400 mt-1">
-                    You can select one or multiple files at once
+                    {{ t('dialogs.max_file_uploads_hint', { max: maxFileUploads }) }}
                 </p>
             </div>
 
@@ -300,6 +303,23 @@ const onConfirm = () => {
                 </ul>
             </div>
 
+            <!-- Error: Exceeds PHP max_file_uploads -->
+            <div
+                v-if="exceedsMaxFiles"
+                class="flex items-start gap-2 rounded-xl border border-red-200 dark:border-red-800/70 bg-red-50/80 dark:bg-red-950/40 px-3.5 py-2.5 text-xs text-red-700 dark:text-red-300"
+            >
+                <i class="pi pi-exclamation-triangle text-red-600 dark:text-red-400 mt-0.5 shrink-0"></i>
+                <span>
+                    {{
+                        t('dialogs.max_file_uploads_exceeded', {
+                            max: maxFileUploads,
+                            count: selectedFiles.length,
+                            excess: selectedFiles.length - maxFileUploads,
+                        })
+                    }}
+                </span>
+            </div>
+
             <!-- Highlight: Auto-Private when user has no team -->
             <div
                 v-if="mustBePrivate"
@@ -324,7 +344,7 @@ const onConfirm = () => {
                 :label="selectedFiles.length ? `${t('dialogs.upload_submit')} (${selectedFiles.length})` : t('dialogs.upload_submit')"
                 icon="pi pi-cloud-upload"
                 :loading="loading"
-                :disabled="!selectedFiles.length"
+                :disabled="!selectedFiles.length || exceedsMaxFiles"
                 class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white"
                 @click="onConfirm"
             />

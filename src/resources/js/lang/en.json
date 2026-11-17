@@ -164,6 +164,8 @@
         "extension": "Extension",
         "visibility": "File Access",
         "no_team_private_hint": "You are not in a team yet — this file will automatically be saved as Private.",
+        "max_file_uploads_hint": "You can select up to {max} files at once.",
+        "max_file_uploads_exceeded": "Too many files selected ({count}). Maximum allowed per upload is {max} files — please remove {excess} file(s).",
         "folder": "Folder",
         "content_optional": "Initial Content (Optional)",
         "rename_title": "Rename Document",

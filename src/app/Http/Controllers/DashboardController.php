@@ -56,6 +56,7 @@ class DashboardController extends Controller
             'allowedExtensions' => allowed_document_extensions(),
             'creatableExtensions' => $extensions->listCreatableFromFormCodes(),
             'extensionMaxSizes' => $extensions->listActiveWithLimits(),
+            'maxFileUploads' => max(1, (int) (ini_get('max_file_uploads') ?: 20)),
             'storageQuota' => $documents->getStorageQuotaSummary($user),
             'teams' => is_superadmin($user) ? $teams->listActiveTeams() : [],
             'myTeam' => $myTeam,

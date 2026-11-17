@@ -26,8 +26,10 @@ class DocumentController extends Controller
     {
         abort_unless(can_use_function('documents.upload', $request->user()), 403);
 
+        $maxFileUploads = max(1, (int) (ini_get('max_file_uploads') ?: 20));
+
         $validated = $request->validate([
-            'files' => ['required', 'array', 'min:1'],
+            'files' => ['required', 'array', 'min:1', "max:{$maxFileUploads}"],
             'files.*' => ['required', 'file'],
             'folder_id' => ['nullable', 'integer', 'exists:doc_folders,id'],
             'notify_members' => ['nullable', 'boolean'],

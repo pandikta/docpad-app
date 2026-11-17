@@ -28,6 +28,7 @@ const props = defineProps({
     allowedExtensions: { type: Array, default: () => ['txt', 'md'] },
     creatableExtensions: { type: Array, default: () => ['txt', 'md'] },
     extensionMaxSizes: { type: Object, default: () => ({}) },
+    maxFileUploads: { type: Number, default: 20 },
     storageQuota: { type: Object, default: () => ({ used_bytes: 0, limit_mb: 100, limit_bytes: 104857600 }) },
     teams: { type: Array, default: () => [] },
     myTeam: { type: Object, default: null },
@@ -625,6 +626,7 @@ const confirmUpload = ({ files, folderId, notifyMembers, encryptedFiles }) => {
             v-model:visible="uploadDialogVisible"
             :allowed-extensions="allowedExtensions"
             :extension-max-sizes="extensionMaxSizes"
+            :max-file-uploads="maxFileUploads"
             :folders="folders"
             :loading="uploading"
             @confirm="confirmUpload"
