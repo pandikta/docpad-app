@@ -17,6 +17,7 @@ const props = defineProps({
     allowedExtensions: { type: Array, default: () => ['txt', 'md'] },
     extensionMaxSizes: { type: Object, default: () => ({}) },
     maxFileUploads: { type: Number, default: 20 },
+    maxPostSizeBytes: { type: Number, default: 0 },
     folders: { type: Array, default: () => [] },
     loading: { type: Boolean, default: false },
 });
@@ -124,10 +125,16 @@ const removeFile = (index) => {
     selectedFiles.value = selectedFiles.value.filter((_, idx) => idx !== index);
 };
 
+const totalSelectedBytes = computed(() =>
+    selectedFiles.value.reduce((sum, file) => sum + Number(file?.size ?? 0), 0),
+);
 const exceedsMaxFiles = computed(() => selectedFiles.value.length > props.maxFileUploads);
+const exceedsMaxPostSize = computed(
+    () => props.maxPostSizeBytes > 0 && totalSelectedBytes.value > props.maxPostSizeBytes,
+);
 
 const onConfirm = () => {
-    if (!selectedFiles.value.length || exceedsMaxFiles.value) return;
+    if (!selectedFiles.value.length || exceedsMaxFiles.value || exceedsMaxPostSize.value) return;
     emit('confirm', {
         files: selectedFiles.value,
         folderId: folderId.value,
@@ -230,10 +237,22 @@ const onConfirm = () => {
 
             <!-- Selected Files Listing -->
             <div v-if="selectedFiles.length" class="space-y-2">
-                <div class="flex items-center justify-between text-xs">
-                    <span class="font-semibold text-slate-700 dark:text-surface-200">
-                        {{ t('dialogs.upload_selected', { count: selectedFiles.length }) }}
-                    </span>
+                <div class="flex items-center justify-between text-xs gap-2">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="font-semibold text-slate-700 dark:text-surface-200">
+                            {{ t('dialogs.upload_selected', { count: selectedFiles.length }) }}
+                        </span>
+                        <span
+                            class="px-2 py-0.5 rounded-full font-semibold text-[11px]"
+                            :class="
+                                exceedsMaxPostSize
+                                    ? 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300'
+                                    : 'bg-emerald-50 text-[#1f6f46] dark:bg-emerald-950/60 dark:text-emerald-300'
+                            "
+                        >
+                            {{ t('dialogs.upload_total_size', { size: formatFileSize(totalSelectedBytes) }) }}
+                        </span>
+                    </div>
                     <button
                         type="button"
                         class="text-slate-500 hover:text-red-500 font-medium cursor-pointer"
@@ -320,6 +339,22 @@ const onConfirm = () => {
                 </span>
             </div>
 
+            <!-- Error: Exceeds PHP post_max_size -->
+            <div
+                v-if="exceedsMaxPostSize"
+                class="flex items-start gap-2 rounded-xl border border-red-200 dark:border-red-800/70 bg-red-50/80 dark:bg-red-950/40 px-3.5 py-2.5 text-xs text-red-700 dark:text-red-300"
+            >
+                <i class="pi pi-exclamation-triangle text-red-600 dark:text-red-400 mt-0.5 shrink-0"></i>
+                <span>
+                    {{
+                        t('dialogs.max_post_size_exceeded', {
+                            total: formatFileSize(totalSelectedBytes),
+                            max: formatFileSize(maxPostSizeBytes),
+                        })
+                    }}
+                </span>
+            </div>
+
             <!-- Highlight: Auto-Private when user has no team -->
             <div
                 v-if="mustBePrivate"
@@ -344,7 +379,7 @@ const onConfirm = () => {
                 :label="selectedFiles.length ? `${t('dialogs.upload_submit')} (${selectedFiles.length})` : t('dialogs.upload_submit')"
                 icon="pi pi-cloud-upload"
                 :loading="loading"
-                :disabled="!selectedFiles.length || exceedsMaxFiles"
+                :disabled="!selectedFiles.length || exceedsMaxFiles || exceedsMaxPostSize"
                 class="!bg-[#1f6f46] hover:!bg-[#185a38] !border-[#1f6f46] !text-white"
                 @click="onConfirm"
             />

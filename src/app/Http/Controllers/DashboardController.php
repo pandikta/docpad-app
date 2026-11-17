@@ -57,6 +57,7 @@ class DashboardController extends Controller
             'creatableExtensions' => $extensions->listCreatableFromFormCodes(),
             'extensionMaxSizes' => $extensions->listActiveWithLimits(),
             'maxFileUploads' => max(1, (int) (ini_get('max_file_uploads') ?: 20)),
+            'maxPostSizeBytes' => $this->parseIniSizeBytes((string) (ini_get('post_max_size') ?: '50M')),
             'storageQuota' => $documents->getStorageQuotaSummary($user),
             'teams' => is_superadmin($user) ? $teams->listActiveTeams() : [],
             'myTeam' => $myTeam,
@@ -65,5 +66,23 @@ class DashboardController extends Controller
                 'search' => $search,
             ],
         ]);
+    }
+
+    private function parseIniSizeBytes(string $val): int
+    {
+        $val = trim($val);
+        if ($val === '' || $val === '-1') {
+            return 0;
+        }
+
+        $unit = strtolower(substr($val, -1));
+        $num = (int) $val;
+
+        return match ($unit) {
+            'g' => $num * 1024 * 1024 * 1024,
+            'm' => $num * 1024 * 1024,
+            'k' => $num * 1024,
+            default => $num,
+        };
     }
 }

@@ -166,6 +166,8 @@
         "no_team_private_hint": "Anda belum tergabung di tim — file ini otomatis disimpan sebagai Private.",
         "max_file_uploads_hint": "Maksimal {max} file dapat dipilih sekaligus.",
         "max_file_uploads_exceeded": "Terlalu banyak file dipilih ({count}). Maksimal per unggahan adalah {max} file — silakan hapus {excess} file.",
+        "upload_total_size": "Total: {size}",
+        "max_post_size_exceeded": "Total ukuran ({total}) melebihi batas unggahan server ({max}). Silakan unggah bertahap.",
         "folder": "Folder",
         "content_optional": "Isi Awal (Opsional)",
         "rename_title": "Ubah Nama Dokumen",

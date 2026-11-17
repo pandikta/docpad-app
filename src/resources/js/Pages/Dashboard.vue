@@ -29,6 +29,7 @@ const props = defineProps({
     creatableExtensions: { type: Array, default: () => ['txt', 'md'] },
     extensionMaxSizes: { type: Object, default: () => ({}) },
     maxFileUploads: { type: Number, default: 20 },
+    maxPostSizeBytes: { type: Number, default: 0 },
     storageQuota: { type: Object, default: () => ({ used_bytes: 0, limit_mb: 100, limit_bytes: 104857600 }) },
     teams: { type: Array, default: () => [] },
     myTeam: { type: Object, default: null },
@@ -627,6 +628,7 @@ const confirmUpload = ({ files, folderId, notifyMembers, encryptedFiles }) => {
             :allowed-extensions="allowedExtensions"
             :extension-max-sizes="extensionMaxSizes"
             :max-file-uploads="maxFileUploads"
+            :max-post-size-bytes="maxPostSizeBytes"
             :folders="folders"
             :loading="uploading"
             @confirm="confirmUpload"

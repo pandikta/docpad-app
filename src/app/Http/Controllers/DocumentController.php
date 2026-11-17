@@ -9,6 +9,7 @@ use App\Services\ExtensionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -38,45 +39,68 @@ class DocumentController extends Controller
             'encrypted_files.*' => ['boolean'],
         ]);
 
+        $user = $request->user();
         $folderId = isset($validated['folder_id']) ? (int) $validated['folder_id'] : null;
         $isEncrypted = $request->boolean('is_encrypted');
         $encryptedFiles = $request->input('encrypted_files', []);
         $allowedExtensions = allowed_document_extensions();
+        $extLimits = $extensions->listActiveWithLimits();
+        $existingNames = Document::where('user_id', $user->id)->pluck('name')->flip()->all();
+        $usedBytes = $this->documents->getStorageUsageBytes($user);
+        $limitBytes = $user->storage_limit_mb !== null ? (int) $user->storage_limit_mb * 1024 * 1024 : null;
         $uploaded = [];
         $failed = [];
 
-        foreach ($request->file('files', []) as $index => $file) {
-            $ext = strtolower($file->getClientOriginalExtension());
-            $originalName = $file->getClientOriginalName();
+        DB::transaction(function () use (
+            $request,
+            $user,
+            $folderId,
+            $isEncrypted,
+            $encryptedFiles,
+            $allowedExtensions,
+            $extLimits,
+            &$existingNames,
+            &$usedBytes,
+            $limitBytes,
+            &$uploaded,
+            &$failed,
+        ) {
+            foreach ($request->file('files', []) as $index => $file) {
+                $ext = strtolower($file->getClientOriginalExtension());
+                $originalName = $file->getClientOriginalName();
+                $fileSize = (int) $file->getSize();
 
-            if (! in_array($ext, $allowedExtensions, true)) {
-                $failed[] = "\"{$originalName}\": extension .{$ext} is not allowed.";
-                continue;
+                if (! in_array($ext, $allowedExtensions, true)) {
+                    $failed[] = "\"{$originalName}\": extension .{$ext} is not allowed.";
+                    continue;
+                }
+
+                $maxKb = (int) ($extLimits[$ext] ?? 1024);
+                if ($fileSize > ($maxKb * 1024)) {
+                    $maxLabel = $maxKb >= 1024 ? round($maxKb / 1024, 2).' MB' : "{$maxKb} KB";
+                    $failed[] = "\"{$originalName}\": exceeds max size of {$maxLabel} for .{$ext}.";
+                    continue;
+                }
+
+                if (isset($existingNames[$originalName])) {
+                    $failed[] = "\"{$originalName}\": a document with this name already exists.";
+                    continue;
+                }
+
+                if ($limitBytes !== null && ($usedBytes + $fileSize) > $limitBytes) {
+                    $failed[] = "\"{$originalName}\": storage quota exceeded.";
+                    continue;
+                }
+
+                $fileEncrypted = is_array($encryptedFiles) && array_key_exists($index, $encryptedFiles)
+                    ? filter_var($encryptedFiles[$index], FILTER_VALIDATE_BOOLEAN)
+                    : $isEncrypted;
+
+                $uploaded[] = $this->documents->createFromUpload($user, $file, $folderId, $fileEncrypted);
+                $existingNames[$originalName] = true;
+                $usedBytes += $fileSize;
             }
-
-            $maxKb = $extensions->getMaxSizeKbForExtension($ext);
-            if ($file->getSize() > ($maxKb * 1024)) {
-                $maxLabel = $maxKb >= 1024 ? round($maxKb / 1024, 2).' MB' : "{$maxKb} KB";
-                $failed[] = "\"{$originalName}\": exceeds max size of {$maxLabel} for .{$ext}.";
-                continue;
-            }
-
-            if ($this->documents->nameExistsForUser($request->user(), $originalName)) {
-                $failed[] = "\"{$originalName}\": a document with this name already exists.";
-                continue;
-            }
-
-            if ($this->documents->wouldExceedStorageQuota($request->user(), (int) $file->getSize())) {
-                $failed[] = "\"{$originalName}\": storage quota exceeded.";
-                continue;
-            }
-
-            $fileEncrypted = is_array($encryptedFiles) && array_key_exists($index, $encryptedFiles)
-                ? filter_var($encryptedFiles[$index], FILTER_VALIDATE_BOOLEAN)
-                : $isEncrypted;
-
-            $uploaded[] = $this->documents->createFromUpload($request->user(), $file, $folderId, $fileEncrypted);
-        }
+        });
 
         $uploadedCount = count($uploaded);
         if ($uploadedCount === 0) {

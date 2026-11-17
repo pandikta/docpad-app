@@ -166,6 +166,8 @@
         "no_team_private_hint": "You are not in a team yet — this file will automatically be saved as Private.",
         "max_file_uploads_hint": "You can select up to {max} files at once.",
         "max_file_uploads_exceeded": "Too many files selected ({count}). Maximum allowed per upload is {max} files — please remove {excess} file(s).",
+        "upload_total_size": "Total: {size}",
+        "max_post_size_exceeded": "Total size ({total}) exceeds the server upload limit ({max}). Please upload in smaller batches.",
         "folder": "Folder",
         "content_optional": "Initial Content (Optional)",
         "rename_title": "Rename Document",
