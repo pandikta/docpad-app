@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\DocumentService;
 use App\Services\ExtensionService;
+use App\Services\LoginActivityService;
 use App\Services\TeamMembershipService;
 use App\Services\TeamService;
 use Illuminate\Http\Request;
@@ -21,6 +22,7 @@ class DashboardController extends Controller
         TeamService $teams,
         ExtensionService $extensions,
         TeamMembershipService $membership,
+        LoginActivityService $loginActivity,
     ): Response {
         $user = $request->user();
         $search = $request->string('search')->toString();
@@ -62,6 +64,7 @@ class DashboardController extends Controller
             'teams' => is_superadmin($user) ? $teams->listActiveTeams() : [],
             'myTeam' => $myTeam,
             'pendingJoinRequest' => $membership->getPendingJoinRequestForUser($user),
+            'loginSessions' => $loginActivity->listActiveSessions($request),
             'filters' => [
                 'search' => $search,
             ],

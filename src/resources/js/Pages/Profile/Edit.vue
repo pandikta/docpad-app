@@ -66,7 +66,9 @@ const initials = computed(() => getInitials(user.value.name));
                     :status="status"
                 />
 
-                <UpdatePasswordForm />
+                <div id="update-password">
+                    <UpdatePasswordForm />
+                </div>
             </div>
 
             <NotificationPreferencesForm />

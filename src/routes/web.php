@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\LoginActivityController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Settings\ExtensionController;
@@ -63,6 +64,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 
     Route::post('/password/force-update', [PasswordController::class, 'forceUpdate'])->name('password.force-update');
+    Route::delete('/sessions/other-devices', [LoginActivityController::class, 'logoutOtherDevices'])->name('sessions.logout-others');
+    Route::delete('/sessions/{sessionKey}', [LoginActivityController::class, 'logoutSession'])->name('sessions.logout-one');
     Route::post('/team-leader-request', [TeamLeaderRequestController::class, 'store'])->name('team-leader.request');
     Route::post('/team-join-request', [TeamJoinRequestController::class, 'store'])->name('team-join.request');
 

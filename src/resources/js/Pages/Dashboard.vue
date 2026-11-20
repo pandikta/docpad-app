@@ -7,6 +7,7 @@ import InputText from 'primevue/inputtext';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import WelcomeBanner from '@/Components/Dashboard/WelcomeBanner.vue';
 import StatCard from '@/Components/Dashboard/StatCard.vue';
+import LoginActivityCard from '@/Components/Dashboard/LoginActivityCard.vue';
 import DocumentTable from '@/Components/Documents/DocumentTable.vue';
 import DocumentCreateDialog from '@/Components/Documents/DocumentCreateDialog.vue';
 import DocumentEditorDialog from '@/Components/Documents/DocumentEditorDialog.vue';
@@ -34,6 +35,7 @@ const props = defineProps({
     teams: { type: Array, default: () => [] },
     myTeam: { type: Object, default: null },
     pendingJoinRequest: { type: Object, default: null },
+    loginSessions: { type: Array, default: () => [] },
 });
 
 const myTeamDialogVisible = ref(false);
@@ -437,6 +439,8 @@ const confirmUpload = ({ files, folderId, notifyMembers, encryptedFiles }) => {
                         @click="joinTeamDialogVisible = true"
                     />
                 </div>
+
+                <LoginActivityCard :sessions="loginSessions" />
 
                 <div v-if="can('documents.create') || can('documents.upload')" class="sm:ml-auto flex flex-wrap items-center gap-3">
                     <Button
